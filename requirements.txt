@@ -10,16 +10,18 @@ Werkzeug==3.0.1
 # Database (already using built-in sqlite3)
 # No additional package needed for SQLite
 
-# OCR and Image Processing
-pytesseract==0.3.10
+# Image Processing - For barcode detection
 Pillow==10.1.0
+pyzbar==0.1.9
+opencv-python==4.8.1.78
 
-# AI Integration (choose one or both)
-# Anthropic Claude API (recommended)
+# AI Integration - Anthropic Claude API
 anthropic==0.25.0
 
-# Alternative: OpenAI API
-# openai==1.12.0
+# Nutrition Agent Dependencies
+aiohttp==3.9.1
+pydantic==2.5.0
 
 # Utilities
 python-dotenv==1.0.0
+requests==2.32.0

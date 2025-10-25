@@ -24,14 +24,29 @@ from backend.database import (
     authenticate_user,
     update_user_profile,
     get_user_profile,
-    log_nutrition,
-    get_nutrition_logs,
     add_weight_entry,
     get_weight_history,
     calculate_bmi,
     migrate_database
 )
-from backend.nutrition_reader import extract_text_from_image, parse_nutrition_info
+# DEPRECATED: Old OCR-based nutrition scanner
+# from backend.nutrition_reader import extract_text_from_image, parse_nutrition_info
+
+# NEW: Nutrition Agent Service (barcode-based)
+try:
+    from backend.nutrition_agent_service import get_nutrition_agent_service, run_async
+    USE_NUTRITION_AGENT = True
+except ImportError as e:
+    print(f"Warning: Nutrition Agent not available: {e}")
+    USE_NUTRITION_AGENT = False
+
+# Barcode detection from images
+try:
+    from backend.barcode_detector import extract_barcode_from_bytes
+    USE_BARCODE_DETECTOR = True
+except ImportError as e:
+    print(f"Warning: Barcode detector not available: {e}")
+    USE_BARCODE_DETECTOR = False
 
 # Optional: Import custom AI model (will use demo mode if not available)
 try:
@@ -215,56 +230,179 @@ def update_profile():
         return jsonify({'error': 'Failed to update profile'}), 400
 
 
-@app.route('/api/scan', methods=['POST'])
-def scan_nutrition_label():
+# ============================================================================
+# NUTRITION SCANNING - NEW BARCODE-BASED SYSTEM
+# ============================================================================
+
+@app.route('/api/barcode/scan', methods=['POST'])
+def scan_barcode():
     """
-    Upload and scan a nutrition label image.
-    No authentication required for hackathon demo.
+    Scan a barcode and return product information.
+    NEW endpoint using the nutrition-agent barcode scanner.
     """
+    if not USE_NUTRITION_AGENT:
+        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
+
+    data = request.get_json()
+
+    if not data or 'barcode' not in data:
+        return jsonify({'error': 'Missing barcode number'}), 400
+
+    barcode = str(data['barcode']).strip()
+
+    if not barcode:
+        return jsonify({'error': 'Invalid barcode'}), 400
+
+    try:
+        # Get nutrition agent service
+        agent_service = get_nutrition_agent_service()
+
+        # Scan barcode asynchronously
+        product_data = run_async(agent_service.scan_barcode(barcode))
+
+        if not product_data:
+            return jsonify({'error': 'Product not found. Please check the barcode number.'}), 404
+
+        return jsonify({
+            'success': True,
+            'product': product_data,
+            'message': 'Product scanned successfully'
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to scan barcode: {str(e)}'}), 500
+
+
+@app.route('/api/barcode/image', methods=['POST'])
+def scan_barcode_image():
+    """
+    Upload a barcode image and automatically extract the barcode number.
+    Then retrieve product information using the extracted barcode.
+    """
+    if not USE_BARCODE_DETECTOR:
+        return jsonify({'error': 'Barcode detector not available. Install pyzbar and opencv-python.'}), 503
+
+    if not USE_NUTRITION_AGENT:
+        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
+
+    # Check if image file is present
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 
     file = request.files['image']
 
     if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
+        return jsonify({'error': 'Empty filename'}), 400
 
-    if file and allowed_file(file.filename):
-        # Save file
-        filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"demo_{timestamp}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+    # Validate file type
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, GIF, BMP'}), 400
 
-        try:
-            # Extract nutrition data using OCR
-            ocr_text = extract_text_from_image(filepath)
-            nutrition_data = parse_nutrition_info(ocr_text)
+    try:
+        # Read image bytes
+        image_bytes = file.read()
 
+        # Extract barcode from image
+        barcode = extract_barcode_from_bytes(image_bytes)
+
+        if not barcode:
             return jsonify({
-                'success': True,
-                'nutrition_data': nutrition_data,
-                'image_path': filepath,
-                'message': 'Nutrition label scanned successfully'
-            }), 200
+                'error': 'No barcode detected in image',
+                'suggestion': 'Make sure the barcode is clearly visible and well-lit'
+            }), 404
 
-        except Exception as e:
-            return jsonify({'error': f'Failed to scan image: {str(e)}'}), 500
-    else:
-        return jsonify({'error': 'Invalid file type. Use jpg, png, gif, or bmp'}), 400
+        # Now scan the extracted barcode
+        agent_service = get_nutrition_agent_service()
+        product_data = run_async(agent_service.scan_barcode(barcode))
+
+        if not product_data:
+            return jsonify({
+                'error': f'Barcode detected ({barcode}) but product not found in database',
+                'barcode': barcode
+            }), 404
+
+        return jsonify({
+            'success': True,
+            'barcode': barcode,
+            'product': product_data,
+            'message': f'Barcode {barcode} detected and product found'
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to process image: {str(e)}'}), 500
+
+
+@app.route('/api/scan', methods=['POST'])
+def scan_nutrition_label():
+    """
+    DEPRECATED: Old OCR-based nutrition label scanner.
+    Kept for backward compatibility.
+
+    Recommendation: Use /api/barcode/scan instead.
+    """
+    return jsonify({
+        'error': 'OCR scanning deprecated. Please use /api/barcode/scan with a barcode number.',
+        'deprecated': True,
+        'message': 'Send POST to /api/barcode/scan with {"barcode": "1234567890"}'
+    }), 410  # 410 Gone - resource no longer available
+
+
+@app.route('/api/agent/evaluate', methods=['POST'])
+def evaluate_with_agent():
+    """
+    NEW: Comprehensive evaluation using nutrition agent.
+    Evaluates product using health, price, and fitness agents.
+    """
+    if not USE_NUTRITION_AGENT:
+        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
+
+    data = request.get_json()
+
+    if not data or 'product' not in data:
+        return jsonify({'error': 'Missing product data'}), 400
+
+    product_data = data['product']
+
+    # Get user profile for personalized evaluation
+    profile = get_user_profile(DEMO_USER_ID)
+
+    if not profile:
+        return jsonify({'error': 'User profile not found'}), 404
+
+    try:
+        # Get nutrition agent service
+        agent_service = get_nutrition_agent_service()
+
+        # Run comprehensive evaluation
+        evaluation = run_async(agent_service.evaluate_product(product_data, profile))
+
+        return jsonify({
+            'success': True,
+            'evaluation': evaluation
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Evaluation failed: {str(e)}'}), 500
 
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_nutrition():
     """
-    Send nutrition data to AI for analysis.
-    Simplified version - uses demo user profile.
+    DEPRECATED: Old AI analysis endpoint.
+    NEW: Use /api/agent/evaluate for comprehensive agent-based evaluation.
+
+    This endpoint remains for backward compatibility but is deprecated.
     """
     data = request.get_json()
 
     if not data or 'nutrition_data' not in data:
         return jsonify({'error': 'Missing nutrition data'}), 400
+
+    # Check if we should use the new agent system
+    if USE_NUTRITION_AGENT and 'product' in data:
+        # Redirect to new agent evaluation
+        return evaluate_with_agent()
 
     nutrition_data = data['nutrition_data']
 
@@ -272,40 +410,7 @@ def analyze_nutrition():
     profile = get_user_profile(DEMO_USER_ID)
 
     try:
-        # Prepare structured input for your custom AI model
-        ai_input = {
-            'nutrition_data': nutrition_data,
-            'user_profile': {
-                'goal_type': profile.get('goal_type', 'general_health'),
-                'diet_type': profile.get('diet_type', 'standard'),
-                'daily_calorie_target': profile.get('daily_calorie_target'),
-                'daily_protein_target_g': profile.get('daily_protein_target_g'),
-                'daily_carbs_target_g': profile.get('daily_carbs_target_g'),
-                'daily_fat_target_g': profile.get('daily_fat_target_g'),
-                'allergies': profile.get('allergies'),
-                'dietary_restrictions': profile.get('dietary_restrictions')
-            }
-        }
-
-        # TODO: Replace this with your custom trained AI model
-        # Example integration patterns:
-
-        # OPTION 1: Local model (TensorFlow/PyTorch)
-        # from your_model import NutritionAnalyzer
-        # model = NutritionAnalyzer.load('path/to/your/model')
-        # analysis = model.predict(ai_input)
-
-        # OPTION 2: API endpoint to your model server
-        # import requests
-        # response = requests.post('http://your-model-api.com/analyze', json=ai_input)
-        # analysis = response.json()['analysis']
-
-        # OPTION 3: Hugging Face model
-        # from transformers import pipeline
-        # analyzer = pipeline('text-generation', model='your-model-name')
-        # analysis = analyzer(str(ai_input), max_length=500)[0]['generated_text']
-
-        # Use custom AI model if available, otherwise use demo
+        # Legacy fallback - basic demo analysis
         if USE_AI_MODEL:
             analysis = ai_analyze(nutrition_data, profile)
         else:
@@ -319,63 +424,6 @@ def analyze_nutrition():
 
     except Exception as e:
         return jsonify({'error': f'AI analysis failed: {str(e)}'}), 500
-
-
-@app.route('/api/log', methods=['POST'])
-def create_nutrition_log():
-    """Log nutrition data for demo user."""
-    data = request.get_json()
-
-    if not data or 'nutrition_data' not in data:
-        return jsonify({'error': 'Missing nutrition data'}), 400
-
-    nutrition_json = json.dumps(data['nutrition_data'])
-
-    log_id = log_nutrition(
-        user_id=DEMO_USER_ID,
-        nutrition_json=nutrition_json,
-        meal_type=data.get('meal_type', 'other'),
-        food_name=data.get('food_name', 'Unknown Food'),
-        price=data.get('price'),
-        notes=data.get('notes'),
-        image_path=data.get('image_path')
-    )
-
-    if log_id:
-        return jsonify({
-            'success': True,
-            'log_id': log_id,
-            'message': 'Nutrition logged successfully'
-        }), 201
-    else:
-        return jsonify({'error': 'Failed to log nutrition'}), 500
-
-
-@app.route('/api/logs', methods=['GET'])
-def get_logs():
-    """Get nutrition logs for demo user."""
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-
-    logs = get_nutrition_logs(DEMO_USER_ID, start_date, end_date)
-
-    # Calculate totals
-    total_calories = sum(log.get('calories', 0) or 0 for log in logs)
-    total_protein = sum(log.get('protein_g', 0) or 0 for log in logs)
-    total_carbs = sum(log.get('total_carbs_g', 0) or 0 for log in logs)
-    total_fat = sum(log.get('total_fat_g', 0) or 0 for log in logs)
-
-    return jsonify({
-        'success': True,
-        'logs': logs,
-        'totals': {
-            'calories': total_calories,
-            'protein_g': round(total_protein, 1),
-            'carbs_g': round(total_carbs, 1),
-            'fat_g': round(total_fat, 1)
-        },
-        'count': len(logs)
-    }), 200
 
 
 @app.route('/api/weight', methods=['POST'])
@@ -449,7 +497,7 @@ def index():
         'note': 'All endpoints use demo user - no authentication needed',
         'endpoints': {
             'profile': ['GET /api/profile', 'PUT /api/profile'],
-            'nutrition': ['POST /api/scan', 'POST /api/analyze', 'POST /api/log', 'GET /api/logs'],
+            'nutrition': ['POST /api/barcode/scan', 'POST /api/agent/evaluate'],
             'weight': ['POST /api/weight', 'GET /api/weight/history']
         },
         'demo': 'Open demo.html in your browser to test!'
@@ -465,11 +513,9 @@ if __name__ == '__main__':
     print("  Profile:")
     print("    GET    http://localhost:5000/api/profile")
     print("    PUT    http://localhost:5000/api/profile")
-    print("\n  Nutrition:")
-    print("    POST   http://localhost:5000/api/scan")
-    print("    POST   http://localhost:5000/api/analyze")
-    print("    POST   http://localhost:5000/api/log")
-    print("    GET    http://localhost:5000/api/logs")
+    print("\n  Nutrition & AI:")
+    print("    POST   http://localhost:5000/api/barcode/scan")
+    print("    POST   http://localhost:5000/api/agent/evaluate")
     print("\n  Weight Tracking:")
     print("    POST   http://localhost:5000/api/weight")
     print("    GET    http://localhost:5000/api/weight/history")

@@ -16,6 +16,7 @@ backend/uploads/
 .env
 
 # AI Models
+.claude/
 *.pkl
 *.h5
 *.pth
@@ -26,5 +27,3 @@ backend/models/
 .idea/
 .DS_Store
 
-# Test Agent
-multi_tool_agent/

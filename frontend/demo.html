@@ -403,62 +403,94 @@
         <div class="tab-navigation">
             <button class="tab active" onclick="switchTab('scanner')">📸 Scanner</button>
             <button class="tab" onclick="switchTab('goals')">🎯 Health Goals</button>
-            <button class="tab" onclick="switchTab('logs')">📊 Food Log</button>
             <button class="tab" onclick="switchTab('profile')">👤 Profile</button>
         </div>
 
         <!-- Scanner Tab -->
         <div id="scannerTab" class="tab-content active">
             <div class="section">
-                <h2>📸 Upload Nutrition Label</h2>
-                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                    <input type="file" id="fileInput" accept="image/*" style="display: none" onchange="handleFileSelect(event)">
-                    <p id="uploadText">📤 Click or drag to upload nutrition label image</p>
-                    <div id="imagePreview"></div>
+                <h2>🔍 Barcode Scanner</h2>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Enter a product barcode number OR upload a barcode image to get nutrition information and AI analysis.
+                </p>
+
+                <!-- Option 1: Manual Barcode Entry -->
+                <div class="form-group">
+                    <label for="barcodeInput">Option 1: Enter Barcode Number</label>
+                    <input type="text" id="barcodeInput" placeholder="e.g., 012000161155"
+                           onkeypress="if(event.key==='Enter') scanBarcode()">
                 </div>
-                <button class="btn" id="scanBtn" onclick="scanLabel()" disabled style="margin-top: 15px;">Scan Label</button>
+                <button class="btn" id="scanBarcodeBtn" onclick="scanBarcode()">🔍 Scan Barcode Number</button>
+
+                <!-- Divider -->
+                <div style="text-align: center; margin: 20px 0; color: #999;">- OR -</div>
+
+                <!-- Option 2: Upload Barcode Image -->
+                <div class="form-group">
+                    <label for="barcodeImage">Option 2: Upload Barcode Image</label>
+                    <input type="file" id="barcodeImage" accept="image/*" onchange="handleBarcodeImageSelect(event)">
+                    <div id="imagePreview" style="margin-top: 10px;"></div>
+                </div>
+                <button class="btn" id="scanImageBtn" onclick="scanBarcodeImage()" disabled>📸 Scan Barcode from Image</button>
+
                 <div id="scanResponse" class="response"></div>
             </div>
 
-            <!-- Validation and Manual Input Section -->
-            <div id="validationSection" class="section hidden">
-                <h2>✅ Confirm Extracted Data</h2>
-                <p style="margin-bottom: 15px; color: #666;">Review the extracted nutrition information and fill in any missing values:</p>
-
-                <div id="validationMessage" class="validation-message">
-                    <strong>Missing or incomplete data:</strong>
-                    <ul id="missingFields" class="validation-list"></ul>
+            <!-- Product Information Section -->
+            <div id="productSection" class="section hidden">
+                <h2>📦 Product Information</h2>
+                <div id="productInfo" style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <p><strong>Name:</strong> <span id="productName">-</span></p>
+                    <p><strong>Brand:</strong> <span id="productBrand">-</span></p>
+                    <p><strong>Category:</strong> <span id="productCategory">-</span></p>
+                    <p><strong>Price:</strong> $<span id="productPrice">-</span></p>
                 </div>
 
-                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #764ba2;">Manual Inputs</h3>
-                <div class="form-group">
-                    <label for="foodName">Food Item Name *</label>
-                    <input type="text" id="foodName" placeholder="Enter food name (e.g., Greek Yogurt)">
-                </div>
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: #764ba2;">Nutrition Facts</h3>
+                <div id="nutritionInfo" style="background: white; padding: 15px; border-radius: 8px;"></div>
 
-                <div class="form-group">
-                    <label for="foodPrice">Price ($)</label>
-                    <input type="number" id="foodPrice" step="0.01" placeholder="Enter price (e.g., 3.99)">
-                </div>
-
-                <div class="form-group">
-                    <label for="mealType">Meal Type</label>
-                    <select id="mealType">
-                        <option value="breakfast">Breakfast</option>
-                        <option value="lunch">Lunch</option>
-                        <option value="dinner">Dinner</option>
-                        <option value="snack">Snack</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-
-                <div class="input-row" style="margin-top: 15px;">
-                    <button class="btn" id="analyzeBtn" onclick="analyzeNutrition()" disabled>🤖 Analyze with AI</button>
-                    <button class="btn btn-secondary" id="logBtn" onclick="saveLog()" disabled>💾 Save to Log</button>
+                <div style="margin-top: 15px;">
+                    <button class="btn" id="analyzeBtn" onclick="analyzeProduct()" disabled>🤖 Get AI Analysis</button>
                 </div>
 
                 <div id="analysisResponse" class="response"></div>
-                <div id="logResponse" class="response"></div>
+            </div>
+
+            <!-- AI Analysis Display -->
+            <div id="evaluationSection" class="section hidden">
+                <h2>🤖 AI Evaluation Results</h2>
+
+                <!-- Overall Score -->
+                <div id="overallScore" style="text-align: center; padding: 20px; background: white; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 10px;" id="overallEmoji">-</div>
+                    <div style="font-size: 32px; font-weight: bold; color: #667eea;" id="overallRating">-</div>
+                    <div style="font-size: 18px; margin-top: 10px;" id="overallRecommendation">-</div>
+                </div>
+
+                <!-- Health Analysis -->
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h3 style="color: #764ba2;">❤️ Health Goal Alignment</h3>
+                    <p><strong>Score:</strong> <span id="healthScore">-</span>/100</p>
+                    <p id="healthSummary" style="margin-top: 10px;"></p>
+                    <div id="healthPros" style="margin-top: 10px;"></div>
+                    <div id="healthCons" style="margin-top: 10px;"></div>
+                </div>
+
+                <!-- Fitness Analysis -->
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h3 style="color: #764ba2;">💪 Fitness Goal Alignment</h3>
+                    <p><strong>Score:</strong> <span id="fitnessScore">-</span>/100</p>
+                    <p id="fitnessSummary" style="margin-top: 10px;"></p>
+                    <div id="fitnessBestFor" style="margin-top: 10px;"></div>
+                    <div id="fitnessRec" style="margin-top: 10px;"></div>
+                </div>
+
+                <!-- Price Analysis -->
+                <div style="background: white; padding: 15px; border-radius: 8px;">
+                    <h3 style="color: #764ba2;">💰 Price Evaluation</h3>
+                    <p><strong>Rating:</strong> <span id="priceRating">-</span></p>
+                    <p id="priceSummary" style="margin-top: 10px;"></p>
+                </div>
             </div>
         </div>
 
@@ -548,35 +580,6 @@
             </div>
         </div>
 
-        <!-- Food Log Tab -->
-        <div id="logsTab" class="tab-content">
-            <div class="section">
-                <h2>📊 Your Food Log & Eating History</h2>
-
-                <div class="stats-grid" id="statsDisplay" style="display: none;">
-                    <div class="stat-card">
-                        <div class="label">Total Calories</div>
-                        <div class="value" id="totalCalories">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="label">Protein</div>
-                        <div class="value" id="totalProtein">0g</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="label">Carbs</div>
-                        <div class="value" id="totalCarbs">0g</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="label">Fat</div>
-                        <div class="value" id="totalFat">0g</div>
-                    </div>
-                </div>
-
-                <button class="btn" onclick="getNutritionLogs()" style="margin-top: 20px;">🔄 Refresh Logs</button>
-                <div id="logsResponse" class="response"></div>
-            </div>
-        </div>
-
         <!-- Profile Tab -->
         <div id="profileTab" class="tab-content">
             <div class="section">
@@ -590,7 +593,8 @@
     <script>
         const API_URL = 'http://localhost:5000/api';
         let selectedFile = null;
-        let scannedNutritionData = null;
+        let scannedNutritionData = null;  // DEPRECATED: old OCR data
+        let scannedProductData = null;     // NEW: barcode scanned product data
         let currentUser = null;
 
         // Check API connection on page load
@@ -686,7 +690,6 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('currentUsername').textContent = currentUser.username;
-            getNutritionLogs();
         }
 
         function showLogin() {
@@ -894,48 +897,11 @@
                     showResponse('logResponse',
                         `✅ Saved!\n\nLog ID: ${result.log_id}\nFood: ${foodName}\nPrice: $${foodPrice || 'N/A'}\nMeal: ${mealType}`,
                         'success');
-
-                    // Refresh stats
-                    await getNutritionLogs();
                 } else {
                     showResponse('logResponse', `❌ Error: ${result.error}`, 'error');
                 }
             } catch (error) {
                 showResponse('logResponse', `❌ Network Error: ${error.message}`, 'error');
-            }
-        }
-
-        // Get Nutrition Logs
-        async function getNutritionLogs() {
-            try {
-                const response = await fetch(`${API_URL}/logs`);
-                const result = await response.json();
-
-                if (response.ok) {
-                    // Update stats
-                    document.getElementById('totalCalories').textContent = result.totals.calories;
-                    document.getElementById('totalProtein').textContent = result.totals.protein_g + 'g';
-                    document.getElementById('totalCarbs').textContent = result.totals.carbs_g + 'g';
-                    document.getElementById('totalFat').textContent = result.totals.fat_g + 'g';
-                    document.getElementById('statsDisplay').style.display = 'grid';
-
-                    if (result.logs.length > 0) {
-                        const logsList = result.logs.map(log => {
-                            const price = log.price ? ` - $${log.price}` : '';
-                            return `- ${log.food_name}: ${log.calories} cal, ${log.protein_g}g protein (${log.meal_type})${price}`;
-                        }).join('\n');
-
-                        showResponse('logsResponse',
-                            `📊 Today's Logs (${result.count}):\n\n${logsList}`,
-                            'success');
-                    } else {
-                        showResponse('logsResponse', '📝 No logs for today yet. Scan and save some nutrition data!', 'info');
-                    }
-                } else {
-                    showResponse('logsResponse', `❌ Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                console.error('Failed to load logs:', error);
             }
         }
 
@@ -1005,5 +971,6 @@
             element.className = `response show ${type}`;
         }
     </script>
+    <script src="barcode_scanner.js"></script>
 </body>
 </html>
