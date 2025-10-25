@@ -7,13 +7,20 @@ Scan product barcodes, get AI-powered nutrition analysis, and reach your health 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Install dependencies
+# 1. Install system dependencies (for barcode image scanning)
+# Ubuntu/Debian:
+sudo apt-get install libzbar0
+
+# macOS:
+brew install zbar
+
+# 2. Install Python dependencies
 pip install -r requirements.txt
 
-# 2. Start the server
+# 3. Start the server
 python run.py
 
-# 3. Open the app
+# 4. Open the app
 # Open: frontend/demo.html in your browser
 ```
 
@@ -249,6 +256,18 @@ python3 backend/api_simple.py
 - Check `ANTHROPIC_API_KEY` for AI agents
 - Check `BARCODE_LOOKUP_API_KEY` for barcode scanning
 - Restart server after adding API keys
+
+### Barcode Image Upload Not Working
+If you see "Barcode detector not available", install the system library:
+```bash
+# Ubuntu/Debian
+sudo apt-get install libzbar0
+
+# macOS
+brew install zbar
+```
+
+**Note**: Manual barcode entry will still work without libzbar. The image upload feature is optional.
 
 ### Frontend can't connect to API
 - Verify server is running: `curl http://localhost:5000/api/health`

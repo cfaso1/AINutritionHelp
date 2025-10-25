@@ -14,9 +14,10 @@ Werkzeug==3.0.1
 Pillow==10.1.0
 pyzbar==0.1.9
 opencv-python==4.8.1.78
+numpy<2  # Required for opencv-python compatibility
 
 # AI Integration - Anthropic Claude API
-anthropic==0.25.0
+anthropic>=0.39.0
 
 # Nutrition Agent Dependencies
 aiohttp==3.9.1

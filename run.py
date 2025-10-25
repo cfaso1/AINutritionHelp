@@ -6,6 +6,10 @@ Usage: python run.py
 
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -17,7 +21,7 @@ if __name__ == '__main__':
     print("\n" + "="*70)
     print("🍎 AI Nutrition Help API Server")
     print("="*70)
-    print("\n✨ Features: OCR Scanner | Health Goals | Food Log | AI Analysis\n")
+    print("\n✨ Features: Barcode Scanner | Multi-Agent AI | Health Goals\n")
     print("API Endpoints:")
     print("  Authentication:")
     print("    POST   http://localhost:5000/api/auth/register")
@@ -25,17 +29,18 @@ if __name__ == '__main__':
     print("\n  Profile & Goals:")
     print("    GET    http://localhost:5000/api/profile")
     print("    PUT    http://localhost:5000/api/profile")
-    print("\n  Nutrition:")
-    print("    POST   http://localhost:5000/api/scan")
-    print("    POST   http://localhost:5000/api/analyze")
-    print("    POST   http://localhost:5000/api/log")
-    print("    GET    http://localhost:5000/api/logs")
+    print("\n  Barcode Scanning & AI:")
+    print("    POST   http://localhost:5000/api/barcode/scan")
+    print("    POST   http://localhost:5000/api/barcode/image")
+    print("    POST   http://localhost:5000/api/agent/evaluate")
     print("\n  Weight Tracking:")
     print("    POST   http://localhost:5000/api/weight")
     print("    GET    http://localhost:5000/api/weight/history")
     print("\n" + "="*70)
     print("\n🚀 Open frontend/demo.html in your browser!")
     print("   Demo Account: demo_user / demo123")
+    print("\n💡 TIP: Make sure to install dependencies:")
+    print("   pip install -r requirements.txt")
     print("="*70 + "\n")
 
     app.run(debug=True, host='0.0.0.0', port=5000)
