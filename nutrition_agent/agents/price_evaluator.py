@@ -49,8 +49,10 @@ class PriceEvaluatorAgent:
         else:
             rating = "Expensive"
         
-        # Use LLM for detailed analysis
-        prompt = f"""Analyze the pricing for this product:
+        # Generate summary (try LLM first, fallback to template)
+        try:
+            # Use LLM for detailed analysis
+            prompt = f"""Analyze the pricing for this product:
 Product: {product.name}
 Brand: {product.brand}
 Category: {product.category}
@@ -65,9 +67,16 @@ Provide a brief 2-3 sentence summary explaining whether this is a good value. Co
 - Brand positioning (premium vs budget)
 - Value for money
 """
-        
-        summary = await self.llm.generate(prompt, max_tokens=150)
-        
+
+            summary = await self.llm.generate(prompt, max_tokens=150)
+
+            # If summary contains an error, use fallback
+            if "Error:" in summary or "Unable to generate" in summary:
+                summary = self._generate_fallback_summary(product, unit_price, benchmark, rating)
+        except Exception as e:
+            print(f"LLM analysis failed, using fallback: {e}")
+            summary = self._generate_fallback_summary(product, unit_price, benchmark, rating)
+
         return {
             "is_good_deal": is_good_deal,
             "rating": rating,
@@ -76,3 +85,16 @@ Provide a brief 2-3 sentence summary explaining whether this is a good value. Co
             "summary": summary.strip(),
             "comparison_percent": ((unit_price - benchmark["avg"]) / benchmark["avg"]) * 100
         }
+
+    def _generate_fallback_summary(self, product: Product, unit_price: float, benchmark: Dict, rating: str) -> str:
+        """Generate a simple summary without LLM"""
+        comparison_percent = ((unit_price - benchmark["avg"]) / benchmark["avg"]) * 100
+
+        if rating == "Excellent Deal":
+            return f"This {product.name} is an excellent deal, priced {abs(comparison_percent):.0f}% below the category average. This is a great value for money in the {product.category} category."
+        elif rating == "Good Price":
+            return f"The {product.name} is reasonably priced at ${product.price:.2f}, offering good value compared to similar {product.category} products. This is a solid choice for budget-conscious shoppers."
+        elif rating == "Fair Price":
+            return f"This product is priced at ${product.price:.2f}, which is {abs(comparison_percent):.0f}% {'above' if comparison_percent > 0 else 'below'} average for {product.category}. It's a fair price, though you might find better deals."
+        else:  # Expensive
+            return f"At ${product.price:.2f}, this {product.name} is priced {comparison_percent:.0f}% above the category average. Consider if the brand premium justifies the higher cost, or look for alternatives."

@@ -52,10 +52,19 @@ PROS: [pro1] | [pro2] | [pro3]
 CONS: [con1] | [con2] | [con3]
 """
         
-        response = await self.llm.generate(prompt, max_tokens=400)
-        
-        # Parse response
-        return self._parse_health_response(response)
+        try:
+            response = await self.llm.generate(prompt, max_tokens=400)
+
+            # Check if response contains error
+            if "Error:" in response or "Unable to generate" in response:
+                print(f"LLM health analysis failed, using fallback")
+                return self._generate_fallback_analysis(product, user_profile)
+
+            # Parse response
+            return self._parse_health_response(response)
+        except Exception as e:
+            print(f"Health evaluation failed: {e}, using fallback")
+            return self._generate_fallback_analysis(product, user_profile)
     
     def _build_nutrition_summary(self, product: Product) -> str:
         """Build nutrition summary string"""
@@ -125,6 +134,82 @@ CONS: [con1] | [con2] | [con3]
                 "cons": ["Unable to determine"]
             }
     
+    def _generate_fallback_analysis(self, product: Product, user_profile: UserProfile) -> Dict:
+        """Generate basic health analysis without LLM"""
+        if not product.nutrition:
+            return self._no_nutrition_response()
+
+        nutrition = product.nutrition
+        score = 50  # Start neutral
+        pros = []
+        cons = []
+
+        # Analyze protein
+        protein = nutrition.get("protein", 0)
+        if protein >= 15:
+            pros.append(f"High protein content ({protein}g)")
+            score += 10
+        elif protein >= 10:
+            pros.append(f"Good protein content ({protein}g)")
+            score += 5
+
+        # Analyze sugar
+        sugar = nutrition.get("sugar", 0)
+        if sugar <= 5:
+            pros.append(f"Low sugar ({sugar}g)")
+            score += 10
+        elif sugar > 20:
+            cons.append(f"High sugar content ({sugar}g)")
+            score -= 10
+
+        # Analyze fiber
+        fiber = nutrition.get("fiber", 0)
+        if fiber >= 5:
+            pros.append(f"Good fiber content ({fiber}g)")
+            score += 10
+        elif fiber >= 3:
+            pros.append(f"Contains fiber ({fiber}g)")
+            score += 5
+
+        # Analyze sodium
+        sodium = nutrition.get("sodium", 0)
+        if sodium > 400:
+            cons.append(f"High sodium ({sodium}mg)")
+            score -= 10
+        elif sodium > 200:
+            cons.append(f"Moderate sodium ({sodium}mg)")
+            score -= 5
+
+        # Analyze calories
+        calories = nutrition.get("calories", 0)
+        if calories > 300:
+            cons.append(f"High calorie content ({calories} cal)")
+            score -= 5
+
+        # Ensure we have at least something
+        if not pros:
+            pros.append("Contains essential nutrients")
+        if not cons:
+            cons.append("Review serving size for daily intake")
+
+        # Clamp score
+        score = max(0, min(100, score))
+
+        summary = f"This {product.name} has {calories} calories per serving with {protein}g protein. "
+        if score >= 70:
+            summary += "Overall, it appears to be a nutritious choice."
+        elif score >= 50:
+            summary += "It has some nutritional benefits but should be consumed mindfully."
+        else:
+            summary += "Consider healthier alternatives or consume in moderation."
+
+        return {
+            "score": score,
+            "summary": summary,
+            "pros": pros[:3],
+            "cons": cons[:3]
+        }
+
     def _no_nutrition_response(self) -> Dict:
         """Return response when no nutrition info available"""
         return {
