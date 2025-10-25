@@ -16,6 +16,7 @@ AINutritionHelp/
 │   ├── database.py            # SQLite database functions
 │   ├── nutrition_reader.py   # OCR nutrition label scanner
 │   ├── ai_model.py            # Custom AI model integration
+│   ├── nutrition_json.json    # Sample nutrition data format
 │   ├── uploads/               # Uploaded images (auto-created)
 │   └── nutrition_app.db       # SQLite database (auto-created)
 │
@@ -24,7 +25,8 @@ AINutritionHelp/
 │
 ├── docs/                       # 📚 Documentation
 │   ├── README.md              # Full documentation
-│   └── SETUP.md               # Quick setup guide
+│   ├── SETUP.md               # Quick setup guide
+│   └── PROJECT_STRUCTURE.md   # This file - detailed structure
 │
 └── venv/                       # Python virtual environment
 ```
@@ -36,7 +38,7 @@ AINutritionHelp/
 python run.py
 ```
 
-Then open `frontend/demo.html` in your browser.
+Then open [frontend/demo.html](../frontend/demo.html) in your browser.
 
 ## 📝 File Descriptions
 
@@ -51,6 +53,7 @@ Then open `frontend/demo.html` in your browser.
 - **database.py** - Database functions (CRUD operations)
 - **nutrition_reader.py** - OCR scanner using Tesseract
 - **ai_model.py** - Your custom AI model integration point
+- **nutrition_json.json** - Sample nutrition data format (example structure)
 - **__init__.py** - Makes backend a Python package
 
 ### Frontend/
@@ -64,6 +67,7 @@ Then open `frontend/demo.html` in your browser.
 ### Docs/
 - **README.md** - Complete documentation
 - **SETUP.md** - Quick setup reference
+- **PROJECT_STRUCTURE.md** - This file - detailed structure info
 
 ## 🔄 Data Flow
 

@@ -12,7 +12,7 @@ python3 -m venv venv
 
 ### 2. Start the API Server
 ```bash
-./venv/bin/python api_simple.py
+python run.py
 ```
 
 ### 3. Open the Demo
@@ -26,14 +26,26 @@ Open `demo.html` in your web browser!
 
 ```
 AINutritionHelp/
-├── api_simple.py          # REST API (no authentication)
-├── demo.html              # Beautiful web interface
-├── ai_model.py            # Custom AI model integration
-├── database.py            # SQLite database functions
-├── nutrition_reader.py    # OCR nutrition label scanner
-├── requirements.txt       # Python dependencies
-├── example_usage.py       # Database usage examples
-└── nutrition_app.db       # SQLite database (auto-created)
+├── run.py                      # START HERE - Main entry point
+├── requirements.txt            # Python dependencies
+├── .gitignore                  # Git ignore rules
+│
+├── backend/                    # Backend Code
+│   ├── api_simple.py          # REST API (no authentication)
+│   ├── database.py            # SQLite database functions
+│   ├── nutrition_reader.py   # OCR nutrition label scanner
+│   ├── ai_model.py            # Custom AI model integration
+│   ├── nutrition_json.json    # Sample nutrition data format
+│   ├── uploads/               # Uploaded images (auto-created)
+│   └── nutrition_app.db       # SQLite database (auto-created)
+│
+├── frontend/                   # Frontend Code
+│   └── demo.html              # Web interface with drag & drop
+│
+└── docs/                       # Documentation
+    ├── README.md              # This file - full documentation
+    ├── SETUP.md               # Quick setup guide
+    └── PROJECT_STRUCTURE.md   # Detailed structure info
 ```
 
 ---
@@ -53,10 +65,10 @@ AINutritionHelp/
 To integrate your custom trained AI model:
 1. Train your nutrition analysis model
 2. Save it to a file (e.g., `model.pkl`, `model.h5`, `model.pth`)
-3. Edit `ai_model.py` to load and use your model
+3. Edit `backend/ai_model.py` to load and use your model
 4. The API will automatically use your model when available!
 
-See `ai_model.py` for implementation examples with TensorFlow, PyTorch, and scikit-learn.
+See `backend/ai_model.py` for implementation examples with TensorFlow, PyTorch, and scikit-learn.
 
 ---
 
@@ -129,11 +141,11 @@ console.log(data.nutrition_data);
 User uploads image → OCR extraction → Structured JSON → AI Analysis → Database storage
 ```
 
-1. **Upload**: User uploads nutrition label photo via `demo.html`
-2. **OCR**: `nutrition_reader.py` uses Tesseract to extract text
+1. **Upload**: User uploads nutrition label photo via `frontend/demo.html`
+2. **OCR**: `backend/nutrition_reader.py` uses Tesseract to extract text
 3. **Parse**: Regex patterns extract structured nutrition data
 4. **Analyze**: (Optional) Send to AI for personalized recommendations
-5. **Store**: Save to SQLite database via `database.py`
+5. **Store**: Save to SQLite database via `backend/database.py`
 6. **Display**: Show stats and history in web interface
 
 ---
@@ -209,10 +221,10 @@ curl http://localhost:5000/api/logs
 
 ## 🏆 Hackathon Tips
 
-1. **Quick Demo**: Just open `demo.html` and it works!
-2. **Customize UI**: Edit `demo.html` for your branding
-3. **Add Your AI Model**: Edit `ai_model.py` to integrate your trained model
-4. **Frontend Integration**: Copy API calls from `demo.html`
+1. **Quick Demo**: Just open `frontend/demo.html` and it works!
+2. **Customize UI**: Edit `frontend/demo.html` for your branding
+3. **Add Your AI Model**: Edit `backend/ai_model.py` to integrate your trained model
+4. **Frontend Integration**: Copy API calls from `frontend/demo.html`
 5. **Extend Features**: Add meal recommendations, streak tracking, etc.
 
 ---
@@ -255,20 +267,20 @@ Your AI model should:
 ### Integration Steps:
 1. Train your model on nutrition datasets
 2. Save trained model: `model.save('my_model.pkl')`
-3. Edit `ai_model.py`:
+3. Edit `backend/ai_model.py`:
    - Update `__init__()` to load your model
    - Update `analyze()` to use your model for predictions
    - Implement `_prepare_features()` if needed
 4. Restart API server - it automatically detects your model!
 
-See `ai_model.py` for detailed code examples and templates.
+See `backend/ai_model.py` for detailed code examples and templates.
 
 ---
 
 ## 🐛 Troubleshooting
 
 **"Network Error: Failed to fetch"**
-- Make sure API server is running: `./venv/bin/python api_simple.py`
+- Make sure API server is running: `python run.py`
 - Check server is on port 5000: `curl http://localhost:5000/api/health`
 
 **"Tesseract not found"**

@@ -13,29 +13,40 @@ Your hackathon nutrition app is **ready to demo** with:
 ## 🚀 Start Demo in 30 Seconds
 
 ```bash
-# 1. Start API server (already running!)
-./venv/bin/python api_simple.py
+# 1. Start API server
+python run.py
 
-# 2. Open demo.html in your browser
+# 2. Open frontend/demo.html in your browser
 # That's it!
 ```
 
 ## 📂 Your Clean Project Structure
 
 ```
-api_simple.py          → REST API (simplified, no auth)
-demo.html              → Web interface (drag & drop upload)
-ai_model.py            → Your custom AI model goes here
-database.py            → SQLite database functions
-nutrition_reader.py    → OCR scanner
-requirements.txt       → Python dependencies
-.gitignore             → Git ignore rules
-README.md              → Full documentation
+run.py                      → START HERE - Main entry point
+requirements.txt            → Python dependencies
+.gitignore                  → Git ignore rules
+README.md                   → Project overview
+
+backend/
+  ├── api_simple.py         → REST API (simplified, no auth)
+  ├── database.py           → SQLite database functions
+  ├── nutrition_reader.py   → OCR scanner
+  ├── ai_model.py           → Your custom AI model goes here
+  └── nutrition_json.json   → Sample nutrition data format
+
+frontend/
+  └── demo.html             → Web interface (drag & drop upload)
+
+docs/
+  ├── README.md             → Full documentation
+  ├── SETUP.md              → This file - quick setup
+  └── PROJECT_STRUCTURE.md  → Detailed structure info
 ```
 
 ## 🤖 Add Your AI Model
 
-Edit `ai_model.py` and replace the `analyze()` method:
+Edit `backend/ai_model.py` and replace the `analyze()` method:
 
 ```python
 def analyze(self, nutrition_data, user_profile):
@@ -94,10 +105,10 @@ curl http://localhost:5000/api/logs
 
 ## 🎯 Next Steps
 
-1. **Demo**: Open `demo.html` and upload a nutrition label
+1. **Demo**: Open `frontend/demo.html` and upload a nutrition label
 2. **Train AI**: Create your nutrition analysis model
-3. **Integrate**: Update `ai_model.py` with your model
-4. **Customize**: Edit `demo.html` for your branding
+3. **Integrate**: Update `backend/ai_model.py` with your model
+4. **Customize**: Edit `frontend/demo.html` for your branding
 
 ## ⚠️ Important
 
@@ -110,4 +121,4 @@ curl http://localhost:5000/api/logs
 
 **Your API is running on http://localhost:5000**
 
-**Open demo.html to start testing!**
+**Open frontend/demo.html to start testing!**

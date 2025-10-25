@@ -1,4 +1,5 @@
 {
+  "_comment": "This is a sample nutrition data structure used by the OCR scanner and API. It shows the expected format for nutrition facts extracted from food labels.",
   "serving_information": {
     "serving_size": "1 cup (228g)",
     "servings_per_container": "2"
