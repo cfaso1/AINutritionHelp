@@ -15,11 +15,14 @@ from backend.api_simple import app
 
 if __name__ == '__main__':
     print("\n" + "="*70)
-    print("AI Nutrition Help API - HACKATHON DEMO MODE")
+    print("🍎 AI Nutrition Help API Server")
     print("="*70)
-    print("\n⚠️  NO AUTHENTICATION - For demo purposes only!\n")
-    print("API Endpoints (all use demo user):")
-    print("  Profile:")
+    print("\n✨ Features: OCR Scanner | Health Goals | Food Log | AI Analysis\n")
+    print("API Endpoints:")
+    print("  Authentication:")
+    print("    POST   http://localhost:5000/api/auth/register")
+    print("    POST   http://localhost:5000/api/auth/login")
+    print("\n  Profile & Goals:")
     print("    GET    http://localhost:5000/api/profile")
     print("    PUT    http://localhost:5000/api/profile")
     print("\n  Nutrition:")
@@ -31,7 +34,8 @@ if __name__ == '__main__':
     print("    POST   http://localhost:5000/api/weight")
     print("    GET    http://localhost:5000/api/weight/history")
     print("\n" + "="*70)
-    print("\n🚀 Open frontend/demo.html in your browser to test!")
+    print("\n🚀 Open frontend/demo.html in your browser!")
+    print("   Demo Account: demo_user / demo123")
     print("="*70 + "\n")
 
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -106,6 +106,7 @@ def init_database():
             log_date DATE DEFAULT CURRENT_DATE,
             meal_type TEXT CHECK(meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'other')),
             food_name TEXT,
+            price REAL,  -- Price of the food item
 
             -- Nutrition Data (stored as JSON from OCR)
             nutrition_json TEXT NOT NULL,  -- Full JSON from nutrition_reader.py
@@ -329,7 +330,7 @@ def get_user_profile(user_id: int) -> dict:
 
 
 def log_nutrition(user_id: int, nutrition_json: str, meal_type: str = 'other',
-                 food_name: str = None, notes: str = None, image_path: str = None) -> int:
+                 food_name: str = None, price: float = None, notes: str = None, image_path: str = None) -> int:
     """
     Log nutrition data from a scanned label.
 
@@ -338,6 +339,7 @@ def log_nutrition(user_id: int, nutrition_json: str, meal_type: str = 'other',
         nutrition_json (str): JSON string from nutrition_reader.py
         meal_type (str): Type of meal
         food_name (str): Name of the food item
+        price (float): Price of the food item
         notes (str): Additional notes
         image_path (str): Path to scanned image
 
@@ -359,9 +361,9 @@ def log_nutrition(user_id: int, nutrition_json: str, meal_type: str = 'other',
 
         cursor.execute("""
             INSERT INTO nutrition_logs
-            (user_id, meal_type, food_name, nutrition_json, calories, protein_g, total_fat_g, total_carbs_g, notes, image_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, meal_type, food_name, nutrition_json, calories, protein, fat, carbs, notes, image_path))
+            (user_id, meal_type, food_name, price, nutrition_json, calories, protein_g, total_fat_g, total_carbs_g, notes, image_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, meal_type, food_name, price, nutrition_json, calories, protein, fat, carbs, notes, image_path))
 
         log_id = cursor.lastrowid
         conn.commit()
@@ -482,6 +484,31 @@ def calculate_bmi(weight_kg: float, height_cm: float) -> float:
     """Calculate BMI from weight and height."""
     height_m = height_cm / 100
     return round(weight_kg / (height_m ** 2), 1)
+
+
+def migrate_database():
+    """
+    Migrate existing database to add new columns if they don't exist.
+    This ensures backward compatibility with existing databases.
+    """
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    try:
+        # Check if price column exists in nutrition_logs
+        cursor.execute("PRAGMA table_info(nutrition_logs)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        if 'price' not in columns:
+            print("Adding 'price' column to nutrition_logs table...")
+            cursor.execute("ALTER TABLE nutrition_logs ADD COLUMN price REAL")
+            conn.commit()
+            print("Migration completed successfully!")
+
+    except Exception as e:
+        print(f"Migration error: {e}")
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

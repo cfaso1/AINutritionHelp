@@ -21,13 +21,15 @@ from pathlib import Path
 from backend.database import (
     init_database,
     create_user,
+    authenticate_user,
     update_user_profile,
     get_user_profile,
     log_nutrition,
     get_nutrition_logs,
     add_weight_entry,
     get_weight_history,
-    calculate_bmi
+    calculate_bmi,
+    migrate_database
 )
 from backend.nutrition_reader import extract_text_from_image, parse_nutrition_info
 
@@ -52,6 +54,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # Initialize database and create a demo user
 init_database()
+migrate_database()  # Run migrations for existing databases
 
 # Create a single demo user for the hackathon (user_id will always be 1)
 DEMO_USER_ID = 1
@@ -134,6 +137,50 @@ def generate_demo_analysis(nutrition_data, profile):
 
 📝 Note: This is demo output. Replace generate_demo_analysis() in api_simple.py
 with your custom trained AI model to get personalized recommendations!"""
+
+
+# ============================================================================
+# AUTHENTICATION ENDPOINTS (DEMO)
+# ============================================================================
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """Register a new user (demo authentication)."""
+    data = request.get_json()
+
+    if not data or 'username' not in data or 'email' not in data or 'password' not in data:
+        return jsonify({'error': 'Missing required fields: username, email, password'}), 400
+
+    user_id = create_user(data['username'], data['email'], data['password'])
+
+    if user_id:
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'message': 'User registered successfully'
+        }), 201
+    else:
+        return jsonify({'error': 'Username or email already exists'}), 400
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login a user (demo authentication)."""
+    data = request.get_json()
+
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'error': 'Missing username or password'}), 400
+
+    user = authenticate_user(data['username'], data['password'])
+
+    if user:
+        return jsonify({
+            'success': True,
+            'user': user,
+            'message': 'Login successful'
+        }), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
 
 
 # ============================================================================
@@ -289,6 +336,7 @@ def create_nutrition_log():
         nutrition_json=nutrition_json,
         meal_type=data.get('meal_type', 'other'),
         food_name=data.get('food_name', 'Unknown Food'),
+        price=data.get('price'),
         notes=data.get('notes'),
         image_path=data.get('image_path')
     )
