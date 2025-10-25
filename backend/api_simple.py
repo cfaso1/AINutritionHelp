@@ -261,7 +261,10 @@ def scan_barcode():
         product_data = run_async(agent_service.scan_barcode(barcode))
 
         if not product_data:
-            return jsonify({'error': 'Product not found. Please check the barcode number.'}), 404
+            return jsonify({
+                'error': 'Product not found. Please check the barcode number.',
+                'suggestion': 'Try one of these test barcodes: 012000161551 (Coca-Cola), 078000113464 (Gatorade), 722252601025 (Quest Bar), 016000275683 (Cheerios)'
+            }), 404
 
         return jsonify({
             'success': True,
@@ -319,7 +322,8 @@ def scan_barcode_image():
         if not product_data:
             return jsonify({
                 'error': f'Barcode detected ({barcode}) but product not found in database',
-                'barcode': barcode
+                'barcode': barcode,
+                'suggestion': 'Try one of these test barcodes: 012000161551 (Coca-Cola), 078000113464 (Gatorade), 722252601025 (Quest Bar), 016000275683 (Cheerios)'
             }), 404
 
         return jsonify({
