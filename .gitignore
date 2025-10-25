@@ -5,9 +5,11 @@ venv/
 
 # Database
 *.db
+backend/*.db
 
 # Uploads
 uploads/
+backend/uploads/
 
 # Environment
 .env
@@ -16,6 +18,7 @@ uploads/
 *.pkl
 *.h5
 *.pth
+backend/models/
 
 # IDE
 .vscode/

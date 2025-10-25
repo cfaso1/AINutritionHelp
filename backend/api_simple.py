@@ -17,8 +17,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# Import your existing modules
-from database import (
+# Import backend modules
+from backend.database import (
     init_database,
     create_user,
     update_user_profile,
@@ -29,11 +29,11 @@ from database import (
     get_weight_history,
     calculate_bmi
 )
-from nutrition_reader import extract_text_from_image, parse_nutrition_info
+from backend.nutrition_reader import extract_text_from_image, parse_nutrition_info
 
 # Optional: Import custom AI model (will use demo mode if not available)
 try:
-    from ai_model import analyze_nutrition as ai_analyze
+    from backend.ai_model import analyze_nutrition as ai_analyze
     USE_AI_MODEL = True
 except ImportError:
     USE_AI_MODEL = False

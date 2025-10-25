@@ -2,21 +2,19 @@
 
 Scan nutrition labels, extract data with OCR, and get AI-powered health recommendations!
 
-## 🚀 Quick Start (3 Steps)
+## 🚀 Quick Start
 
-### 1. Install Dependencies
 ```bash
+# 1. Install dependencies
 python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
-```
 
-### 2. Start the API Server
-```bash
-./venv/bin/python api_simple.py
-```
+# 2. Start the server
+python run.py
 
-### 3. Open the Demo
-Open `demo.html` in your web browser!
+# 3. Open the demo
+Open frontend/demo.html in your browser!
+```
 
 **That's it!** No authentication, no configuration needed.
 
@@ -26,37 +24,54 @@ Open `demo.html` in your web browser!
 
 ```
 AINutritionHelp/
-├── api_simple.py          # REST API (no authentication)
-├── demo.html              # Beautiful web interface
-├── ai_model.py            # Custom AI model integration
-├── database.py            # SQLite database functions
-├── nutrition_reader.py    # OCR nutrition label scanner
-├── requirements.txt       # Python dependencies
-├── example_usage.py       # Database usage examples
-└── nutrition_app.db       # SQLite database (auto-created)
+├── run.py                    # Start server (use this!)
+├── requirements.txt          # Python dependencies
+├── .gitignore               # Git ignore rules
+├── backend/                 # Backend code
+│   ├── api_simple.py        # REST API (no auth)
+│   ├── database.py          # SQLite database
+│   ├── nutrition_reader.py  # OCR scanner
+│   └── ai_model.py          # YOUR AI model integration
+├── frontend/                # Frontend code
+│   └── demo.html            # Web interface
+└── docs/                    # Documentation
+    ├── README.md            # Full documentation
+    └── SETUP.md             # Quick setup guide
 ```
 
 ---
 
 ## 🎯 Features
 
-### ✅ What Works Now:
-- **Upload nutrition label images** (drag & drop)
-- **OCR scanning** - Extract nutrition data automatically
-- **Nutrition logging** - Save meals to database
-- **Daily stats** - Track calories, protein, carbs, fat
-- **Weight tracking** - Log and view weight history
-- **User profiles** - Store health goals and preferences
-- **Demo AI analysis** - Placeholder for AI integration
+- ✅ **Upload nutrition labels** - Drag & drop images
+- ✅ **OCR scanning** - Extract nutrition data automatically
+- ✅ **Nutrition logging** - Save meals to database
+- ✅ **Daily stats** - Track calories, protein, carbs, fat
+- ✅ **Weight tracking** - Log and view weight history
+- ✅ **User profiles** - Store health goals
+- ✅ **AI-ready** - Plug in your custom model!
 
-### 🤖 AI Integration (Custom Model):
-To integrate your custom trained AI model:
-1. Train your nutrition analysis model
-2. Save it to a file (e.g., `model.pkl`, `model.h5`, `model.pth`)
-3. Edit `ai_model.py` to load and use your model
-4. The API will automatically use your model when available!
+---
 
-See `ai_model.py` for implementation examples with TensorFlow, PyTorch, and scikit-learn.
+## 🤖 Add Your Custom AI Model
+
+Edit `backend/ai_model.py` to integrate your trained nutrition analysis model:
+
+```python
+class NutritionAI:
+    def __init__(self, model_path=None):
+        # Load your model
+        self.model = load_model(model_path)
+
+    def analyze(self, nutrition_data, user_profile):
+        # Use your model
+        prediction = self.model.predict(nutrition_data, user_profile)
+        return prediction
+```
+
+The API automatically detects and uses your model!
+
+**See [docs/README.md](docs/README.md) for complete AI integration guide.**
 
 ---
 
@@ -64,29 +79,27 @@ See `ai_model.py` for implementation examples with TensorFlow, PyTorch, and scik
 
 **Base URL:** `http://localhost:5000/api`
 
-**No authentication required - all endpoints use demo user (ID: 1)**
+**No authentication required!**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/profile` | Get user profile |
-| PUT | `/profile` | Update user profile |
-| POST | `/scan` | Upload & scan nutrition label |
-| POST | `/analyze` | Get AI nutrition analysis |
-| POST | `/log` | Save nutrition to log |
-| GET | `/logs` | Get today's nutrition logs |
-| POST | `/weight` | Log weight entry |
-| GET | `/weight/history` | Get weight history |
+| PUT | `/profile` | Update profile |
+| POST | `/scan` | Scan nutrition label |
+| POST | `/analyze` | Get AI analysis |
+| POST | `/log` | Save to log |
+| GET | `/logs` | View logs |
+| POST | `/weight` | Log weight |
+| GET | `/weight/history` | View history |
 
 ---
 
 ## 💻 Frontend Integration
 
-### Using with React/Vue/vanilla JS:
-
 ```javascript
 const API_URL = 'http://localhost:5000/api';
 
-// Scan nutrition label
+// Upload and scan
 const formData = new FormData();
 formData.append('image', imageFile);
 
@@ -99,192 +112,37 @@ const data = await response.json();
 console.log(data.nutrition_data);
 ```
 
-### Example Response:
-```json
-{
-  "success": true,
-  "nutrition_data": {
-    "serving_information": {
-      "serving_size": "1 bar (50g)",
-      "servings_per_container": "2"
-    },
-    "calories": {
-      "total": "210",
-      "from_fat": "70"
-    },
-    "macronutrients": {
-      "protein": { "amount_g": "12" },
-      "fat": { "total_g": "8", "saturated_g": "3" },
-      "carbohydrates": { "total_g": "25", "fiber_g": "3" }
-    }
-  }
-}
-```
-
 ---
 
-## 🛠️ How It Works
+## 🛠️ Development
 
-```
-User uploads image → OCR extraction → Structured JSON → AI Analysis → Database storage
-```
-
-1. **Upload**: User uploads nutrition label photo via `demo.html`
-2. **OCR**: `nutrition_reader.py` uses Tesseract to extract text
-3. **Parse**: Regex patterns extract structured nutrition data
-4. **Analyze**: (Optional) Send to AI for personalized recommendations
-5. **Store**: Save to SQLite database via `database.py`
-6. **Display**: Show stats and history in web interface
-
----
-
-## 📊 Database Schema
-
-### Users Table
-- `user_id`, `username`, `email`, `password_hash`, `password_salt`
-
-### User Profiles
-- Personal info: DOB, gender, height, weight
-- Goals: goal_type, target_weight, activity_level
-- Diet: diet_type, allergies, dietary_restrictions
-- Targets: daily calories, protein, carbs, fat
-
-### Nutrition Logs
-- `log_id`, `user_id`, `food_name`, `meal_type`
-- `nutrition_json` (full nutrition data)
-- Quick fields: calories, protein, fat, carbs
-- `image_path`, `notes`, timestamps
-
-### Weight History
-- `weight_id`, `user_id`, `weight_kg`, `recorded_at`, `notes`
-
----
-
-## 🎓 For Development
-
-### Run Database Examples:
 ```bash
+# Test database
 ./venv/bin/python example_usage.py
-```
 
-### Test OCR Scanner:
-```bash
-./venv/bin/python nutrition_reader.py path/to/label.jpg
-```
+# Test OCR
+./venv/bin/python -m backend.nutrition_reader image.jpg
 
-### Test API:
-```bash
-# Check health
-curl http://localhost:5000/api/health
-
-# Get profile
-curl http://localhost:5000/api/profile
-
-# Get logs
-curl http://localhost:5000/api/logs
+# Test AI model
+./venv/bin/python -m backend.ai_model
 ```
 
 ---
 
-## ⚠️ Important Notes
+## ⚠️ Important
 
-- **For demo purposes only** - No authentication/security
-- All requests use a single demo user (ID: 1)
-- Server runs on `http://localhost:5000`
+- **Demo purposes only** - No security
+- Single demo user (ID: 1)
 - CORS enabled for all origins
-- Max upload size: 16MB
+- Perfect for hackathons!
 
 ---
 
-## 📦 Dependencies
+## 📖 Full Documentation
 
-- **Flask** - Web framework
-- **flask-cors** - CORS handling
-- **pytesseract** - OCR engine
-- **Pillow** - Image processing
-- **anthropic** - AI API (optional)
-- **sqlite3** - Database (built-in)
-
----
-
-## 🏆 Hackathon Tips
-
-1. **Quick Demo**: Just open `demo.html` and it works!
-2. **Customize UI**: Edit `demo.html` for your branding
-3. **Add Your AI Model**: Edit `ai_model.py` to integrate your trained model
-4. **Frontend Integration**: Copy API calls from `demo.html`
-5. **Extend Features**: Add meal recommendations, streak tracking, etc.
-
----
-
-## 🧠 Training Your Custom AI Model
-
-Your AI model should:
-1. **Input**: Nutrition data (JSON) + User profile (goals, diet type, etc.)
-2. **Output**: Personalized nutrition analysis and recommendations
-
-### Data Format:
-
-**Input nutrition_data:**
-```python
-{
-    'calories': {'total': '210', 'from_fat': '70'},
-    'macronutrients': {
-        'protein': {'amount_g': '12'},
-        'fat': {'total_g': '8'},
-        'carbohydrates': {'total_g': '25'}
-    },
-    'micronutrients': {...}
-}
-```
-
-**Input user_profile:**
-```python
-{
-    'goal_type': 'muscle_gain',
-    'diet_type': 'high_protein',
-    'daily_calorie_target': 2500,
-    'daily_protein_target_g': 150,
-    'allergies': 'peanuts',
-    'dietary_restrictions': 'none'
-}
-```
-
-**Expected output:** String with personalized analysis
-
-### Integration Steps:
-1. Train your model on nutrition datasets
-2. Save trained model: `model.save('my_model.pkl')`
-3. Edit `ai_model.py`:
-   - Update `__init__()` to load your model
-   - Update `analyze()` to use your model for predictions
-   - Implement `_prepare_features()` if needed
-4. Restart API server - it automatically detects your model!
-
-See `ai_model.py` for detailed code examples and templates.
-
----
-
-## 🐛 Troubleshooting
-
-**"Network Error: Failed to fetch"**
-- Make sure API server is running: `./venv/bin/python api_simple.py`
-- Check server is on port 5000: `curl http://localhost:5000/api/health`
-
-**"Tesseract not found"**
-- Install Tesseract OCR:
-  - Ubuntu/Debian: `sudo apt-get install tesseract-ocr`
-  - macOS: `brew install tesseract`
-  - Windows: Download from [GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
-
-**"Module not found"**
-- Install dependencies: `./venv/bin/pip install -r requirements.txt`
-
----
-
-## 📝 License
-
-MIT - Free for hackathons and personal projects!
+- **[docs/README.md](docs/README.md)** - Complete documentation
+- **[docs/SETUP.md](docs/SETUP.md)** - Quick setup guide
+- **[backend/ai_model.py](backend/ai_model.py)** - AI integration examples
 
 ---
 
