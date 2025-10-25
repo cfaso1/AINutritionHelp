@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan - Your Nutrition Partner</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #2d6a4f;
+            --light-green: #52b788;
+            --soft-green: #95d5b2;
+            --mint: #d8f3dc;
+            --cream: #f8fdf8;
+            --white: #ffffff;
+            --dark-text: #1b4332;
+            --medium-text: #40916c;
+            --light-text: #74c69d;
+            --shadow: rgba(45, 106, 79, 0.1);
+            --shadow-hover: rgba(45, 106, 79, 0.2);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--cream);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .nav-bar {
+            background: var(--white);
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px var(--shadow);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: var(--white);
+            border: 2px solid var(--primary-green);
+            color: var(--primary-green);
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: var(--primary-green);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-hover);
+        }
+
+        .btn.primary {
+            background: var(--primary-green);
+            color: var(--white);
+        }
+
+        .btn.primary:hover {
+            background: var(--light-green);
+            border-color: var(--light-green);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(27, 67, 50, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            background: var(--white);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px var(--shadow-hover);
+            position: relative;
+            animation: modal-in 0.3s ease;
+        }
+
+        @keyframes modal-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            text-align: center;
+            color: var(--primary-green);
+            margin-bottom: 30px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--medium-text);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-green);
+            transform: rotate(90deg);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary-green);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--mint);
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+            background: var(--white);
+            color: var(--dark-text);
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+        }
+
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            display: none;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+
+        .message.success {
+            background: var(--mint);
+            border: 1px solid var(--soft-green);
+            color: var(--primary-green);
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 40px 40px;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--mint) 100%);
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 1000px;
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary-green);
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--medium-text);
+            margin-bottom: 50px;
+            font-weight: 300;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 80px;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 30px var(--shadow-hover);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            color: var(--primary-green);
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        /* Profile Setup */
+        .profile-setup {
+            display: none;
+            min-height: 100vh;
+            padding: 120px 40px 40px;
+            align-items: center;
+            justify-content: center;
+            background: var(--cream);
+        }
+
+        .profile-setup.show {
+            display: flex;
+        }
+
+        .profile-container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .progress-tracker {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .progress-dot {
+            width: 60px;
+            height: 6px;
+            background: var(--mint);
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .progress-dot.active {
+            background: var(--primary-green);
+        }
+
+        .question-card {
+            display: none;
+            background: var(--white);
+            padding: 60px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .question-card.active {
+            display: block;
+            animation: slide-in 0.5s ease;
+        }
+
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            text-align: center;
+            color: var(--primary-green);
+            margin-bottom: 30px;
+        }
+
+        .button-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+            padding-top: 100px;
+            background: var(--cream);
+        }
+
+        .dashboard.show {
+            display: block;
+        }
+
+        .user-banner {
+            background: var(--white);
+            padding: 25px;
+            margin: 0 auto 30px;
+            max-width: 1400px;
+            box-shadow: 0 2px 10px var(--shadow);
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 1.4rem;
+        }
+
+        .user-details h3 {
+            color: var(--primary-green);
+            font-size: 1.3rem;
+        }
+
+        .user-goal {
+            color: var(--medium-text);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .dashboard-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px 30px;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 30px;
+        }
+
+        .scanner-section {
+            background: var(--white);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--primary-green);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--medium-text);
+            margin-bottom: 40px;
+        }
+
+        .scan-area {
+            width: 100%;
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 50px;
+            border: 3px dashed var(--soft-green);
+            border-radius: 15px;
+            background: var(--mint);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .scan-area:hover {
+            border-color: var(--primary-green);
+            background: var(--soft-green);
+            transform: scale(1.02);
+        }
+
+        .results-panel {
+            background: var(--white);
+            border: 2px solid var(--mint);
+            padding: 30px;
+            border-radius: 20px;
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-panel.show {
+            display: block;
+            animation: slide-in 0.5s ease;
+        }
+
+        .product-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--primary-green);
+            margin-bottom: 10px;
+        }
+
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-box {
+            background: var(--mint);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-box:hover {
+            background: var(--soft-green);
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-green);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--medium-text);
+            margin-top: 5px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .ai-analysis {
+            background: linear-gradient(135deg, var(--mint), var(--soft-green));
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .analysis-title {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-green);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        .score-display {
+            display: inline-block;
+            padding: 15px 40px;
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--white);
+            border: 3px solid var(--primary-green);
+            border-radius: 50px;
+            color: var(--primary-green);
+            margin: 15px 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--mint);
+            border-top-color: var(--primary-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .sidebar {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-green);
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .test-barcode {
+            background: var(--mint);
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-green);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .test-barcode:hover {
+            background: var(--soft-green);
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px var(--shadow);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, var(--mint), var(--soft-green));
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        /* Settings Page */
+        .settings-page {
+            display: none;
+            min-height: 100vh;
+            padding: 120px 40px 40px;
+            background: var(--cream);
+        }
+
+        .settings-page.show {
+            display: block;
+        }
+
+        .settings-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .settings-card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .settings-card h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-green);
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 968px) {
+            .hero-title { font-size: 2.5rem; }
+            .features { grid-template-columns: 1fr; }
+            .dashboard-content { grid-template-columns: 1fr; }
+            .nutrition-grid { grid-template-columns: repeat(2, 1fr); }
+            .input-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-content">
+            <div class="logo">
+                <span>🌿</span>
+                NutriScan
+            </div>
+            <div id="navButtons">
+                <button class="btn" onclick="showLogin()">Login</button>
+                <button class="btn primary" onclick="showSignup()">Sign Up</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="hero-content">
+            <h1 class="hero-title">Your Nutrition Partner</h1>
+            <p class="hero-subtitle">Make informed food choices with AI-powered insights</p>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">📷</div>
+                    <h3>Smart Scanning</h3>
+                    <p>Instantly identify products with barcode technology</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>AI Analysis</h3>
+                    <p>Get personalized nutrition insights for your goals</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💚</div>
+                    <h3>Holistic Health</h3>
+                    <p>Track your wellness journey with expert guidance</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 60px;">
+                <button class="btn primary" onclick="showSignup()" style="font-size: 16px; padding: 18px 50px;">
+                    Get Started
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <h2 class="modal-title">Welcome Back</h2>
+            <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                Sign in to continue your wellness journey
+            </p>
+
+            <div class="message" id="loginMessage"></div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">
+                    Sign In
+                </button>
+            </form>
+
+            <p style="text-align: center; margin-top: 30px; color: var(--medium-text);">
+                New here? <a href="#" onclick="showSignup(); return false;" style="color: var(--primary-green); font-weight: 500;">Create Account</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <h2 class="modal-title">Join NutriScan</h2>
+            <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                Start your personalized nutrition journey
+            </p>
+
+            <div class="message" id="signupMessage"></div>
+
+            <form onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="signupUsername" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="signupPassword" required>
+                </div>
+                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">
+                    Create Account
+                </button>
+            </form>
+
+            <p style="text-align: center; margin-top: 30px; color: var(--medium-text);">
+                Have an account? <a href="#" onclick="showLogin(); return false;" style="color: var(--primary-green); font-weight: 500;">Sign In</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Profile Setup -->
+    <div class="profile-setup" id="profileSetup">
+        <div class="profile-container">
+            <div class="progress-tracker">
+                <div class="progress-dot active" id="prog1"></div>
+                <div class="progress-dot" id="prog2"></div>
+                <div class="progress-dot" id="prog3"></div>
+                <div class="progress-dot" id="prog4"></div>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="question-card active" id="q1">
+                <h3 class="question-title">Your Physical Profile</h3>
+                <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                    Help us personalize your experience
+                </p>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label">Height (cm)</label>
+                        <input type="number" class="form-input" id="profileHeight" placeholder="175" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Weight (kg)</label>
+                        <input type="number" class="form-input" id="profileWeight" placeholder="70" step="0.1" required>
+                    </div>
+                </div>
+                <button class="btn primary" onclick="nextQuestion(2)" style="width: 100%; margin-top: 20px;">
+                    Continue
+                </button>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question-card" id="q2">
+                <h3 class="question-title">Your Primary Goal</h3>
+                <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                    What would you like to achieve?
+                </p>
+                <div class="button-grid">
+                    <button class="btn" onclick="setProfileData('goal', 'weight_loss'); nextQuestion(3)">
+                        🎯 Weight Loss
+                    </button>
+                    <button class="btn" onclick="setProfileData('goal', 'muscle_gain'); nextQuestion(3)">
+                        💪 Build Muscle
+                    </button>
+                    <button class="btn" onclick="setProfileData('goal', 'maintain'); nextQuestion(3)">
+                        ⚖️ Maintain Weight
+                    </button>
+                    <button class="btn" onclick="setProfileData('goal', 'general_health'); nextQuestion(3)">
+                        💚 General Health
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question-card" id="q3">
+                <h3 class="question-title">Activity Level</h3>
+                <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                    How active is your lifestyle?
+                </p>
+                <div class="button-grid">
+                    <button class="btn" onclick="setProfileData('activity', 'sedentary'); nextQuestion(4)">
+                        🪑 Sedentary<br><small style="opacity: 0.7;">Little exercise</small>
+                    </button>
+                    <button class="btn" onclick="setProfileData('activity', 'lightly_active'); nextQuestion(4)">
+                        🚶 Lightly Active<br><small style="opacity: 0.7;">1-3 days/week</small>
+                    </button>
+                    <button class="btn" onclick="setProfileData('activity', 'moderately_active'); nextQuestion(4)">
+                        🏃 Moderately Active<br><small style="opacity: 0.7;">3-5 days/week</small>
+                    </button>
+                    <button class="btn" onclick="setProfileData('activity', 'very_active'); nextQuestion(4)">
+                        🏋️ Very Active<br><small style="opacity: 0.7;">Daily exercise</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question-card" id="q4">
+                <h3 class="question-title">Dietary Preferences</h3>
+                <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                    Any dietary restrictions?
+                </p>
+                <div class="button-grid">
+                    <button class="btn" onclick="setProfileData('diet', 'standard'); submitProfile()">
+                        🍽️ Standard
+                    </button>
+                    <button class="btn" onclick="setProfileData('diet', 'vegetarian'); submitProfile()">
+                        🥗 Vegetarian
+                    </button>
+                    <button class="btn" onclick="setProfileData('diet', 'vegan'); submitProfile()">
+                        🌱 Vegan
+                    </button>
+                    <button class="btn" onclick="setProfileData('diet', 'keto'); submitProfile()">
+                        🥑 Keto
+                    </button>
+                    <button class="btn" onclick="setProfileData('diet', 'paleo'); submitProfile()">
+                        🍖 Paleo
+                    </button>
+                    <button class="btn" onclick="setProfileData('diet', 'gluten_free'); submitProfile()">
+                        🌾 Gluten-Free
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="settings-page" id="settingsPage">
+        <div class="settings-container">
+            <h1 style="font-family: 'Playfair Display'; color: var(--primary-green); margin-bottom: 30px; font-size: 2.5rem; text-align: center;">
+                Profile Settings
+            </h1>
+
+            <div class="message" id="settingsMessage"></div>
+
+            <!-- Personal Info Card -->
+            <div class="settings-card">
+                <h2>📊 Physical Profile</h2>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label">Height (cm)</label>
+                        <input type="number" class="form-input" id="editHeight">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Weight (kg)</label>
+                        <input type="number" class="form-input" id="editWeight" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Goals Card -->
+            <div class="settings-card">
+                <h2>🎯 Health Goals</h2>
+                <div class="form-group">
+                    <label class="form-label">Primary Goal</label>
+                    <select class="form-select" id="editGoal">
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="muscle_gain">Build Muscle</option>
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="general_health">General Health</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Activity Level</label>
+                    <select class="form-select" id="editActivity">
+                        <option value="sedentary">Sedentary</option>
+                        <option value="lightly_active">Lightly Active</option>
+                        <option value="moderately_active">Moderately Active</option>
+                        <option value="very_active">Very Active</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Diet Type</label>
+                    <select class="form-select" id="editDiet">
+                        <option value="standard">Standard</option>
+                        <option value="vegetarian">Vegetarian</option>
+                        <option value="vegan">Vegan</option>
+                        <option value="keto">Keto</option>
+                        <option value="paleo">Paleo</option>
+                        <option value="gluten_free">Gluten-Free</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 15px;">
+                <button class="btn primary" onclick="saveProfile()" style="flex: 1;">
+                    Save Changes
+                </button>
+                <button class="btn" onclick="showDashboard()" style="flex: 1;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <div style="padding: 0 30px;">
+            <div class="user-banner">
+                <div class="user-info-section">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <h3 id="userName">User</h3>
+                        <div class="user-goal" id="userGoal">Loading...</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn" onclick="showSettings()">⚙️ Settings</button>
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Main Panel -->
+            <div class="main-panel">
+                <div class="scanner-section">
+                    <h2 class="section-title">Scan Your Food</h2>
+                    <p class="section-subtitle">Enter a barcode or upload an image</p>
+
+                    <!-- Barcode Input -->
+                    <div style="margin: 30px 0;">
+                        <input type="text"
+                               class="form-input"
+                               id="barcodeInput"
+                               placeholder="Enter barcode number (e.g., 722252601025)"
+                               style="text-align: center;"
+                               onkeypress="if(event.key==='Enter') scanBarcode()">
+                        <button class="btn primary" onclick="scanBarcode()" style="width: 100%; margin-top: 15px;">
+                            🔍 Scan Barcode
+                        </button>
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="scan-area" onclick="document.getElementById('imageInput').click()">
+                        <input type="file"
+                               id="imageInput"
+                               accept="image/*"
+                               style="display: none;"
+                               onchange="handleImageUpload(event)">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">📸</div>
+                        <p style="color: var(--primary-green); font-weight: 500;">Upload Barcode Image</p>
+                        <p style="font-size: 0.9rem; color: var(--medium-text); margin-top: 10px;">
+                            Click to browse or drag & drop
+                        </p>
+                    </div>
+
+                    <div id="imagePreview" style="margin: 20px 0; text-align: center;"></div>
+                </div>
+
+                <!-- Loading -->
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="color: var(--primary-green); margin-top: 20px; font-weight: 500;">
+                        Analyzing nutrition data...
+                    </p>
+                </div>
+
+                <!-- Messages -->
+                <div class="message" id="messageBox"></div>
+
+                <!-- Results Panel -->
+                <div class="results-panel" id="resultsPanel">
+                    <div style="margin-bottom: 30px;">
+                        <h3 class="product-name" id="productName">-</h3>
+                        <p style="color: var(--medium-text); font-size: 1.1rem;" id="productBrand">-</p>
+                        <p style="color: var(--light-text); margin-top: 5px;">
+                            <span id="productCategory">-</span> • $<span id="productPrice">-</span>
+                        </p>
+                    </div>
+
+                    <h4 style="color: var(--primary-green); margin-bottom: 15px; font-size: 1.2rem;">Nutrition Facts</h4>
+                    <div class="nutrition-grid" id="nutritionGrid"></div>
+
+                    <button class="btn primary" onclick="analyzeProduct()" id="analyzeBtn" style="width: 100%; margin-top: 30px;" disabled>
+                        🧠 Get AI Analysis
+                    </button>
+
+                    <!-- AI Results -->
+                    <div id="aiResults" style="display: none;">
+                        <div style="text-align: center; margin: 40px 0;">
+                            <h4 style="color: var(--primary-green); margin-bottom: 15px; font-size: 1.3rem;">Overall Rating</h4>
+                            <div class="score-display" id="overallScore">-</div>
+                            <p style="color: var(--medium-text); margin-top: 15px; font-size: 1.1rem;" id="overallRecommendation">-</p>
+                        </div>
+
+                        <div class="ai-analysis">
+                            <h4 class="analysis-title">❤️ Health Alignment</h4>
+                            <p style="margin: 10px 0;"><strong>Score:</strong> <span id="healthScore">-</span>/100</p>
+                            <p style="margin: 10px 0;" id="healthSummary">-</p>
+                            <div id="healthPros" style="margin-top: 15px;"></div>
+                            <div id="healthCons" style="margin-top: 10px;"></div>
+                        </div>
+
+                        <div class="ai-analysis">
+                            <h4 class="analysis-title">💪 Fitness Alignment</h4>
+                            <p style="margin: 10px 0;"><strong>Score:</strong> <span id="fitnessScore">-</span>/100</p>
+                            <p style="margin: 10px 0;" id="fitnessSummary">-</p>
+                            <p style="margin: 10px 0;"><strong>Best for:</strong> <span id="fitnessBestFor">-</span></p>
+                            <p style="margin: 10px 0;" id="fitnessRec">-</p>
+                        </div>
+
+                        <div class="ai-analysis">
+                            <h4 class="analysis-title">💰 Price Evaluation</h4>
+                            <p style="margin: 10px 0;"><strong>Rating:</strong> <span id="priceRating">-</span></p>
+                            <p style="margin: 10px 0;" id="priceSummary">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h3>🧪 Test Products</h3>
+                <p style="color: var(--medium-text); font-size: 0.9rem; margin-bottom: 20px;">
+                    Try these sample barcodes:
+                </p>
+
+                <div class="test-barcode" onclick="quickScan('722252601025')">
+                    <strong style="color: var(--primary-green);">Quest Protein Bar</strong>
+                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">722252601025</p>
+                </div>
+
+                <div class="test-barcode" onclick="quickScan('012000161551')">
+                    <strong style="color: var(--primary-green);">Coca-Cola Classic</strong>
+                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">012000161551</p>
+                </div>
+
+                <div class="test-barcode" onclick="quickScan('078000113464')">
+                    <strong style="color: var(--primary-green);">Gatorade</strong>
+                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">078000113464</p>
+                </div>
+
+                <div class="test-barcode" onclick="quickScan('016000275683')">
+                    <strong style="color: var(--primary-green);">Cheerios</strong>
+                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">016000275683</p>
+                </div>
+
+                <div class="info-box">
+                    <h4 style="color: var(--primary-green); margin-bottom: 10px;">💡 Tip</h4>
+                    <p style="font-size: 0.9rem; color: var(--dark-text);">
+                        AI recommendations are personalized to your goals and activity level!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Config
+        const API_URL = 'http://localhost:5000/api';
+        let currentUser = null;
+        let profileData = {};
+        let scannedProduct = null;
+
+        // Initialize
+        function init() {
+            const savedUser = localStorage.getItem('nutriscan_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showDashboard();
+            }
+        }
+
+        // Modal Functions
+        function showLogin() {
+            closeModal();
+            document.getElementById('loginModal').classList.add('show');
+        }
+
+        function showSignup() {
+            closeModal();
+            document.getElementById('signupModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+            clearMessages();
+        }
+
+        function clearMessages() {
+            document.querySelectorAll('.message').forEach(m => m.classList.remove('show'));
+        }
+
+        function showMessage(elementId, message, type = 'error') {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `message show ${type}`;
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+
+        // Authentication
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentUser = result.user;
+                    localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+                    closeModal();
+                    await loadUserProfile();
+                    showDashboard();
+                } else {
+                    showMessage('loginMessage', result.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showMessage('loginMessage', 'Network error. Try: demo_user / demo123', 'error');
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentUser = { user_id: result.user_id, username, email };
+                    localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+                    closeModal();
+                    showProfileSetup();
+                } else {
+                    showMessage('signupMessage', result.error || 'Signup failed', 'error');
+                }
+            } catch (error) {
+                showMessage('signupMessage', 'Network error. Please try again.', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('nutriscan_user');
+            hideAllScreens();
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            updateNav(false);
+        }
+
+        // Profile Setup
+        function showProfileSetup() {
+            hideAllScreens();
+            document.getElementById('profileSetup').classList.add('show');
+        }
+
+        function nextQuestion(num) {
+            if (num === 2) {
+                profileData.height = document.getElementById('profileHeight').value;
+                profileData.weight = document.getElementById('profileWeight').value;
+                if (!profileData.height || !profileData.weight) {
+                    alert('Please enter both height and weight');
+                    return;
+                }
+            }
+
+            document.querySelectorAll('.question-card').forEach(q => q.classList.remove('active'));
+            document.getElementById(`q${num}`).classList.add('active');
+
+            document.querySelectorAll('.progress-dot').forEach((dot, i) => {
+                if (i < num) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function setProfileData(key, value) {
+            profileData[key] = value;
+        }
+
+        async function submitProfile() {
+            try {
+                const response = await fetch(`${API_URL}/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        height_cm: parseFloat(profileData.height),
+                        current_weight_kg: parseFloat(profileData.weight),
+                        goal_type: profileData.goal,
+                        activity_level: profileData.activity,
+                        diet_type: profileData.diet
+                    })
+                });
+
+                if (response.ok) {
+                    await loadUserProfile();
+                    showDashboard();
+                } else {
+                    showDashboard();
+                }
+            } catch (error) {
+                console.error('Profile save error:', error);
+                showDashboard();
+            }
+        }
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch(`${API_URL}/profile`);
+                if (response.ok) {
+                    const result = await response.json();
+                    currentUser.profile = result.profile;
+                    localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+            }
+        }
+
+        // Settings Page
+        function showSettings() {
+            hideAllScreens();
+            document.getElementById('settingsPage').classList.add('show');
+
+            // Load current profile data
+            if (currentUser && currentUser.profile) {
+                const p = currentUser.profile;
+                document.getElementById('editHeight').value = p.height_cm || '';
+                document.getElementById('editWeight').value = p.current_weight_kg || '';
+                document.getElementById('editGoal').value = p.goal_type || 'general_health';
+                document.getElementById('editActivity').value = p.activity_level || 'moderately_active';
+                document.getElementById('editDiet').value = p.diet_type || 'standard';
+            }
+        }
+
+        async function saveProfile() {
+            const updatedProfile = {
+                height_cm: parseFloat(document.getElementById('editHeight').value),
+                current_weight_kg: parseFloat(document.getElementById('editWeight').value),
+                goal_type: document.getElementById('editGoal').value,
+                activity_level: document.getElementById('editActivity').value,
+                diet_type: document.getElementById('editDiet').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedProfile)
+                });
+
+                if (response.ok) {
+                    await loadUserProfile();
+                    showMessage('settingsMessage', 'Profile updated successfully!', 'success');
+                    setTimeout(() => showDashboard(), 2000);
+                } else {
+                    showMessage('settingsMessage', 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showMessage('settingsMessage', 'Network error', 'error');
+            }
+        }
+
+        function showDashboard() {
+            hideAllScreens();
+            document.getElementById('dashboard').classList.add('show');
+            updateNav(true);
+            updateUserDisplay();
+        }
+
+        function hideAllScreens() {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('profileSetup').classList.remove('show');
+            document.getElementById('settingsPage').classList.remove('show');
+            document.getElementById('dashboard').classList.remove('show');
+        }
+
+        function updateNav(loggedIn) {
+            const navButtons = document.getElementById('navButtons');
+            if (loggedIn) {
+                navButtons.innerHTML = `
+                    <button class="btn" onclick="showSettings()">Settings</button>
+                    <button class="btn" onclick="logout()">Logout</button>
+                `;
+            } else {
+                navButtons.innerHTML = `
+                    <button class="btn" onclick="showLogin()">Login</button>
+                    <button class="btn primary" onclick="showSignup()">Sign Up</button>
+                `;
+            }
+        }
+
+        function updateUserDisplay() {
+            if (currentUser) {
+                const initials = currentUser.username.substring(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+                document.getElementById('userName').textContent = currentUser.username;
+
+                if (currentUser.profile) {
+                    const goalText = (currentUser.profile.goal_type || 'general_health').replace('_', ' ');
+                    const goal = goalText.charAt(0).toUpperCase() + goalText.slice(1);
+                    document.getElementById('userGoal').textContent = `Goal: ${goal}`;
+                } else {
+                    document.getElementById('userGoal').textContent = 'Complete your profile';
+                }
+            }
+        }
+
+        // Barcode Scanning
+        async function scanBarcode() {
+            const barcode = document.getElementById('barcodeInput').value.trim();
+
+            if (!barcode) {
+                showMessageBox('Please enter a barcode number', 'error');
+                return;
+            }
+
+            showLoading();
+            hideResults();
+
+            try {
+                const response = await fetch(`${API_URL}/barcode/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ barcode })
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (response.ok) {
+                    scannedProduct = result.product;
+                    displayProduct(result.product);
+                    showMessageBox('Product found!', 'success');
+                } else {
+                    showMessageBox(result.error, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error. Make sure the server is running!', 'error');
+            }
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('imagePreview').innerHTML =
+                    `<img src="${e.target.result}" style="max-width: 400px; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow);">`;
+            };
+            reader.readAsDataURL(file);
+
+            showLoading();
+            hideResults();
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(`${API_URL}/barcode/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (response.ok) {
+                    scannedProduct = result.product;
+                    document.getElementById('barcodeInput').value = result.barcode;
+                    displayProduct(result.product);
+                    showMessageBox(`Barcode ${result.barcode} detected!`, 'success');
+                } else {
+                    showMessageBox(result.error, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error!', 'error');
+            }
+        }
+
+        function displayProduct(product) {
+            document.getElementById('productName').textContent = product.name || 'Unknown';
+            document.getElementById('productBrand').textContent = product.brand || 'Unknown';
+            document.getElementById('productCategory').textContent = product.category || 'Uncategorized';
+            document.getElementById('productPrice').textContent = product.price ? product.price.toFixed(2) : '0.00';
+
+            const grid = document.getElementById('nutritionGrid');
+            grid.innerHTML = '';
+
+            if (product.nutrition) {
+                const nutrients = [
+                    { key: 'calories', label: 'Calories', unit: '' },
+                    { key: 'protein', label: 'Protein', unit: 'g' },
+                    { key: 'carbohydrates', label: 'Carbs', unit: 'g' },
+                    { key: 'sugar', label: 'Sugar', unit: 'g' },
+                    { key: 'fat', label: 'Fat', unit: 'g' },
+                    { key: 'sodium', label: 'Sodium', unit: 'mg' }
+                ];
+
+                nutrients.forEach(n => {
+                    const value = product.nutrition[n.key] || 0;
+                    grid.innerHTML += `
+                        <div class="stat-box">
+                            <span class="stat-value">${value}${n.unit}</span>
+                            <span class="stat-label">${n.label}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('resultsPanel').classList.add('show');
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+
+        async function analyzeProduct() {
+            if (!scannedProduct) return;
+
+            showLoading();
+            document.getElementById('aiResults').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/agent/evaluate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product: scannedProduct })
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (response.ok) {
+                    displayAIResults(result.evaluation);
+                } else {
+                    showMessageBox('AI analysis failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error during analysis!', 'error');
+            }
+        }
+
+        function displayAIResults(evaluation) {
+            document.getElementById('overallScore').textContent = evaluation.overall.score + '/100';
+            document.getElementById('overallRecommendation').textContent =
+                evaluation.overall.recommendation_emoji + ' ' + evaluation.overall.recommendation;
+
+            document.getElementById('healthScore').textContent = evaluation.health_analysis.score;
+            document.getElementById('healthSummary').textContent = evaluation.health_analysis.summary;
+
+            if (evaluation.health_analysis.pros && evaluation.health_analysis.pros.length) {
+                document.getElementById('healthPros').innerHTML =
+                    '<strong style="color: var(--primary-green);">✅ Benefits:</strong><ul style="margin-left: 20px; margin-top: 10px;">' +
+                    evaluation.health_analysis.pros.map(p => `<li style="margin: 5px 0;">${p}</li>`).join('') +
+                    '</ul>';
+            }
+
+            if (evaluation.health_analysis.cons && evaluation.health_analysis.cons.length) {
+                document.getElementById('healthCons').innerHTML =
+                    '<strong style="color: #d32f2f;">⚠️ Considerations:</strong><ul style="margin-left: 20px; margin-top: 10px;">' +
+                    evaluation.health_analysis.cons.map(c => `<li style="margin: 5px 0;">${c}</li>`).join('') +
+                    '</ul>';
+            }
+
+            document.getElementById('fitnessScore').textContent = evaluation.fitness_analysis.score;
+            document.getElementById('fitnessSummary').textContent = evaluation.fitness_analysis.summary;
+            document.getElementById('fitnessBestFor').textContent = evaluation.fitness_analysis.best_for || '-';
+            document.getElementById('fitnessRec').textContent = evaluation.fitness_analysis.recommendation || '-';
+
+            document.getElementById('priceRating').textContent = evaluation.price_analysis.rating || '-';
+            document.getElementById('priceSummary').textContent = evaluation.price_analysis.summary || '-';
+
+            document.getElementById('aiResults').style.display = 'block';
+            showMessageBox('Analysis complete!', 'success');
+        }
+
+        function quickScan(barcode) {
+            document.getElementById('barcodeInput').value = barcode;
+            scanBarcode();
+        }
+
+        // Utility Functions
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function hideResults() {
+            document.getElementById('resultsPanel').classList.remove('show');
+            document.getElementById('aiResults').style.display = 'none';
+        }
+
+        function showMessageBox(message, type) {
+            const box = document.getElementById('messageBox');
+            box.textContent = message;
+            box.className = `message show ${type}`;
+            setTimeout(() => box.classList.remove('show'), 5000);
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
