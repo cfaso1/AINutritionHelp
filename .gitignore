@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 venv/
+.venv/
 
 # Database
 *.db
@@ -24,3 +25,6 @@ backend/models/
 .vscode/
 .idea/
 .DS_Store
+
+# Test Agent
+multi_tool_agent/
