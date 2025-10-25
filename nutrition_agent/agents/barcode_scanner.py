@@ -1,6 +1,9 @@
 from typing import Optional
 from models.product import Product
 from services.barcode_api import BarcodeAPIService
+import asyncio
+
+
 
 
 class BarcodeScannerAgent:
@@ -73,3 +76,65 @@ class BarcodeScannerAgent:
         )
         
         return product
+
+      
+_barcode_agent_instance = None
+
+def get_barcode_agent():
+    """Get or create singleton instance of BarcodeScannerAgent"""
+    global _barcode_agent_instance
+    if _barcode_agent_instance is None:
+        from services.barcode_api import BarcodeAPIService
+        _barcode_agent_instance = BarcodeScannerAgent(BarcodeAPIService())
+    return _barcode_agent_instance
+
+
+def scan_barcode(barcode: str) -> dict:
+    """
+    Scan a barcode and return product information.
+    
+    This tool looks up a product by its barcode number and returns comprehensive
+    information including name, brand, category, price, nutritional facts, and ingredients.
+    
+    Args:
+        barcode: The barcode number (UPC/EAN format) to scan
+        
+    Returns:
+        Dictionary containing product information or error message
+    """
+    agent = get_barcode_agent()
+    
+    # Run the async function synchronously
+    try:
+        product = asyncio.run(agent.scan(barcode))
+    except RuntimeError:
+        # If event loop is already running, use run_coroutine_threadsafe
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                product = pool.submit(lambda: asyncio.run(agent.scan(barcode))).result()
+        else:
+            product = asyncio.run(agent.scan(barcode))
+    
+    if product is None:
+        return {
+            "success": False,
+            "error": "Product not found for this barcode"
+        }
+    
+    return {
+        "success": True,
+        "barcode": product.barcode,
+        "name": product.name,
+        "brand": product.brand,
+        "category": product.category,
+        "price": product.price,
+        "size": product.size,
+        "unit_price": product.unit_price,
+        "nutrition": product.nutrition,
+        "ingredients": product.ingredients
+    }
+
+
+__all__ = ['scan_barcode', 'BarcodeScannerAgent', 'get_barcode_agent']

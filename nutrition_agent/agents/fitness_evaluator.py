@@ -213,3 +213,66 @@ RECOMMENDATION: [your recommendation]
             "best_for": "N/A",
             "recommendation": "Find a product with nutrition information"
         }
+
+import asyncio
+
+_fitness_agent_instance = None
+
+def get_fitness_agent():
+    """Get or create singleton instance of FitnessEvaluatorAgent"""
+    global _fitness_agent_instance
+    if _fitness_agent_instance is None:
+        _fitness_agent_instance = FitnessEvaluatorAgent()
+    return _fitness_agent_instance
+
+
+def evaluate_fitness(
+    product_data: dict,
+    fitness_goals: list
+) -> dict:
+    """
+    Evaluate a product against user's fitness goals.
+    
+    This tool analyzes macronutrient ratios and nutritional content to determine
+    how well a product supports specific fitness objectives like muscle building,
+    weight loss, endurance training, etc.
+    
+    Args:
+        product_data: Dictionary containing product information (from scan_barcode)
+        fitness_goals: List of fitness goals (e.g., ["muscle building", "weight loss"])
+        
+    Returns:
+        Dictionary with fitness score (0-100), macro analysis, timing recommendations, and insights
+    """
+    from models.product import Product
+    
+    product = Product(
+        barcode=product_data.get("barcode", ""),
+        name=product_data.get("name", ""),
+        brand=product_data.get("brand", ""),
+        category=product_data.get("category", ""),
+        price=product_data.get("price", 0),
+        size=product_data.get("size"),
+        unit_price=product_data.get("unit_price"),
+        nutrition=product_data.get("nutrition"),
+        ingredients=product_data.get("ingredients")
+    )
+    
+    agent = get_fitness_agent()
+    
+    # Run the async function synchronously
+    try:
+        result = asyncio.run(agent.evaluate(product, fitness_goals))
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                result = pool.submit(lambda: asyncio.run(agent.evaluate(product, fitness_goals))).result()
+        else:
+            result = asyncio.run(agent.evaluate(product, fitness_goals))
+    
+    return result
+
+
+__all__ = ['evaluate_fitness', 'FitnessEvaluatorAgent', 'get_fitness_agent']

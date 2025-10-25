@@ -1,7 +1,7 @@
 from typing import Dict
 from models.product import Product
 from services.llm_service import LLMService
-
+import asyncio
 
 class PriceEvaluatorAgent:
     """Agent responsible for evaluating product pricing"""
@@ -98,3 +98,62 @@ Provide a brief 2-3 sentence summary explaining whether this is a good value. Co
             return f"This product is priced at ${product.price:.2f}, which is {abs(comparison_percent):.0f}% {'above' if comparison_percent > 0 else 'below'} average for {product.category}. It's a fair price, though you might find better deals."
         else:  # Expensive
             return f"At ${product.price:.2f}, this {product.name} is priced {comparison_percent:.0f}% above the category average. Consider if the brand premium justifies the higher cost, or look for alternatives."
+
+          
+
+_price_agent_instance = None
+
+def get_price_agent():
+    """Get or create singleton instance of PriceEvaluatorAgent"""
+    global _price_agent_instance
+    if _price_agent_instance is None:
+        _price_agent_instance = PriceEvaluatorAgent()
+    return _price_agent_instance
+
+
+def evaluate_price(product_data: dict) -> dict:
+    """
+    Evaluate product pricing and value.
+    
+    This tool analyzes the product price compared to category averages and
+    calculates nutritional value per dollar to help determine if the product
+    offers good value for money.
+    
+    Args:
+        product_data: Dictionary containing product information (from scan_barcode)
+        
+    Returns:
+        Dictionary with price analysis, value rating, and insights
+    """
+    from models.product import Product
+    
+    product = Product(
+        barcode=product_data.get("barcode", ""),
+        name=product_data.get("name", ""),
+        brand=product_data.get("brand", ""),
+        category=product_data.get("category", ""),
+        price=product_data.get("price", 0),
+        size=product_data.get("size"),
+        unit_price=product_data.get("unit_price"),
+        nutrition=product_data.get("nutrition"),
+        ingredients=product_data.get("ingredients")
+    )
+    
+    agent = get_price_agent()
+    
+    # Run the async function synchronously
+    try:
+        result = asyncio.run(agent.evaluate(product))
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                result = pool.submit(lambda: asyncio.run(agent.evaluate(product))).result()
+        else:
+            result = asyncio.run(agent.evaluate(product))
+    
+    return result
+
+
+__all__ = ['evaluate_price', 'PriceEvaluatorAgent', 'get_price_agent']

@@ -2,7 +2,8 @@ from typing import Dict, List
 from models.product import Product
 from models.user_profile import UserProfile
 from services.llm_service import LLMService
-
+import asyncio
+from typing import Optional
 
 class HealthEvaluatorAgent:
     """Agent responsible for evaluating product health alignment"""
@@ -218,3 +219,37 @@ CONS: [con1] | [con2] | [con3]
             "pros": ["N/A"],
             "cons": ["Missing nutrition data"]
         }
+
+        _health_agent_instance = None
+
+def get_health_agent():
+    """Get or create singleton instance of HealthEvaluatorAgent"""
+    global _health_agent_instance
+    if _health_agent_instance is None:
+        _health_agent_instance = HealthEvaluatorAgent()
+    return _health_agent_instance
+
+def evaluate_health(product_data: dict, health_goals: list, dietary_restrictions: Optional[list] = None) -> dict:
+    """Evaluate a product against user's health goals."""
+    product = Product(
+        barcode=product_data.get("barcode", ""),
+        name=product_data.get("name", ""),
+        brand=product_data.get("brand", ""),
+        category=product_data.get("category", ""),
+        price=product_data.get("price", 0),
+        size=product_data.get("size"),
+        unit_price=product_data.get("unit_price"),
+        nutrition=product_data.get("nutrition"),
+        ingredients=product_data.get("ingredients")
+    )
+    
+    agent = get_health_agent()
+    try:
+        result = asyncio.run(agent.evaluate(product, health_goals, dietary_restrictions or []))
+    except Exception as e:
+        result = {"success": False, "error": str(e)}
+    return result
+
+__all__ = ['evaluate_health', 'HealthEvaluatorAgent', 'get_health_agent']
+
+  
