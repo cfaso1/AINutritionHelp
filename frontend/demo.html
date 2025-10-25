@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Nutrition Help - Enhanced Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Login Screen Styles */
+        .login-container {
+            max-width: 450px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .login-container h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        h2 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            padding: 40px;
+            text-align: center;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .upload-area:hover {
+            background: #f0f4ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8f0ff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .response.show {
+            opacity: 1;
+        }
+
+        .response.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .response.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .response.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 15px;
+            border-radius: 10px;
+        }
+
+        .tab-navigation {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab:hover {
+            color: #764ba2;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .validation-message {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #ffeeba;
+        }
+
+        .validation-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .validation-list li {
+            padding: 8px;
+            background: white;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .validation-list input {
+            width: 150px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .link-button {
+            background: none;
+            border: none;
+            color: #667eea;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        .link-button:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <h1>🍎 AI Nutrition Help</h1>
+        <p class="subtitle text-center">Track your nutrition and reach your health goals</p>
+
+        <div id="loginForm">
+            <div class="form-group">
+                <label for="loginUsername">Username</label>
+                <input type="text" id="loginUsername" placeholder="Enter username">
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password">
+            </div>
+
+            <button class="btn" onclick="login()">Login</button>
+
+            <div class="text-center">
+                <button class="link-button" onclick="showRegister()">Don't have an account? Register</button>
+            </div>
+
+            <div class="text-center" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <button class="btn" onclick="useDemoAccount()">Use Demo Account</button>
+            </div>
+
+            <div id="loginResponse" class="response"></div>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <div class="form-group">
+                <label for="regUsername">Username</label>
+                <input type="text" id="regUsername" placeholder="Choose a username">
+            </div>
+
+            <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" placeholder="Enter your email">
+            </div>
+
+            <div class="form-group">
+                <label for="regPassword">Password</label>
+                <input type="password" id="regPassword" placeholder="Choose a password">
+            </div>
+
+            <button class="btn" onclick="register()">Register</button>
+
+            <div class="text-center">
+                <button class="link-button" onclick="showLogin()">Already have an account? Login</button>
+            </div>
+
+            <div id="registerResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="container hidden">
+        <h1>🍎 AI Nutrition Help</h1>
+        <p class="subtitle">Enhanced Nutrition Tracking & Analysis</p>
+
+        <div class="user-info">
+            <div>
+                <strong>Welcome, <span id="currentUsername">User</span>!</strong>
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">Track your nutrition and reach your goals</p>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab active" onclick="switchTab('scanner')">📸 Scanner</button>
+            <button class="tab" onclick="switchTab('goals')">🎯 Health Goals</button>
+            <button class="tab" onclick="switchTab('logs')">📊 Food Log</button>
+            <button class="tab" onclick="switchTab('profile')">👤 Profile</button>
+        </div>
+
+        <!-- Scanner Tab -->
+        <div id="scannerTab" class="tab-content active">
+            <div class="section">
+                <h2>📸 Upload Nutrition Label</h2>
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept="image/*" style="display: none" onchange="handleFileSelect(event)">
+                    <p id="uploadText">📤 Click or drag to upload nutrition label image</p>
+                    <div id="imagePreview"></div>
+                </div>
+                <button class="btn" id="scanBtn" onclick="scanLabel()" disabled style="margin-top: 15px;">Scan Label</button>
+                <div id="scanResponse" class="response"></div>
+            </div>
+
+            <!-- Validation and Manual Input Section -->
+            <div id="validationSection" class="section hidden">
+                <h2>✅ Confirm Extracted Data</h2>
+                <p style="margin-bottom: 15px; color: #666;">Review the extracted nutrition information and fill in any missing values:</p>
+
+                <div id="validationMessage" class="validation-message">
+                    <strong>Missing or incomplete data:</strong>
+                    <ul id="missingFields" class="validation-list"></ul>
+                </div>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; color: #764ba2;">Manual Inputs</h3>
+                <div class="form-group">
+                    <label for="foodName">Food Item Name *</label>
+                    <input type="text" id="foodName" placeholder="Enter food name (e.g., Greek Yogurt)">
+                </div>
+
+                <div class="form-group">
+                    <label for="foodPrice">Price ($)</label>
+                    <input type="number" id="foodPrice" step="0.01" placeholder="Enter price (e.g., 3.99)">
+                </div>
+
+                <div class="form-group">
+                    <label for="mealType">Meal Type</label>
+                    <select id="mealType">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snack">Snack</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="input-row" style="margin-top: 15px;">
+                    <button class="btn" id="analyzeBtn" onclick="analyzeNutrition()" disabled>🤖 Analyze with AI</button>
+                    <button class="btn btn-secondary" id="logBtn" onclick="saveLog()" disabled>💾 Save to Log</button>
+                </div>
+
+                <div id="analysisResponse" class="response"></div>
+                <div id="logResponse" class="response"></div>
+            </div>
+        </div>
+
+        <!-- Health Goals Tab -->
+        <div id="goalsTab" class="tab-content">
+            <div class="section">
+                <h2>🎯 Set Your Health Goals</h2>
+
+                <div class="form-group">
+                    <label for="goalType">Health Goal *</label>
+                    <select id="goalType">
+                        <option value="general_health">General Health</option>
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="muscle_gain">Muscle Gain</option>
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="lean_muscle">Lean Muscle</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <h3 style="margin: 25px 0 15px; color: #764ba2;">Personal Information</h3>
+
+                <div class="input-row">
+                    <div class="form-group">
+                        <label for="userWeight">Current Weight (kg) *</label>
+                        <input type="number" id="userWeight" step="0.1" placeholder="e.g., 75.5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userHeight">Height (cm) *</label>
+                        <input type="number" id="userHeight" step="0.1" placeholder="e.g., 175">
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <div class="form-group">
+                        <label for="userDOB">Date of Birth *</label>
+                        <input type="date" id="userDOB">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userGender">Gender</label>
+                        <select id="userGender">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer_not_to_say">Prefer not to say</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="activityLevel">Fitness Habits / Activity Level *</label>
+                    <select id="activityLevel">
+                        <option value="sedentary">Sedentary (little to no exercise)</option>
+                        <option value="lightly_active">Lightly Active (1-3 days/week)</option>
+                        <option value="moderately_active">Moderately Active (3-5 days/week)</option>
+                        <option value="very_active">Very Active (6-7 days/week)</option>
+                        <option value="extremely_active">Extremely Active (twice per day)</option>
+                    </select>
+                </div>
+
+                <h3 style="margin: 25px 0 15px; color: #764ba2;">Dietary Preferences</h3>
+
+                <div class="form-group">
+                    <label for="dietType">Diet Type</label>
+                    <select id="dietType">
+                        <option value="standard">Standard</option>
+                        <option value="vegetarian">Vegetarian</option>
+                        <option value="vegan">Vegan</option>
+                        <option value="keto">Keto</option>
+                        <option value="paleo">Paleo</option>
+                        <option value="mediterranean">Mediterranean</option>
+                        <option value="low_carb">Low Carb</option>
+                        <option value="high_protein">High Protein</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="allergies">Allergies (comma-separated)</label>
+                    <input type="text" id="allergies" placeholder="e.g., peanuts, shellfish, dairy">
+                </div>
+
+                <button class="btn" onclick="saveHealthGoals()">Save Health Goals</button>
+                <div id="goalsResponse" class="response"></div>
+            </div>
+        </div>
+
+        <!-- Food Log Tab -->
+        <div id="logsTab" class="tab-content">
+            <div class="section">
+                <h2>📊 Your Food Log & Eating History</h2>
+
+                <div class="stats-grid" id="statsDisplay" style="display: none;">
+                    <div class="stat-card">
+                        <div class="label">Total Calories</div>
+                        <div class="value" id="totalCalories">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Protein</div>
+                        <div class="value" id="totalProtein">0g</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Carbs</div>
+                        <div class="value" id="totalCarbs">0g</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Fat</div>
+                        <div class="value" id="totalFat">0g</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="getNutritionLogs()" style="margin-top: 20px;">🔄 Refresh Logs</button>
+                <div id="logsResponse" class="response"></div>
+            </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="profileTab" class="tab-content">
+            <div class="section">
+                <h2>👤 Your Profile</h2>
+                <button class="btn" onclick="loadProfile()">Load Profile Data</button>
+                <div id="profileResponse" class="response"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let selectedFile = null;
+        let scannedNutritionData = null;
+        let currentUser = null;
+
+        // Check API connection on page load
+        window.onload = () => {
+            checkDemoUser();
+        };
+
+        // Authentication Functions
+        async function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showResponse('loginResponse', '❌ Please enter both username and password', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentUser = result.user;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showMainApp();
+                } else {
+                    showResponse('loginResponse', `❌ ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('loginResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            if (!username || !email || !password) {
+                showResponse('registerResponse', '❌ Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResponse('registerResponse', '✅ Registration successful! Please login.', 'success');
+                    setTimeout(() => showLogin(), 2000);
+                } else {
+                    showResponse('registerResponse', `❌ ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('registerResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function useDemoAccount() {
+            // Use the demo user that's already created
+            currentUser = { user_id: 1, username: 'demo_user', email: 'demo@hackathon.com' };
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showMainApp();
+        }
+
+        function checkDemoUser() {
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                showMainApp();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            showLogin();
+        }
+
+        function showMainApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('currentUsername').textContent = currentUser.username;
+            getNutritionLogs();
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        // Tab Navigation
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // File Upload
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            selectedFile = file;
+            document.getElementById('uploadText').innerHTML = `<strong>${file.name}</strong>`;
+            document.getElementById('scanBtn').disabled = false;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('imagePreview').innerHTML =
+                    `<img src="${e.target.result}" class="preview-image" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Scan Nutrition Label
+        async function scanLabel() {
+            if (!selectedFile) {
+                showResponse('scanResponse', 'Please select an image first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            try {
+                showResponse('scanResponse', 'Scanning image with OCR...', 'info');
+
+                const response = await fetch(`${API_URL}/scan`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    scannedNutritionData = result.nutrition_data;
+                    showResponse('scanResponse', '✅ Scan Successful!', 'success');
+
+                    // Show validation section
+                    document.getElementById('validationSection').classList.remove('hidden');
+                    validateNutritionData(scannedNutritionData);
+
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('logBtn').disabled = false;
+                } else {
+                    showResponse('scanResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('scanResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Validate Nutrition Data
+        function validateNutritionData(data) {
+            const requiredFields = [
+                { path: 'calories.total', label: 'Calories', unit: 'kcal' },
+                { path: 'macronutrients.protein.amount_g', label: 'Protein', unit: 'g' },
+                { path: 'macronutrients.carbohydrates.sugars_g', label: 'Sugar', unit: 'g' },
+                { path: 'macronutrients.fat.total_g', label: 'Fat', unit: 'g' },
+                { path: 'macronutrients.carbohydrates.total_g', label: 'Carbohydrates', unit: 'g' },
+                { path: 'micronutrients.sodium_mg', label: 'Sodium', unit: 'mg' },
+                { path: 'micronutrients.cholesterol_mg', label: 'Cholesterol', unit: 'mg' },
+                { path: 'micronutrients.vitamin_a_mcg', label: 'Vitamin A', unit: 'mcg' },
+                { path: 'micronutrients.vitamin_c_mg', label: 'Vitamin C', unit: 'mg' },
+                { path: 'micronutrients.vitamin_d_mcg', label: 'Vitamin D', unit: 'mcg' },
+                { path: 'serving_information.serving_size', label: 'Serving Size', unit: '' },
+                { path: 'serving_information.servings_per_container', label: 'Servings per Container', unit: '' }
+            ];
+
+            const missingFields = [];
+            const missingFieldsList = document.getElementById('missingFields');
+            missingFieldsList.innerHTML = '';
+
+            requiredFields.forEach(field => {
+                const value = getNestedValue(data, field.path);
+                if (!value || value === null) {
+                    missingFields.push(field);
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${field.label}:</span>
+                        <input type="text" id="manual_${field.path.replace(/\./g, '_')}"
+                               placeholder="Enter ${field.label} ${field.unit}">
+                    `;
+                    missingFieldsList.appendChild(li);
+                }
+            });
+
+            if (missingFields.length === 0) {
+                document.getElementById('validationMessage').innerHTML =
+                    '<strong style="color: #28a745;">✅ All required fields detected!</strong>';
+            }
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((curr, key) => curr?.[key], obj);
+        }
+
+        // Analyze Nutrition
+        async function analyzeNutrition() {
+            if (!scannedNutritionData) {
+                showResponse('analysisResponse', '❌ Please scan a nutrition label first!', 'error');
+                return;
+            }
+
+            try {
+                showResponse('analysisResponse', '🤖 AI is analyzing your nutrition data...', 'info');
+
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nutrition_data: scannedNutritionData })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResponse('analysisResponse', result.analysis, 'success');
+                } else {
+                    showResponse('analysisResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('analysisResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Save Log
+        async function saveLog() {
+            if (!scannedNutritionData) {
+                showResponse('logResponse', '❌ Please scan a nutrition label first!', 'error');
+                return;
+            }
+
+            const foodName = document.getElementById('foodName').value || 'Unknown Food';
+            const foodPrice = parseFloat(document.getElementById('foodPrice').value) || null;
+            const mealType = document.getElementById('mealType').value;
+
+            try {
+                showResponse('logResponse', '💾 Saving to nutrition log...', 'info');
+
+                const response = await fetch(`${API_URL}/log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nutrition_data: scannedNutritionData,
+                        food_name: foodName,
+                        price: foodPrice,
+                        meal_type: mealType
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResponse('logResponse',
+                        `✅ Saved!\n\nLog ID: ${result.log_id}\nFood: ${foodName}\nPrice: $${foodPrice || 'N/A'}\nMeal: ${mealType}`,
+                        'success');
+
+                    // Refresh stats
+                    await getNutritionLogs();
+                } else {
+                    showResponse('logResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('logResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Get Nutrition Logs
+        async function getNutritionLogs() {
+            try {
+                const response = await fetch(`${API_URL}/logs`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Update stats
+                    document.getElementById('totalCalories').textContent = result.totals.calories;
+                    document.getElementById('totalProtein').textContent = result.totals.protein_g + 'g';
+                    document.getElementById('totalCarbs').textContent = result.totals.carbs_g + 'g';
+                    document.getElementById('totalFat').textContent = result.totals.fat_g + 'g';
+                    document.getElementById('statsDisplay').style.display = 'grid';
+
+                    if (result.logs.length > 0) {
+                        const logsList = result.logs.map(log => {
+                            const price = log.price ? ` - $${log.price}` : '';
+                            return `- ${log.food_name}: ${log.calories} cal, ${log.protein_g}g protein (${log.meal_type})${price}`;
+                        }).join('\n');
+
+                        showResponse('logsResponse',
+                            `📊 Today's Logs (${result.count}):\n\n${logsList}`,
+                            'success');
+                    } else {
+                        showResponse('logsResponse', '📝 No logs for today yet. Scan and save some nutrition data!', 'info');
+                    }
+                } else {
+                    showResponse('logsResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to load logs:', error);
+            }
+        }
+
+        // Save Health Goals
+        async function saveHealthGoals() {
+            const goalData = {
+                goal_type: document.getElementById('goalType').value,
+                current_weight_kg: parseFloat(document.getElementById('userWeight').value),
+                height_cm: parseFloat(document.getElementById('userHeight').value),
+                date_of_birth: document.getElementById('userDOB').value,
+                gender: document.getElementById('userGender').value,
+                activity_level: document.getElementById('activityLevel').value,
+                diet_type: document.getElementById('dietType').value,
+                allergies: document.getElementById('allergies').value
+            };
+
+            if (!goalData.current_weight_kg || !goalData.height_cm || !goalData.date_of_birth) {
+                showResponse('goalsResponse', '❌ Please fill in all required fields (marked with *)', 'error');
+                return;
+            }
+
+            try {
+                showResponse('goalsResponse', '💾 Saving your health goals...', 'info');
+
+                const response = await fetch(`${API_URL}/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(goalData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResponse('goalsResponse', '✅ Health goals saved successfully!', 'success');
+                } else {
+                    showResponse('goalsResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('goalsResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Load Profile
+        async function loadProfile() {
+            try {
+                showResponse('profileResponse', '📥 Loading profile...', 'info');
+
+                const response = await fetch(`${API_URL}/profile`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    const profile = result.profile;
+                    const displayData = JSON.stringify(profile, null, 2);
+                    showResponse('profileResponse', `✅ Profile Loaded:\n\n${displayData}`, 'success');
+                } else {
+                    showResponse('profileResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('profileResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Helper function to show response messages
+        function showResponse(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `response show ${type}`;
+        }
+    </script>
+</body>
+</html>

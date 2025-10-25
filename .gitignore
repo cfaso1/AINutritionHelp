@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Database
+*.db
+backend/*.db
+
+# Uploads
+uploads/
+backend/uploads/
+
+# Environment
+.env
+
+# AI Models
+*.pkl
+*.h5
+*.pth
+backend/models/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
