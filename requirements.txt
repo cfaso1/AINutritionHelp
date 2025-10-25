@@ -1,0 +1,25 @@
+# AI Nutrition Help - Backend Dependencies
+
+# Core Flask Framework
+Flask==3.0.0
+flask-cors==4.0.0
+
+# File handling and security
+Werkzeug==3.0.1
+
+# Database (already using built-in sqlite3)
+# No additional package needed for SQLite
+
+# OCR and Image Processing
+pytesseract==0.3.10
+Pillow==10.1.0
+
+# AI Integration (choose one or both)
+# Anthropic Claude API (recommended)
+anthropic==0.25.0
+
+# Alternative: OpenAI API
+# openai==1.12.0
+
+# Utilities
+python-dotenv==1.0.0
