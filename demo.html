@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Nutrition Help - Hackathon Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        h2 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            padding: 40px;
+            text-align: center;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .upload-area:hover {
+            background: #f0f4ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8f0ff;
+            border-color: #667eea;
+            border-style: solid;
+        }
+
+        .upload-area input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            white-space: pre-wrap;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .response.show {
+            display: block;
+        }
+
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #667eea;
+            color: white;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥗 AI Nutrition Help</h1>
+        <p class="subtitle">Hackathon Demo - Scan nutrition labels and get AI-powered analysis</p>
+
+        <div class="status-bar">
+            <div>
+                <strong>API Status:</strong>
+                <span id="apiStatus" class="status disconnected">Checking...</span>
+            </div>
+            <div>
+                <strong>Demo User ID:</strong> <span class="badge">1</span>
+            </div>
+        </div>
+
+        <!-- Upload & Scan Section -->
+        <div class="section">
+            <h2>📸 Step 1: Scan Nutrition Label</h2>
+            <p style="margin-bottom: 15px; color: #666;">Upload a photo of a nutrition facts label</p>
+
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('nutritionImage').click()">
+                <div class="upload-icon">📷</div>
+                <input type="file" id="nutritionImage" accept="image/*" onchange="handleFileSelect(event)">
+                <p id="uploadText"><strong>Click to upload</strong> or drag and drop</p>
+                <p style="font-size: 12px; color: #999; margin-top: 10px;">PNG, JPG, GIF up to 16MB</p>
+            </div>
+
+            <div id="imagePreview"></div>
+
+            <button id="scanBtn" onclick="scanLabel()" disabled style="width: 100%; margin-top: 15px;">
+                🔍 Scan Nutrition Label
+            </button>
+
+            <div id="scanResponse" class="response"></div>
+        </div>
+
+        <!-- AI Analysis Section -->
+        <div class="section">
+            <h2>🤖 Step 2: Get AI Analysis</h2>
+            <p style="margin-bottom: 15px; color: #666;">Send scanned data to AI for personalized recommendations</p>
+
+            <button id="analyzeBtn" onclick="analyzeNutrition()" disabled style="width: 100%;">
+                ✨ Analyze with AI
+            </button>
+
+            <div id="analysisResponse" class="response"></div>
+        </div>
+
+        <!-- Save Log Section -->
+        <div class="section">
+            <h2>💾 Step 3: Save to Log (Optional)</h2>
+            <input type="text" id="foodName" placeholder="Food name (e.g., Protein Bar)"
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 10px;">
+
+            <select id="mealType" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 10px;">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
+                <option value="other">Other</option>
+            </select>
+
+            <button id="logBtn" onclick="saveLog()" disabled style="width: 100%;">
+                📝 Save to Nutrition Log
+            </button>
+
+            <div id="logResponse" class="response"></div>
+        </div>
+
+        <!-- View Logs Section -->
+        <div class="section">
+            <h2>📊 Today's Nutrition Summary</h2>
+
+            <div id="statsDisplay" class="stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCalories">0</div>
+                    <div class="stat-label">Calories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalProtein">0g</div>
+                    <div class="stat-label">Protein</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCarbs">0g</div>
+                    <div class="stat-label">Carbs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalFat">0g</div>
+                    <div class="stat-label">Fat</div>
+                </div>
+            </div>
+
+            <button onclick="getNutritionLogs()" style="width: 100%; margin-top: 15px;">
+                🔄 Refresh Today's Logs
+            </button>
+
+            <div id="logsResponse" class="response"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let scannedNutritionData = null;
+        let selectedFile = null;
+
+        // Check API connection on load
+        window.onload = async () => {
+            await checkAPIConnection();
+            await getNutritionLogs(); // Load initial stats
+        };
+
+        async function checkAPIConnection() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('apiStatus').textContent = 'Connected';
+                    document.getElementById('apiStatus').className = 'status connected';
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = 'Disconnected';
+                document.getElementById('apiStatus').className = 'status disconnected';
+            }
+        }
+
+        // File upload handlers
+        const uploadArea = document.getElementById('uploadArea');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('dragover');
+            });
+        });
+
+        uploadArea.addEventListener('drop', handleDrop);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                document.getElementById('nutritionImage').files = files;
+                handleFileSelect({ target: { files: files } });
+            }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('uploadText').innerHTML = `<strong>${file.name}</strong>`;
+                document.getElementById('scanBtn').disabled = false;
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('imagePreview').innerHTML =
+                        `<img src="${e.target.result}" class="preview-image" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function scanLabel() {
+            if (!selectedFile) {
+                showResponse('scanResponse', 'Please select an image first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            try {
+                showResponse('scanResponse', 'Scanning image with OCR...', 'info');
+
+                const response = await fetch(`${API_URL}/scan`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    scannedNutritionData = result.nutrition_data;
+                    const displayData = JSON.stringify(result.nutrition_data, null, 2);
+                    showResponse('scanResponse',
+                        `✅ Scan Successful!\n\nExtracted Nutrition Data:\n${displayData}`,
+                        'success');
+
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('logBtn').disabled = false;
+                } else {
+                    showResponse('scanResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('scanResponse', `❌ Network Error: ${error.message}\n\nMake sure the API server is running!`, 'error');
+            }
+        }
+
+        async function analyzeNutrition() {
+            if (!scannedNutritionData) {
+                showResponse('analysisResponse', '❌ Please scan a nutrition label first!', 'error');
+                return;
+            }
+
+            try {
+                showResponse('analysisResponse', '🤖 AI is analyzing your nutrition data...', 'info');
+
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nutrition_data: scannedNutritionData })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResponse('analysisResponse', result.analysis, 'success');
+                } else {
+                    showResponse('analysisResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('analysisResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveLog() {
+            if (!scannedNutritionData) {
+                showResponse('logResponse', '❌ Please scan a nutrition label first!', 'error');
+                return;
+            }
+
+            const foodName = document.getElementById('foodName').value || 'Unknown Food';
+            const mealType = document.getElementById('mealType').value;
+
+            try {
+                showResponse('logResponse', '💾 Saving to nutrition log...', 'info');
+
+                const response = await fetch(`${API_URL}/log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nutrition_data: scannedNutritionData,
+                        food_name: foodName,
+                        meal_type: mealType
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResponse('logResponse', `✅ Saved!\n\nLog ID: ${result.log_id}\nFood: ${foodName}\nMeal: ${mealType}`, 'success');
+
+                    // Refresh stats
+                    await getNutritionLogs();
+                } else {
+                    showResponse('logResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResponse('logResponse', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getNutritionLogs() {
+            try {
+                const response = await fetch(`${API_URL}/logs`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Update stats
+                    document.getElementById('totalCalories').textContent = result.totals.calories;
+                    document.getElementById('totalProtein').textContent = result.totals.protein_g + 'g';
+                    document.getElementById('totalCarbs').textContent = result.totals.carbs_g + 'g';
+                    document.getElementById('totalFat').textContent = result.totals.fat_g + 'g';
+                    document.getElementById('statsDisplay').style.display = 'grid';
+
+                    if (result.logs.length > 0) {
+                        const logsList = result.logs.map(log =>
+                            `- ${log.food_name}: ${log.calories} cal, ${log.protein_g}g protein (${log.meal_type})`
+                        ).join('\n');
+
+                        showResponse('logsResponse',
+                            `📊 Today's Logs (${result.count}):\n\n${logsList}`,
+                            'success');
+                    } else {
+                        showResponse('logsResponse', '📝 No logs for today yet. Scan and save some nutrition data!', 'info');
+                    }
+                } else {
+                    showResponse('logsResponse', `❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to load logs:', error);
+            }
+        }
+
+        function showResponse(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `response show ${type}`;
+        }
+    </script>
+</body>
+</html>

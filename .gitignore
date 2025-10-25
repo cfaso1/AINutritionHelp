@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Database
+*.db
+
+# Uploads
+uploads/
+
+# Environment
+.env
+
+# AI Models
+*.pkl
+*.h5
+*.pth
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
