@@ -9,13 +9,19 @@ USAGE:
 Then open demo.html in your browser!
 """
 
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 import os
-import json
 from datetime import datetime
 from pathlib import Path
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Import backend modules
 from backend.database import (
@@ -30,14 +36,12 @@ from backend.database import (
     migrate_database,
     migrate_to_imperial
 )
-# DEPRECATED: Old OCR-based nutrition scanner
-# from backend.nutrition_reader import extract_text_from_image, parse_nutrition_info
-# NEW: Nutrition Agent Service (barcode-based)
+# Nutrition Agent Service (barcode-based)
 try:
     from backend.nutrition_agent_service import get_nutrition_agent_service, run_async
     USE_NUTRITION_AGENT = True
 except ImportError as e:
-    print(f"Warning: Nutrition Agent not available: {e}")
+    logger.warning(f"Nutrition Agent not available: {e}")
     USE_NUTRITION_AGENT = False
 
 # Barcode detection from images
@@ -95,64 +99,6 @@ except:
     print(f"✓ Using existing demo user (ID: {DEMO_USER_ID})")
 
 
-def allowed_file(filename):
-    """Check if uploaded file has allowed extension."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def generate_demo_analysis(nutrition_data, profile):
-    """
-    Generate demo analysis output.
-    REPLACE THIS FUNCTION with your custom AI model integration.
-
-    Args:
-        nutrition_data: Dict with nutrition facts from OCR
-        profile: User profile dict with goals and preferences
-
-    Returns:
-        String with nutrition analysis
-    """
-    calories = nutrition_data.get('calories', {}).get('total', 'Unknown')
-    protein = nutrition_data.get('macronutrients', {}).get('protein', {}).get('amount_g', 'Unknown')
-    carbs = nutrition_data.get('macronutrients', {}).get('carbohydrates', {}).get('total_g', 'Unknown')
-    fat = nutrition_data.get('macronutrients', {}).get('fat', {}).get('total_g', 'Unknown')
-    sodium = nutrition_data.get('micronutrients', {}).get('sodium_mg', 'Unknown')
-
-    return f"""🤖 AI Nutrition Analysis (Demo Mode)
-
-1. OVERALL HEALTH ASSESSMENT: 7/10
-   - Calories: {calories} kcal
-   - Protein: {protein}g
-   - Carbs: {carbs}g
-   - Fat: {fat}g
-   - Sodium: {sodium}mg
-
-2. KEY NUTRITIONAL HIGHLIGHTS:
-   - Protein: {protein}g (Your daily goal: {profile.get('daily_protein_target_g', 100)}g)
-   - Calories: {calories} kcal (Your daily goal: {profile.get('daily_calorie_target', 2000)} kcal)
-
-3. DIETARY COMPATIBILITY:
-   - Your Goal: {profile.get('goal_type', 'general health').replace('_', ' ').title()}
-   - Your Diet: {profile.get('diet_type', 'standard').title()}
-   - This food appears compatible with your dietary preferences
-
-4. WARNINGS/CONCERNS:
-   - Check sodium content: {sodium}mg
-   - Review serving size carefully
-   - Monitor added sugars
-
-5. RECOMMENDATIONS:
-   - Fits your {profile.get('goal_type', 'general health').replace('_', ' ')} goals
-   - Consider portion size relative to daily targets
-   - Balance with other meals throughout the day
-
-6. PORTION GUIDANCE:
-   - Review serving size information from the label
-   - Track in your daily nutrition log
-   - Stay within your daily calorie target
-
-📝 Note: This is demo output. Replace generate_demo_analysis() in api_simple.py
-with your custom trained AI model to get personalized recommendations!"""
 
 
 # ============================================================================
@@ -220,7 +166,7 @@ def get_profile():
 def update_profile():
     """Update demo user profile - stores in imperial units."""
     data = request.get_json() or {}
-    print("[DEBUG] /api/profile called with payload:", data)
+    logger.debug(f"/api/profile called with payload: {data}")
 
     import re
 
@@ -256,10 +202,10 @@ def update_profile():
             # Remove the original 'height' key
             data.pop('height')
             
-            print(f"[DEBUG] Parsed height: {feet}'{inches}\"")
+            logger.debug(f"Parsed height: {feet}'{inches}\"")
             
         except Exception as e:
-            print("[DEBUG] Height parse failed:", e)
+            logger.error(f"Height parse failed: {e}")
             return jsonify({
                 'error': "Invalid height format. Use feet'inches (e.g., 5'8)"
             }), 400
@@ -284,10 +230,10 @@ def update_profile():
             data.pop('weight', None)
             data.pop('current_weight_lbs', None)
             
-            print(f"[DEBUG] Parsed weight: {weight_lbs} lbs")
+            logger.debug(f"Parsed weight: {weight_lbs} lbs")
             
         except (ValueError, TypeError) as e:
-            print("[DEBUG] Weight parse failed:", e)
+            logger.error(f"Weight parse failed: {e}")
             return jsonify({
                 'error': 'Weight must be a valid number in pounds'
             }), 400
@@ -295,17 +241,24 @@ def update_profile():
     # Calculate BMI if we have both height and weight
     # Use existing values if new ones weren't provided
     profile = get_user_profile(DEMO_USER_ID)
-    
+
     height_feet = data.get('height_feet') or (profile.get('height_feet') if profile else None)
     height_inches = data.get('height_inches') or (profile.get('height_inches') if profile else None)
     weight_lbs = data.get('weight_lbs') or (profile.get('weight_lbs') if profile else None)
-    
+
     if height_feet and height_inches is not None and weight_lbs:
         # BMI formula: (weight_lbs / (height_inches^2)) * 703
         total_height_inches = (height_feet * 12) + height_inches
         bmi = (weight_lbs / (total_height_inches ** 2)) * 703
         data['bmi'] = round(bmi, 1)
-        print(f"[DEBUG] Calculated BMI: {bmi:.1f}")
+        logger.debug(f"Calculated BMI: {bmi:.1f}")
+
+        # Convert to metric for AI usage
+        height_cm = total_height_inches * 2.54
+        current_weight_kg = weight_lbs * 0.453592
+        data['height_cm'] = round(height_cm, 1)
+        data['current_weight_kg'] = round(current_weight_kg, 1)
+        logger.debug(f"Converted to metric - height_cm: {height_cm:.1f}, weight_kg: {current_weight_kg:.1f}")
 
     # Ensure numeric fields are proper types
     numeric_fields = [
@@ -319,22 +272,22 @@ def update_profile():
             try:
                 data[field] = float(data[field])
             except (ValueError, TypeError) as e:
-                print(f'[DEBUG] Type conversion error for {field}:', e)
+                logger.error(f'Type conversion error for {field}: {e}')
                 return jsonify({
                     'error': f'{field} must be a valid number'
                 }), 400
 
     # Debug output
-    print('[DEBUG] Data to save:', {k: (type(v).__name__, v) for k, v in data.items()})
+    logger.debug(f'Data to save: {[(k, type(v).__name__, v) for k, v in data.items()]}')
 
     # Save profile to database
     success = update_user_profile(DEMO_USER_ID, data)
-    print(f"[DEBUG] update_user_profile returned: {success}")
+    logger.debug(f"update_user_profile returned: {success}")
     
     if success:
         # Retrieve updated profile
         profile = get_user_profile(DEMO_USER_ID)
-        print(f"[DEBUG] Retrieved profile after save: {profile}")
+        logger.debug(f"Retrieved profile after save: {profile}")
         
         return jsonify({
             'success': True,
@@ -342,7 +295,7 @@ def update_profile():
             'profile': profile
         }), 200
     else:
-        print("[DEBUG] Failed to update profile in database")
+        logger.error("Failed to update profile in database")
         return jsonify({
             'error': 'Failed to update profile in database'
         }), 400
@@ -454,19 +407,6 @@ def scan_barcode_image():
         return jsonify({'error': f'Failed to process image: {str(e)}'}), 500
 
 
-@app.route('/api/scan', methods=['POST'])
-def scan_nutrition_label():
-    """
-    DEPRECATED: Old OCR-based nutrition label scanner.
-    Kept for backward compatibility.
-
-    Recommendation: Use /api/barcode/scan instead.
-    """
-    return jsonify({
-        'error': 'OCR scanning deprecated. Please use /api/barcode/scan with a barcode number.',
-        'deprecated': True,
-        'message': 'Send POST to /api/barcode/scan with {"barcode": "1234567890"}'
-    }), 410  # 410 Gone - resource no longer available
 
 
 @app.route('/api/agent/evaluate', methods=['POST'])
@@ -507,44 +447,6 @@ def evaluate_with_agent():
         return jsonify({'error': f'Evaluation failed: {str(e)}'}), 500
 
 
-@app.route('/api/analyze', methods=['POST'])
-def analyze_nutrition():
-    """
-    DEPRECATED: Old AI analysis endpoint.
-    NEW: Use /api/agent/evaluate for comprehensive agent-based evaluation.
-
-    This endpoint remains for backward compatibility but is deprecated.
-    """
-    data = request.get_json()
-
-    if not data or 'nutrition_data' not in data:
-        return jsonify({'error': 'Missing nutrition data'}), 400
-
-    # Check if we should use the new agent system
-    if USE_NUTRITION_AGENT and 'product' in data:
-        # Redirect to new agent evaluation
-        return evaluate_with_agent()
-
-    nutrition_data = data['nutrition_data']
-
-    # Get demo user profile for personalized analysis
-    profile = get_user_profile(DEMO_USER_ID)
-
-    try:
-        # Legacy fallback - basic demo analysis
-        if USE_AI_MODEL:
-            analysis = ai_analyze(nutrition_data, profile)
-        else:
-            analysis = generate_demo_analysis(nutrition_data, profile)
-
-        return jsonify({
-            'success': True,
-            'analysis': analysis,
-            'nutrition_data': nutrition_data
-        }), 200
-
-    except Exception as e:
-        return jsonify({'error': f'AI analysis failed: {str(e)}'}), 500
 
 
 @app.route('/api/weight', methods=['POST'])
@@ -732,6 +634,12 @@ def initial_profile_setup():
     bmi = (data['weight_lbs'] / (total_height_inches ** 2)) * 703
     data['bmi'] = round(bmi, 1)
 
+    # Convert to metric for AI usage
+    height_cm = total_height_inches * 2.54
+    current_weight_kg = data['weight_lbs'] * 0.453592
+    data['height_cm'] = round(height_cm, 1)
+    data['current_weight_kg'] = round(current_weight_kg, 1)
+
     print(f"[DEBUG] Saving initial profile: {data}")
 
     # Save to database
@@ -748,19 +656,6 @@ def initial_profile_setup():
         return jsonify({'error': 'Failed to save profile'}), 500
 
 
-    
-
-    fetch('http://localhost:5000/api/profile/setup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        height: "5'8",
-        weight: 150,
-        goal_type: 'weight_loss',
-        activity_level: 'moderately_active',
-        diet_type: 'standard'
-    })
-})
 
 if __name__ == '__main__':
     print("\n" + "="*70)

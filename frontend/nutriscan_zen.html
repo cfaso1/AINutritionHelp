@@ -359,26 +359,40 @@
         }
 
         .user-banner {
-            background: var(--white);
-            padding: 25px;
-            margin: 0 auto 30px;
-            max-width: 1400px;
-            box-shadow: 0 2px 10px var(--shadow);
-            border-radius: 15px;
-            display: flex;
-            justify-content: space-between;
+            display: none;
+            gap: 15px;
             align-items: center;
+        }
+
+        .user-banner.show {
+            display: flex;
         }
 
         .user-info-section {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 12px;
+        }
+
+        .user-info-section.clickable {
+            cursor: pointer;
+            padding: 8px 12px;
+            margin: -8px -12px;
+            border-radius: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .user-info-section.clickable:hover {
+            background-color: var(--mint);
+        }
+
+        .user-info-section.clickable:active {
+            background-color: var(--soft-green);
         }
 
         .user-avatar {
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, var(--primary-green), var(--light-green));
             border-radius: 50%;
             display: flex;
@@ -386,18 +400,42 @@
             justify-content: center;
             color: var(--white);
             font-weight: 600;
-            font-size: 1.4rem;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            flex: 1;
+            min-width: 0;
         }
 
         .user-details h3 {
             color: var(--primary-green);
-            font-size: 1.3rem;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
         }
 
         .user-goal {
             color: var(--medium-text);
-            font-size: 0.9rem;
-            margin-top: 5px;
+            font-size: 0.75rem;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-banner-buttons {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .user-banner-buttons .btn {
+            padding: 8px 18px;
+            font-size: 13px;
         }
 
         .dashboard-content {
@@ -656,6 +694,7 @@
             margin: 0;
             font-size: 1.2rem;
             font-weight: 600;
+            color: #f8fdf8;
         }
 
         .chat-header p {
@@ -896,6 +935,19 @@
             transform: translateX(5px);
         }
 
+        /* Checkbox styling */
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-green);
+        }
+
+        .dietary-restriction-checkbox:checked + span {
+            font-weight: 500;
+            color: var(--primary-green);
+        }
+
         @media (max-width: 968px) {
             .hero-title { font-size: 2.5rem; }
             .features { grid-template-columns: 1fr; }
@@ -904,6 +956,20 @@
             .input-row { grid-template-columns: 1fr; }
             .chat-container { height: 500px; }
             .chat-bubble { max-width: 85%; }
+
+            .nav-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .user-details {
+                display: none;
+            }
+
+            .user-banner-buttons .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -918,6 +984,19 @@
             <div id="navButtons">
                 <button class="btn" onclick="showLogin()">Login</button>
                 <button class="btn primary" onclick="showSignup()">Sign Up</button>
+            </div>
+            <!-- User banner in header (shown when logged in) -->
+            <div class="user-banner" id="userBannerNav">
+                <div class="user-info-section clickable" onclick="showSettings()">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <h3 id="userName">User</h3>
+                        <div class="user-goal" id="userGoal">Loading...</div>
+                    </div>
+                </div>
+                <div class="user-banner-buttons">
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
             </div>
         </div>
     </nav>
@@ -1028,6 +1107,7 @@
                 <div class="progress-dot" id="prog2"></div>
                 <div class="progress-dot" id="prog3"></div>
                 <div class="progress-dot" id="prog4"></div>
+                <div class="progress-dot" id="prog5"></div>
             </div>
 
             <!-- Question 1 -->
@@ -1040,25 +1120,45 @@
                     <div class="form-group">
                         <label class="form-label">Height (ft'in)</label>
                        <div class="form-group">
-    <input 
-        type="text" 
-        class="form-input" 
-        id="profileHeight" 
-        placeholder="5'8" 
-        required 
-        pattern="^\d+'\d{1,2}$" 
+    <input
+        type="text"
+        class="form-input"
+        id="profileHeight"
+        placeholder="5'8"
+        required
+        pattern="^\d+'\d{1,2}$"
         title="Format: 5'8 (feet'apostrophe'inches)"
         oninput="this.setCustomValidity('')"
         oninvalid="this.setCustomValidity('Enter height as feet\'inches, like 5\'8')"
     >
-    <small style="color: var(--medium-text); font-size: 0.85rem; display: block; margin-top: 5px;">
-        Use apostrophe (') between feet and inches. Example: 5'8
-    </small>
 </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Weight (lbs)</label>
                         <input type="number" class="form-input" id="profileWeight" placeholder="150" min="66" max="660" step="1" required>
+                    </div>
+                </div>
+                <div class="input-row" style="margin-top: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="profileGender" required>
+                            <option value="">Select...</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <select class="form-select" id="profileAge" required>
+                            <option value="">Select...</option>
+                            <option value="18-25">18-25</option>
+                            <option value="26-35">26-35</option>
+                            <option value="36-45">36-45</option>
+                            <option value="46-55">46-55</option>
+                            <option value="56-65">56-65</option>
+                            <option value="65+">65+</option>
+                        </select>
                     </div>
                 </div>
                 <button class="btn primary" onclick="nextQuestion(2)" style="width: 100%; margin-top: 20px;">
@@ -1114,28 +1214,65 @@
             <div class="question-card" id="q4">
                 <h3 class="question-title">Dietary Preferences</h3>
                 <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
-                    Any dietary restrictions?
+                    What's your preferred diet type?
                 </p>
                 <div class="button-grid">
-                    <button class="btn" onclick="setProfileData('diet', 'standard'); submitProfile()">
+                    <button class="btn" onclick="setProfileData('diet', 'standard'); nextQuestion(5)">
                         🍽️ Standard
                     </button>
-                    <button class="btn" onclick="setProfileData('diet', 'vegetarian'); submitProfile()">
+                    <button class="btn" onclick="setProfileData('diet', 'vegetarian'); nextQuestion(5)">
                         🥗 Vegetarian
                     </button>
-                    <button class="btn" onclick="setProfileData('diet', 'vegan'); submitProfile()">
+                    <button class="btn" onclick="setProfileData('diet', 'vegan'); nextQuestion(5)">
                         🌱 Vegan
                     </button>
-                    <button class="btn" onclick="setProfileData('diet', 'keto'); submitProfile()">
+                    <button class="btn" onclick="setProfileData('diet', 'keto'); nextQuestion(5)">
                         🥑 Keto
                     </button>
-                    <button class="btn" onclick="setProfileData('diet', 'paleo'); submitProfile()">
+                    <button class="btn" onclick="setProfileData('diet', 'paleo'); nextQuestion(5)">
                         🍖 Paleo
                     </button>
-                    <button class="btn" onclick="setProfileData('diet', 'gluten_free'); submitProfile()">
+                    <button class="btn" onclick="setProfileData('diet', 'gluten_free'); nextQuestion(5)">
                         🌾 Gluten-Free
                     </button>
                 </div>
+            </div>
+
+            <!-- Question 5 - Dietary Restrictions -->
+            <div class="question-card" id="q5">
+                <h3 class="question-title">Dietary Restrictions</h3>
+                <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
+                    Select any that apply
+                </p>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" value="gluten_free" class="dietary-restriction-checkbox">
+                        <span>Gluten-Free</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" value="diabetes" class="dietary-restriction-checkbox">
+                        <span>Diabetes</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" value="lactose_intolerant" class="dietary-restriction-checkbox">
+                        <span>Lactose Intolerant</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" value="low_sodium" class="dietary-restriction-checkbox">
+                        <span>Low Sodium</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" value="heart_healthy" class="dietary-restriction-checkbox">
+                        <span>Heart Healthy</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer;">
+                        <input type="checkbox" value="none" class="dietary-restriction-checkbox">
+                        <span>None</span>
+                    </label>
+                </div>
+                <button class="btn primary" onclick="submitProfile()" style="width: 100%; margin-top: 20px;">
+                    Complete Setup
+                </button>
             </div>
         </div>
     </div>
@@ -1160,6 +1297,27 @@
                     <div class="form-group">
                         <label class="form-label">Weight (lbs)</label>
                         <input type="number" class="form-input" id="editWeight" min="66" max="660" step="0.1">
+                    </div>
+                </div>
+                <div class="input-row" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="editGender">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <select class="form-select" id="editAge">
+                            <option value="18-25">18-25</option>
+                            <option value="26-35">26-35</option>
+                            <option value="36-45">36-45</option>
+                            <option value="46-55">46-55</option>
+                            <option value="56-65">56-65</option>
+                            <option value="65+">65+</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -1196,6 +1354,13 @@
                         <option value="gluten_free">Gluten-Free</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Dietary Restrictions</label>
+                    <input type="text" class="form-input" id="editDietaryRestrictions" placeholder="e.g., Gluten-Free, Diabetes">
+                    <small style="color: var(--medium-text); font-size: 0.85rem; display: block; margin-top: 5px;">
+                        Separate multiple restrictions with commas
+                    </small>
+                </div>
             </div>
 
             <!-- Action Buttons -->
@@ -1212,23 +1377,7 @@
 
     <!-- Dashboard -->
     <div class="dashboard" id="dashboard">
-        <div style="padding: 0 30px;">
-            <div class="user-banner">
-                <div class="user-info-section">
-                    <div class="user-avatar" id="userAvatar">U</div>
-                    <div class="user-details">
-                        <h3 id="userName">User</h3>
-                        <div class="user-goal" id="userGoal">Loading...</div>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 15px;">
-                    <button class="btn" onclick="showSettings()">⚙️ Settings</button>
-                    <button class="btn" onclick="logout()">Logout</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-content">
+        <div class="dashboard-content" style="padding: 0 30px;">
             <!-- AI Chat Interface -->
             <div class="sidebar">
                 <div class="chat-container">
@@ -1505,14 +1654,28 @@
         // Validate height and weight before continuing
         const heightInput = document.getElementById('profileHeight').value.trim();
         const weightInput = document.getElementById('profileWeight').value.trim();
-        
+        const genderInput = document.getElementById('profileGender').value;
+        const ageInput = document.getElementById('profileAge').value;
+
+        // Validate gender
+        if (!genderInput) {
+            alert("Please select your gender.");
+            return;
+        }
+
+        // Validate age
+        if (!ageInput) {
+            alert("Please select your age range.");
+            return;
+        }
+
         // Validate height format
         const heightPattern = /^\d+'\d{1,2}$/;
         if (!heightPattern.test(heightInput)) {
             alert("Height must be in format 5'8 (feet'inches with apostrophe).\nExample: 5'8 or 6'2");
             return; // Stop here, don't continue
         }
-        
+
         // Validate height range
         const [feet, inches] = heightInput.split("'").map(Number);
         if (feet < 3 || feet > 8) {
@@ -1523,22 +1686,24 @@
             alert("Inches must be between 0 and 11.");
             return;
         }
-        
+
         // Validate weight
         const weight = parseFloat(weightInput);
         if (!weight || weight < 66 || weight > 660) {
             alert("Weight must be between 66 and 660 pounds.");
             return;
         }
-        
+
         // If all validation passes, save the data
         profileData.height = heightInput;
         profileData.weight = weight;
+        profileData.gender = genderInput;
+        profileData.age_category = ageInput;
     }
 
     // Hide all question cards
     document.querySelectorAll('.question-card').forEach(q => q.classList.remove('active'));
-    
+
     // Show the requested question
     document.getElementById(`q${num}`).classList.add('active');
 
@@ -1557,28 +1722,37 @@
             try {
         const heightRaw = (profileData.height || '').toString().trim();
         const weightRaw = (profileData.weight || '').toString().trim();
-        
+
         const heightPattern = /^\d+'\d{1,2}$/;
         if (!heightPattern.test(heightRaw)) {
             alert("Height must be in format 5'8 (feet'apostrophe'inches).");
             return;
         }
-        
+
         const weightVal = parseFloat(weightRaw);
         if (Number.isNaN(weightVal) || weightVal <= 0) {
             alert('Please enter a valid weight in pounds.');
             return;
         }
-        
+
+        // Get dietary restrictions from checkboxes
+        const dietaryRestrictions = [];
+        document.querySelectorAll('.dietary-restriction-checkbox:checked').forEach(checkbox => {
+            if (checkbox.value !== 'none') {
+                dietaryRestrictions.push(checkbox.value);
+            }
+        });
+
         const payload = {
             height: heightRaw,
             current_weight_lbs: weightVal,
+            gender: profileData.gender,
+            age_category: profileData.age_category,
             goal_type: profileData.goal,
             activity_level: profileData.activity,
-            diet_type: profileData.diet
+            diet_type: profileData.diet,
+            dietary_restrictions: dietaryRestrictions.join(', ')
         };
-
-        console.log('[DEBUG] submitProfile payload:', payload);
 
         // Use the setup endpoint for initial profile
         const response = await fetch(`${API_URL}/profile/setup`, {
@@ -1621,8 +1795,11 @@
             // Load current profile data
                 if (currentUser && currentUser.profile) {
                     const p = currentUser.profile;
-                    // Convert stored cm/kg back to user-friendly ft'in and lbs
-                    if (p.height_cm) {
+                    // Use stored imperial values directly if available, otherwise convert from metric
+                    if (p.height_feet !== null && p.height_feet !== undefined &&
+                        p.height_inches !== null && p.height_inches !== undefined) {
+                        document.getElementById('editHeight').value = `${p.height_feet}'${p.height_inches}`;
+                    } else if (p.height_cm) {
                         const totalInches = p.height_cm / 2.54;
                         const feet = Math.floor(totalInches / 12);
                         const inches = Math.round(totalInches - feet * 12);
@@ -1631,7 +1808,9 @@
                         document.getElementById('editHeight').value = '';
                     }
 
-                    if (p.current_weight_kg) {
+                    if (p.weight_lbs !== null && p.weight_lbs !== undefined) {
+                        document.getElementById('editWeight').value = Math.round(p.weight_lbs);
+                    } else if (p.current_weight_kg) {
                         const lbs = Math.round(p.current_weight_kg / 0.453592);
                         document.getElementById('editWeight').value = lbs;
                     } else {
@@ -1641,6 +1820,9 @@
                     document.getElementById('editGoal').value = p.goal_type || 'general_health';
                     document.getElementById('editActivity').value = p.activity_level || 'moderately_active';
                     document.getElementById('editDiet').value = p.diet_type || 'standard';
+                    document.getElementById('editGender').value = p.gender || 'male';
+                    document.getElementById('editAge').value = p.age_category || '26-35';
+                    document.getElementById('editDietaryRestrictions').value = p.dietary_restrictions || '';
                 }
         }
 
@@ -1648,6 +1830,9 @@
             // Read values
             const heightRaw = (document.getElementById('editHeight').value || '').toString().trim();
             const weightRaw = (document.getElementById('editWeight').value || '').toString().trim();
+            const gender = document.getElementById('editGender').value;
+            const ageCategory = document.getElementById('editAge').value;
+            const dietaryRestrictions = (document.getElementById('editDietaryRestrictions').value || '').trim();
 
             // Validate height format (no decimals allowed, must be feet'apostrophe'inches)
             const heightPattern = /^\d+'\d{1,2}$/;
@@ -1667,13 +1852,13 @@
             const updatedProfile = {
                 height: heightRaw, // e.g. "5'8"
                 current_weight_lbs: Math.round(weightVal),
+                gender: gender,
+                age_category: ageCategory,
                 goal_type: document.getElementById('editGoal').value,
                 activity_level: document.getElementById('editActivity').value,
-                diet_type: document.getElementById('editDiet').value
+                diet_type: document.getElementById('editDiet').value,
+                dietary_restrictions: dietaryRestrictions
             };
-
-            // Debug payload sent to server
-            console.log('[DEBUG] Sending profile payload:', updatedProfile);
 
             try {
                 const response = await fetch(`${API_URL}/profile`, {
@@ -1712,13 +1897,14 @@
 
         function updateNav(loggedIn) {
             const navButtons = document.getElementById('navButtons');
+            const userBannerNav = document.getElementById('userBannerNav');
+
             if (loggedIn) {
-                navButtons.innerHTML = '';
+                navButtons.style.display = 'none';
+                userBannerNav.classList.add('show');
             } else {
-                navButtons.innerHTML = `
-                    <button class="btn" onclick="showLogin()">Login</button>
-                    <button class="btn primary" onclick="showSignup()">Sign Up</button>
-                `;
+                navButtons.style.display = 'flex';
+                userBannerNav.classList.remove('show');
             }
         }
 

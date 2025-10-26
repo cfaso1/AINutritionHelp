@@ -288,12 +288,72 @@ I'm here to help you make informed choices for your health journey. Keep it up! 
 
         if "user_profile" in context:
             profile = context["user_profile"]
-            context_parts.append(f"User's health goals: {profile.get('health_goals', 'Not specified')}")
-            context_parts.append(f"User's fitness goals: {profile.get('fitness_goals', 'Not specified')}")
+
+            # Add user's physical stats
+            profile_info = []
+
+            # Gender
+            if profile.get('gender'):
+                gender_display = profile['gender'].capitalize()
+                profile_info.append(f"Gender: {gender_display}")
+
+            # Age category
+            if profile.get('age_category'):
+                profile_info.append(f"Age: {profile['age_category']}")
+
+            # Height in imperial units
+            if profile.get('height_feet') is not None and profile.get('height_inches') is not None:
+                profile_info.append(f"Height: {profile['height_feet']}'{profile['height_inches']}\"")
+            elif profile.get('height_cm'):
+                total_inches = profile['height_cm'] / 2.54
+                feet = int(total_inches // 12)
+                inches = int(total_inches % 12)
+                profile_info.append(f"Height: {feet}'{inches}\"")
+
+            # Weight in imperial units
+            if profile.get('weight_lbs'):
+                profile_info.append(f"Weight: {profile['weight_lbs']} lbs")
+            elif profile.get('current_weight_kg'):
+                lbs = round(profile['current_weight_kg'] / 0.453592)
+                profile_info.append(f"Weight: {lbs} lbs")
+
+            # BMI
+            if profile.get('bmi'):
+                profile_info.append(f"BMI: {profile['bmi']}")
+
+            # Activity level
+            if profile.get('activity_level'):
+                activity = profile['activity_level'].replace('_', ' ')
+                profile_info.append(f"Activity level: {activity}")
+
+            # Goals and diet type
+            if profile.get('goal_type'):
+                goal = profile['goal_type'].replace('_', ' ')
+                profile_info.append(f"Goal: {goal}")
+
+            if profile.get('diet_type') and profile['diet_type'] != 'standard':
+                profile_info.append(f"Diet type: {profile['diet_type']}")
+
+            # Nutritional targets
+            if profile.get('daily_calorie_target'):
+                profile_info.append(f"Daily calorie target: {profile['daily_calorie_target']} cal")
+
+            if profile.get('daily_protein_target_g'):
+                profile_info.append(f"Daily protein target: {profile['daily_protein_target_g']}g")
+
+            # Dietary restrictions
+            if profile.get('allergies'):
+                profile_info.append(f"Allergies: {profile['allergies']}")
+
+            if profile.get('dietary_restrictions'):
+                profile_info.append(f"Dietary restrictions: {profile['dietary_restrictions']}")
+
+            if profile_info:
+                context_parts.append("USER PROFILE:\n" + "\n".join(f"- {info}" for info in profile_info))
 
         if "recent_product" in context:
             product = context["recent_product"]
-            context_parts.append(f"Recently scanned: {product.get('name', 'Unknown')}")
+            context_parts.append(f"\nRecently scanned: {product.get('name', 'Unknown')}")
 
         return "\n".join(context_parts) if context_parts else ""
 

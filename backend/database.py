@@ -33,22 +33,27 @@ def migrate_to_imperial():
         if 'height_feet' not in columns:
             print("Adding 'height_feet' column...")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_feet INTEGER")
-        
+
         if 'height_inches' not in columns:
             print("Adding 'height_inches' column...")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_inches INTEGER")
-        
+
         if 'height_display' not in columns:
             print("Adding 'height_display' column...")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_display TEXT")
-        
+
         # Add imperial weight column
         if 'weight_lbs' not in columns:
             print("Adding 'weight_lbs' column...")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN weight_lbs REAL")
 
+        # Add age category column
+        if 'age_category' not in columns:
+            print("Adding 'age_category' column...")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN age_category TEXT")
+
         conn.commit()
-        print("✓ Database migrated to support imperial units!")
+        print("✓ Database migrated to support imperial units and age category!")
 
     except Exception as e:
         print(f"Migration error: {e}")
@@ -301,8 +306,8 @@ def update_user_profile(user_id: int, profile_data: dict) -> bool:
 
         # Build dynamic UPDATE query
         valid_fields = [
-        'date_of_birth', 'gender', 'height_cm', 'current_weight_kg',
-        'height_feet', 'height_inches', 'height_display', 'weight_lbs',  # ADD THIS LINE
+        'date_of_birth', 'gender', 'age_category', 'height_cm', 'current_weight_kg',
+        'height_feet', 'height_inches', 'height_display', 'weight_lbs',
         'goal_type', 'target_weight_kg', 'activity_level', 'diet_type',
         'allergies', 'dietary_restrictions', 'bmi',
         'daily_calorie_target', 'daily_protein_target_g',
