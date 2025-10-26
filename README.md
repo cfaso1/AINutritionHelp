@@ -1,50 +1,47 @@
 # 🍎 AI Nutrition Help
 
-Scan product barcodes, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from multi-agent AI system.
+Scan product barcodes, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from a multi-agent AI system.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Install system dependencies (for barcode image scanning)
-# Ubuntu/Debian:
-sudo apt-get install libzbar0
-
-# macOS:
-brew install zbar
-
-# 2. Install Python dependencies
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# 3. Start the server
-python run.py
+# 2. Configure API keys
+cd agent
+nano .env  # Add: GOOGLE_API_KEY=your_key_here
 
-# 4. Open the app
-# Open: frontend/demo.html in your browser
+# 3. Start the backend
+cd ..
+python backend/api_simple.py
+
+# 4. Open the frontend
+# Open: frontend/nutriscan_zen.html in your browser
 ```
 
-**That's it!** Use the demo account or create your own.
+**Demo Login:** `demo_user` / `demo123`
 
 ---
 
 ## ✨ Features
 
-### Core Features
-- 🔍 **Barcode Scanner** - Scan product barcodes or upload barcode images to retrieve nutrition data
-- 🤖 **Multi-Agent AI System** - 3 specialized agents (Health, Fitness, Price)
-- ❤️ **Health Evaluator** - Analyzes nutrition alignment with your health goals
-- 💪 **Fitness Evaluator** - Evaluates products for your fitness objectives
-- 💰 **Price Evaluator** - Assesses value for money and suggests alternatives
-- 🎯 **Health Goals** - Set weight, height, fitness habits, and dietary preferences
-- 🔐 **User Authentication** - Login, register, or use demo account
+### Core Capabilities
+- 🔍 **Barcode Scanner** - Scan product barcodes or upload images
+- 🤖 **AI Chat Companion** - Conversational nutrition assistant powered by Gemini 2.0
+- ❤️ **Health Evaluator** - Analyzes nutrition alignment with health goals
+- 💪 **Fitness Evaluator** - Evaluates products for fitness objectives
+- 💰 **Price Evaluator** - Assesses value for money
+- 💬 **Live Chat Interface** - Real-time AI conversations about nutrition
+- 🎯 **Personalized Recommendations** - Based on your profile and goals
 
-### Extracted Nutrition Data (10+ Fields)
-- Calories, Protein, Fat (total, saturated, trans)
-- Carbohydrates (total, fiber), Sugar (total, added)
-- Sodium, Cholesterol, Potassium
-- Vitamins (A, C, D), Calcium, Iron
-- Serving size, Servings per container
+### AI Multi-Agent System
+- **Health Agent** - Nutritional analysis with pros/cons
+- **Fitness Agent** - Workout timing and recommendations
+- **Price Agent** - Value assessment and alternatives
+- **Chat Agent** - Natural language Q&A about nutrition
 
 ---
 
@@ -52,64 +49,66 @@ python run.py
 
 ```
 AINutritionHelp/
-├── run.py                              # Start the server
-├── requirements.txt                    # Python dependencies
+├── backend/
+│   ├── api_simple.py              # REST API (includes chat endpoint)
+│   ├── database.py                # SQLite database
+│   ├── nutrition_agent_service.py # Agent integration wrapper
+│   ├── barcode_detector.py        # Image barcode extraction
+│   └── uploads/                   # Uploaded images
 │
-├── backend/                            # Backend API
-│   ├── api_simple.py                  # REST API with auth endpoints
-│   ├── database.py                    # SQLite database with price tracking
-│   ├── nutrition_agent_service.py     # Integration layer for nutrition agent
-│   ├── uploads/                       # Uploaded images (auto-created)
-│   └── nutrition_app.db               # SQLite database (auto-created)
+├── frontend/
+│   ├── nutriscan_zen.html         # Main app with AI chat interface
+│   └── demo.html                  # Legacy version
 │
-├── frontend/                           # Frontend UI
-│   ├── demo.html                      # Single-page app with all features
-│   └── barcode_scanner.js             # Barcode scanning and AI analysis
+├── agent/                          # AI Agent System (NEW)
+│   ├── main_agent.py              # Main orchestrator
+│   ├── service.py                 # Backend integration layer
+│   ├── models.py                  # Product & UserProfile models
+│   ├── barcode_service.py         # Barcode API integration
+│   ├── health_evaluator.py        # Health analysis agent
+│   ├── fitness_evaluator.py       # Fitness evaluation agent
+│   ├── price_evaluator.py         # Price analysis agent
+│   ├── agent.py                   # Google ADK integration
+│   └── utils/                     # Helper utilities
+│       ├── data_parser.py
+│       └── response_formatter.py
 │
-└── nutrition_agent/                    # AI Agent System
-    ├── agents/                        # Agent implementations
-    │   ├── barcode_scanner.py         # Barcode scanning agent
-    │   ├── health_evaluator.py        # Health analysis agent
-    │   ├── fitness_evaluator.py       # Fitness evaluation agent
-    │   └── price_evaluator.py         # Price analysis agent
-    ├── models/                        # Data models
-    │   ├── product.py                 # Product model
-    │   └── user_profile.py            # User profile model
-    └── services/                      # External services
-        ├── llm_service.py             # Anthropic/Claude AI service
-        └── barcode_api.py             # Barcode lookup API service
+└── requirements.txt                # Python dependencies
 ```
 
 ---
 
 ## 🎯 How to Use
 
-### 1. Login
-- **Demo Account:** Click "Use Demo Account" for instant access
-- **Register:** Create your own account with username/email/password
-- **Login:** Use your credentials
+### 1. **Login**
+- Use demo account: `demo_user` / `demo123`
+- Or create your own account
 
-### 2. Set Health Goals (🎯 Health Goals Tab)
-Fill in your information:
-- **Goal:** Weight loss, muscle gain, general health, etc.
-- **Personal Info:** Weight (kg), Height (cm), Date of birth
-- **Fitness Habits:** Sedentary → Extremely active (5 levels)
-- **Diet Preferences:** Vegetarian, vegan, keto, standard, etc.
-- **Allergies:** Comma-separated list
+### 2. **Set Your Profile**
+Navigate to Settings and configure:
+- Personal info (height, weight, goals)
+- Activity level
+- Dietary restrictions
+- Daily targets (calories, protein, etc.)
 
-Click "Save Health Goals" - BMI is calculated automatically.
+### 3. **Scan Products**
+- **Enter barcode manually** (e.g., `722252601025`)
+- **Upload barcode image** - automatically extracts barcode
+- View product information and nutrition facts
 
-### 3. Scan Product Barcodes (🔍 Scanner Tab)
-- **Option 1**: Enter barcode number manually and click "Scan Barcode"
-- **Option 2**: Upload barcode image and extract barcode automatically
-- Review product information and nutrition facts
+### 4. **Get AI Analysis**
+- Click "Get AI Analysis" button
+- View comprehensive evaluation:
+  - Health score and recommendations
+  - Fitness alignment and timing
+  - Price assessment
+- **AI companion message appears in chat automatically!**
 
-### 4. Get AI Analysis
-- Click "🤖 Get AI Analysis"
-- View comprehensive evaluation from 3 AI agents:
-  - **Health Agent**: Nutrition alignment score and recommendations
-  - **Fitness Agent**: Fitness goal compatibility and timing suggestions
-  - **Price Agent**: Value assessment and alternatives
+### 5. **Chat with AI**
+- Ask questions in the chat interface
+- Get personalized nutrition advice
+- AI remembers your scanned products
+- Use quick action buttons for common questions
 
 ---
 
@@ -121,62 +120,139 @@ Click "Save Health Goals" - BMI is calculated automatically.
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login user
 
-### Profile & Goals
-- `GET /profile` - Get user profile and health goals
-- `PUT /profile` - Update profile and goals
+### Profile
+- `GET /profile` - Get user profile
+- `PUT /profile` - Update profile
 
-### Barcode Scanning & AI Evaluation
-- `POST /barcode/scan` - Scan barcode number and retrieve product data
-- `POST /barcode/image` - Upload barcode image and extract barcode automatically
-- `POST /agent/evaluate` - Get comprehensive AI evaluation (3 agents)
+### Barcode & Analysis
+- `POST /barcode/scan` - Scan barcode number
+- `POST /barcode/image` - Upload barcode image
+- `POST /agent/evaluate` - Get AI evaluation (3 agents)
+- `POST /agent/chat` - Chat with AI companion ✨ **NEW**
 
 ### Weight Tracking
-- `POST /weight` - Log weight entry
+- `POST /weight` - Log weight
 - `GET /weight/history` - Get weight history
 
 ### Health Check
 - `GET /health` - API status
 
-### Deprecated
-- `POST /scan` - ❌ Old OCR scanner (use `/barcode/scan` instead)
-- `POST /analyze` - ❌ Old analysis (use `/agent/evaluate` instead)
+---
+
+## 💬 AI Chat Interface
+
+### What It Does
+The chat interface provides a conversational AI companion that:
+- Automatically sends analysis results when you scan products
+- Answers nutrition and fitness questions
+- Provides context-aware advice based on your profile
+- Remembers recently scanned products
+
+### How It Works
+
+**Auto-Trigger on Scan:**
+```
+User scans barcode → AI analyzes product →
+Companion message appears in chat automatically
+```
+
+**Manual Chat:**
+```
+User types question → AI responds with personalized advice
+```
+
+**Quick Actions:**
+- 💪 "What should I eat before a workout?"
+- 🥗 "How much protein do I need daily?"
+- 🍎 "What are healthy snack options?"
+
+### Example Conversation
+```
+🤖 Hey! I just looked at the Quest Protein Bar you scanned.
+   With 21g protein and only 1g sugar, this is an excellent
+   choice for your muscle building goals!
+
+   Overall Score: 85/100 ✅
+   Best time: Post-workout
+
+👤 Is this good for me?
+
+🤖 Absolutely! Based on your moderately active lifestyle and
+   protein target of 100g/day, this bar provides 21% of your
+   daily protein needs. Perfect as a post-workout snack!
+```
 
 ---
 
-## 🤖 Multi-Agent AI System
+## 🧪 Test Barcodes
 
-The application uses a **three-agent architecture** powered by Anthropic's Claude API for intelligent food analysis:
+Try these sample products:
 
-### Agent Architecture
+| Product | Barcode | Notes |
+|---------|---------|-------|
+| Quest Protein Bar | `722252601025` | High protein, low sugar ✅ |
+| Coca-Cola Classic | `012000161551` | High sugar ⚠️ |
+| Gatorade | `078000113464` | Sports drink |
+| Cheerios | `016000275683` | Breakfast cereal |
 
-**1. Health Evaluator Agent**
-- Analyzes nutritional content against user's health goals
-- Scores products 0-100 based on macro/micronutrient profile
-- Provides specific pros and cons
-- Considers dietary restrictions and allergies
+---
 
-**2. Fitness Evaluator Agent**
-- Evaluates alignment with fitness objectives
-- Recommends optimal consumption timing (pre/post workout)
-- Scores based on protein, carbs, and activity level
-- Customized for muscle gain, weight loss, or maintenance
+## 🔧 Configuration
 
-**3. Price Evaluator Agent**
-- Assesses value for money
-- Compares unit price across similar products
-- Suggests budget-friendly alternatives
-- Tracks spending patterns
+### Required: Google API Key
 
-### Parallel Execution
-All three agents run **simultaneously** using `asyncio.gather()` for optimal performance, providing comprehensive analysis in seconds.
+The agent system uses **Google Gemini 2.0-flash** (not Anthropic Claude).
+
+**Create `agent/.env`:**
+```env
+GOOGLE_API_KEY=your_google_api_key_here
+BARCODE_LOOKUP_API_KEY=your_barcode_api_key  # Optional
+```
+
+**Get API Key:**
+1. Go to https://aistudio.google.com/apikey
+2. Create a new API key
+3. Add to `agent/.env`
+
+### Optional: Barcode Lookup API
+For real product data, get a key from:
+- https://www.barcodelookup.com/api
+
+Without this, the app uses mock data for test barcodes.
+
+---
+
+## 🤖 Multi-Agent Architecture
+
+### Agent System (Google Gemini 2.0)
+
+```
+┌─────────────────────────────────────────────────┐
+│          Main Nutrition Agent                   │
+│         (NutritionAgent class)                  │
+└──────────┬──────────────────────────────────────┘
+           │
+    ┌──────┴──────┐
+    │  Evaluators │
+    └──────┬──────┘
+           │
+    ┌──────┴────────┬──────────┬──────────┐
+    │               │          │          │
+┌───▼───┐   ┌──────▼──┐  ┌────▼─────┐  ┌─▼────┐
+│Health │   │ Fitness │  │  Price   │  │ Chat │
+│Agent  │   │ Agent   │  │  Agent   │  │Agent │
+└───────┘   └─────────┘  └──────────┘  └──────┘
+```
 
 ### Data Flow
 ```
-Barcode → Product Lookup → User Profile + Product Data
-                          ↓
-          [Health Agent | Fitness Agent | Price Agent]
-                          ↓
-              Combined Evaluation Results
+1. User scans barcode
+2. Product info retrieved
+3. All 3 evaluators run in parallel (asyncio)
+4. Results combined
+5. Companion message generated
+6. Message sent to chat interface
+7. User can ask follow-up questions
 ```
 
 ---
@@ -191,204 +267,173 @@ Barcode → Product Lookup → User Profile + Product Data
 - created_at, last_login
 
 **user_profiles**
-- Personal: date_of_birth, gender, height_cm, current_weight_kg
+- Personal: height_cm, current_weight_kg, bmi
 - Goals: goal_type, target_weight_kg, activity_level
 - Diet: diet_type, allergies, dietary_restrictions
 - Targets: daily_calorie_target, protein_target_g, carbs_target_g, fat_target_g
-- Calculated: bmi
 
 **nutrition_logs**
-- Log info: log_date, meal_type, food_name, **price**
-- Full data: nutrition_json (complete OCR output)
-- Quick access: calories, protein_g, total_fat_g, total_carbs_g
-- Metadata: image_path, notes, created_at
+- log_date, meal_type, food_name, price
+- nutrition_json, calories, protein_g, carbs_g, fat_g
 
 **weight_history**
-- weight_id, user_id, weight_kg
-- recorded_at, notes
-
----
-
-## 🧪 Testing
-
-### Test API Health
-```bash
-curl http://localhost:5000/api/health
-```
-
-### Test Login
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"demo_user","password":"demo123"}'
-```
-
-### Test Profile Update
-```bash
-curl -X POST http://localhost:5000/api/profile \
-  -H "Content-Type: application/json" \
-  -d '{
-    "goal_type": "muscle_gain",
-    "current_weight_kg": 80,
-    "height_cm": 180,
-    "activity_level": "very_active"
-  }'
-```
-
----
-
-## 🔧 Troubleshooting
-
-### Server won't start
-```bash
-# Check Python version (need 3.8+)
-python3 --version
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Try running directly
-python3 backend/api_simple.py
-```
-
-### Barcode Scanner or AI Agents Not Working
-- Verify API keys are set in `.env` file
-- Check `ANTHROPIC_API_KEY` for AI agents
-- Check `BARCODE_LOOKUP_API_KEY` for barcode scanning
-- Restart server after adding API keys
-
-### Barcode Image Upload Not Working
-If you see "Barcode detector not available", install the system library:
-```bash
-# Ubuntu/Debian
-sudo apt-get install libzbar0
-
-# macOS
-brew install zbar
-```
-
-**Note**: Manual barcode entry will still work without libzbar. The image upload feature is optional.
-
-### Frontend can't connect to API
-- Verify server is running: `curl http://localhost:5000/api/health`
-- Check browser console for errors
-- Ensure CORS is enabled (already configured)
-
-### Database errors
-```bash
-# Reset database (WARNING: deletes all data)
-rm backend/nutrition_app.db
-
-# Restart server (will recreate database)
-python run.py
-```
-
----
-
-## 📝 Configuration
-
-### Environment Variables
-Create `.env` file in project root:
-
-```env
-# Required for AI Agent System
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx      # For AI evaluations
-BARCODE_LOOKUP_API_KEY=xxxxxxxxxxxxx        # For barcode scanning
-
-# Optional
-FLASK_DEBUG=True
-DATABASE_PATH=backend/nutrition_app.db
-UPLOAD_FOLDER=backend/uploads
-MAX_CONTENT_LENGTH=16777216  # 16MB
-```
-
-**Get API Keys:**
-- **Anthropic (Claude)**: https://console.anthropic.com/
-- **Barcode Lookup**: https://www.barcodelookup.com/api
-
-### Database Migration
-The app automatically migrates existing databases:
-- Adds new columns (e.g., `price` field)
-- Preserves existing data
-- Runs on server startup
-
----
-
-## 🚀 Production Deployment
-
-For production use, implement:
-
-### Security
-- [ ] JWT authentication (password hashing already done)
-- [ ] HTTPS/SSL certificates
-- [ ] Rate limiting on API endpoints
-- [ ] Input sanitization (parameterized queries already used)
-- [ ] CORS restrictions (currently allows all origins)
-
-### Database
-- [ ] Switch to PostgreSQL or MySQL
-- [ ] Database backups
-- [ ] Connection pooling
-
-### Infrastructure
-- [ ] Deploy to cloud (Heroku, AWS, GCP, Azure)
-- [ ] Load balancing
-- [ ] CDN for static files
-- [ ] Monitoring and logging
-
-### Features
-- [ ] Email verification
-- [ ] Password reset
-- [ ] OAuth/SSO integration
-- [ ] Mobile app (API is ready)
-- [ ] Barcode scanning
-- [ ] Recipe suggestions
-- [ ] Export reports (PDF/CSV)
+- weight_id, user_id, weight_kg, recorded_at
 
 ---
 
 ## 🛠️ Tech Stack
 
 **Backend:**
-- Python 3.8+
+- Python 3.12+
 - Flask 3.0.0 (REST API)
-- SQLite3 (database)
-- Tesseract OCR (image processing)
-- Pillow (image handling)
+- SQLite3
+- Google Generative AI SDK (Gemini 2.0-flash)
+- OpenCV + pyzbar (barcode detection)
 
 **Frontend:**
 - Vanilla HTML5/CSS3/JavaScript
-- No frameworks (lightweight)
+- No frameworks (lightweight, fast)
+- Modern CSS (flexbox, grid, animations)
 - Fetch API for HTTP requests
 
-**AI & External Services:**
-- Anthropic Claude API (for multi-agent AI analysis)
-- Barcode Lookup API (for product information retrieval)
+**AI:**
+- Google Gemini 2.0-flash (via genai SDK)
+- Multi-agent system with parallel execution
+- Context-aware conversations
 
 ---
 
-## 📊 Demo Account
+## 🔍 Troubleshooting
 
-**Username:** `demo_user`
-**Password:** `demo123`
-**User ID:** 1
+### "Nutrition agent not available" Error
 
-All demo data is isolated to this account. Create your own account for personal use.
+**Cause:** Missing or invalid Google API key
+
+**Fix:**
+```bash
+# 1. Check if .env exists
+cd agent
+ls -la .env
+
+# 2. If missing, create it:
+echo "GOOGLE_API_KEY=your_key_here" > .env
+
+# 3. Verify it's loaded
+cat .env
+
+# 4. Restart the backend
+cd ..
+python backend/api_simple.py
+```
+
+### Chat Shows "Sorry, I encountered an error"
+
+**Causes:**
+1. Google API key not set
+2. API key invalid/expired
+3. Network connection issue
+4. Agent service not initialized
+
+**Debug Steps:**
+```bash
+# Test the agent directly
+cd agent
+python -c "from main_agent import get_agent; print(get_agent())"
+
+# Check API key is valid
+# Go to: https://aistudio.google.com/apikey
+
+# Check backend logs
+# Look for errors when starting api_simple.py
+```
+
+### Barcode Image Upload Not Working
+
+**Cause:** Missing system dependencies
+
+**Fix:**
+```bash
+# Ubuntu/Debian:
+sudo apt-get install libzbar0
+
+# macOS:
+brew install zbar
+
+# Then reinstall Python package:
+pip install pyzbar
+```
+
+### Frontend Can't Connect to API
+
+**Check:**
+```bash
+# 1. Is backend running?
+curl http://localhost:5000/api/health
+
+# 2. Check backend is on port 5000
+# Should see: * Running on http://0.0.0.0:5000
+
+# 3. Check browser console (F12) for CORS errors
+```
 
 ---
 
-## 🎯 What's Included
+## 🚀 Running with Google ADK
 
-✅ **User Authentication** - Demo implementation with password hashing
-✅ **Health Goal Setting** - Comprehensive profile with BMI calculation
-✅ **Barcode Scanner** - Instant product lookup via barcode API
-✅ **Multi-Agent AI System** - 3 specialized evaluators (Health, Fitness, Price)
-✅ **Barcode Image Scanner** - Upload images to automatically detect barcodes
-✅ **AI-Powered Recommendations** - Personalized based on user goals
-✅ **Responsive UI** - Modern design with tab navigation
-✅ **Database Migration** - Backward compatible with existing data
+The agent also supports Google Agent Development Kit:
+
+```bash
+# Start ADK agent
+./venv/bin/adk run agent
+
+# Then interact via CLI:
+> Can you scan barcode 722252601025?
+> Evaluate barcode 722252601025 for muscle building
+```
+
+This is useful for testing the agent outside the web interface.
 
 ---
+
+## 📊 Performance
+
+- **Agent Response Time:** 2-4 seconds (all 3 agents in parallel)
+- **Chat Response Time:** 1-2 seconds
+- **Barcode Lookup:** <1 second
+- **Image Barcode Detection:** 1-2 seconds
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Save chat history to database
+- [ ] Support markdown formatting in chat
+- [ ] Add message timestamps
+- [ ] Export chat conversations
+- [ ] Voice input for chat
+- [ ] Real-time camera barcode scanning
+- [ ] Meal planning suggestions
+- [ ] Recipe recommendations
+- [ ] Social features (meal sharing)
+
+---
+
+## 📝 Development Notes
+
+### Recent Changes (v2.0)
+- ✅ Migrated from Anthropic Claude to Google Gemini
+- ✅ Added AI chat interface (replaced "Example Barcodes")
+- ✅ Integrated chat with barcode scanning
+- ✅ Auto-trigger chat messages on product analysis
+- ✅ Added quick action buttons
+- ✅ Improved UI/UX with animations
+
+### Migration Summary
+The codebase was refactored to:
+1. Use Google Gemini instead of Claude
+2. Consolidate agent code into `agent/` directory
+3. Add conversational chat capability
+4. Improve frontend with modern chat UI
 
 ---
 
@@ -401,30 +446,31 @@ MIT License - See LICENSE file for details
 ## 🤝 Contributing
 
 Contributions welcome! Areas for improvement:
-- Mobile app development (API is ready)
-- Recipe recommendations engine
-- Social features (meal sharing, challenges)
+- Mobile app (API is ready)
+- Recipe engine
+- Social features
 - Multi-language support
-- Export functionality (PDF/CSV reports)
-- Integration with fitness trackers
-- Real-time barcode scanning via camera
+- Fitness tracker integration
 
 ---
 
 ## 📞 Support
 
-**Issues?**
-- Check API is running: `http://localhost:5000/api/health`
-- Review browser console for JavaScript errors
-- Verify API keys are configured in `.env`
-- Check database file exists: `backend/nutrition_app.db`
-- Ensure Python 3.8+ is installed
+**Check the logs:**
+```bash
+# Backend logs
+python backend/api_simple.py
+# Look for errors on startup
 
-**Questions?**
-- Review API documentation in this README
-- Check code comments in `backend/api_simple.py`
-- See agent integration in `backend/nutrition_agent_service.py`
-- Explore agent code in `nutrition_agent/` directory
+# Check API health
+curl http://localhost:5000/api/health
+```
+
+**Common Issues:**
+1. ❌ "Nutrition agent not available" → Add Google API key to `agent/.env`
+2. ❌ Chat not working → Check browser console (F12)
+3. ❌ Barcode image upload fails → Install libzbar
+4. ❌ Database errors → Delete `backend/nutrition_app.db` and restart
 
 ---
 

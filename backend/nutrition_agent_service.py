@@ -80,6 +80,24 @@ class NutritionAgentService:
             print(f"Error evaluating product: {e}")
             return self._error_evaluation_response()
 
+    async def chat(self, message: str, context: Optional[Dict] = None) -> str:
+        """
+        Chat with the AI nutrition companion.
+
+        Args:
+            message: User's message
+            context: Optional context (user profile, recent product)
+
+        Returns:
+            AI response string
+        """
+        try:
+            # Delegate to the new agent service
+            return await self._new_service.chat(message, context)
+        except Exception as e:
+            print(f"Error in chat: {e}")
+            return "Sorry, I encountered an error. Please try again!"
+
     def _error_evaluation_response(self) -> Dict:
         """Return error response for full evaluation"""
         return {
