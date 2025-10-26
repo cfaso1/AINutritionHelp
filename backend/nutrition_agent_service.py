@@ -36,22 +36,6 @@ class NutritionAgentService:
         # Initialize the new agent service
         self._new_service = get_new_service()
 
-    async def scan_barcode(self, barcode: str) -> Optional[Dict]:
-        """
-        Scan a barcode and return product information.
-
-        Args:
-            barcode: The barcode number to scan
-
-        Returns:
-            Dictionary with product data or None if not found
-        """
-        try:
-            # Delegate to the new agent service
-            return await self._new_service.scan_barcode(barcode)
-        except Exception as e:
-            print(f"Error scanning barcode: {e}")
-            return None
 
     async def evaluate_product(
         self,

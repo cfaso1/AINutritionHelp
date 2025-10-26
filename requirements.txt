@@ -18,11 +18,11 @@ pydantic>=2.12.0
 aiohttp==3.9.1
 requests==2.32.0
 
-# Image Processing (Barcode Detection)
+# Image Processing & OCR
 Pillow==10.1.0
-pyzbar==0.1.9
 opencv-python==4.8.1.78
 numpy<2
+pytesseract==0.3.10
 
 # Environment Configuration
 python-dotenv==1.0.0

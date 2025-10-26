@@ -21,7 +21,6 @@ from dotenv import load_dotenv
 from google import genai
 
 from agent.models import Product, UserProfile
-from agent.barcode_service import BarcodeService
 from agent.fitness_evaluator import FitnessEvaluator
 from agent.health_evaluator import HealthEvaluator
 from agent.price_evaluator import PriceEvaluator
@@ -54,45 +53,10 @@ class NutritionAgent:
         self.model_name = model_name
         self.client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-        # Initialize services
-        self.barcode_service = BarcodeService()
-
         # Initialize evaluators
         self.health_evaluator = HealthEvaluator(self.model_name)
         self.fitness_evaluator = FitnessEvaluator(self.model_name)
         self.price_evaluator = PriceEvaluator(self.model_name)
-
-    async def scan_barcode(self, barcode: str) -> Optional[Product]:
-        """
-        Scan a barcode and retrieve product information.
-
-        Args:
-            barcode: Barcode number to scan
-
-        Returns:
-            Product object if found, None otherwise
-        """
-        try:
-            product_data = await self.barcode_service.lookup(barcode)
-
-            if not product_data:
-                return None
-
-            return Product(
-                barcode=barcode,
-                name=product_data.get("name", "Unknown Product"),
-                brand=product_data.get("brand", "Unknown Brand"),
-                category=product_data.get("category", "Uncategorized"),
-                price=product_data.get("price", 0.0),
-                size=product_data.get("size"),
-                unit_price=product_data.get("unit_price"),
-                nutrition=product_data.get("nutrition"),
-                ingredients=product_data.get("ingredients")
-            )
-
-        except Exception as e:
-            print(f"Error scanning barcode: {e}")
-            return None
 
     async def evaluate_product(
         self,

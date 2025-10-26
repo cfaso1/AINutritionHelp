@@ -16,9 +16,6 @@ from agent.price_evaluator import PriceEvaluator
 # Models
 from agent.models import Product, UserProfile, EvaluationResult
 
-# Services
-from agent.barcode_service import BarcodeService
-
 # Utilities
 from agent.utils.data_parser import parse_nutrition_data, calculate_macros
 from agent.utils.response_formatter import format_evaluation_response, format_error_response
@@ -42,9 +39,6 @@ __all__ = [
     'Product',
     'UserProfile',
     'EvaluationResult',
-
-    # Services
-    'BarcodeService',
 
     # Utilities
     'parse_nutrition_data',

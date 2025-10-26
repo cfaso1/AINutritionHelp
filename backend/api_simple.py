@@ -36,7 +36,7 @@ from backend.database import (
     migrate_database,
     migrate_to_imperial
 )
-# Nutrition Agent Service (barcode-based)
+# Nutrition Agent Service
 try:
     from backend.nutrition_agent_service import get_nutrition_agent_service, run_async
     USE_NUTRITION_AGENT = True
@@ -44,13 +44,20 @@ except ImportError as e:
     logger.warning(f"Nutrition Agent not available: {e}")
     USE_NUTRITION_AGENT = False
 
-# Barcode detection from images
+# OCR Ingestion Pipeline
 try:
-    from backend.barcode_detector import extract_barcode_from_bytes
-    USE_BARCODE_DETECTOR = True
+    from backend.ingest import (
+        extract_text_from_image,
+        parse_nutrition_text,
+        needs_clarification,
+        get_clarification_form_data,
+        merge_user_corrections,
+        validate_nutrition_data
+    )
+    USE_OCR = True
 except ImportError as e:
-    print(f"Warning: Barcode detector not available: {e}")
-    USE_BARCODE_DETECTOR = False
+    logger.warning(f"OCR pipeline not available: {e}")
+    USE_OCR = False
 
 # Optional: Import custom AI model (will use demo mode if not available)
 try:
@@ -301,64 +308,19 @@ def update_profile():
         }), 400
 
 # ============================================================================
-# NUTRITION SCANNING - NEW BARCODE-BASED SYSTEM
+# NUTRITION INGESTION - OCR & MANUAL ENTRY
 # ============================================================================
 
-@app.route('/api/barcode/scan', methods=['POST'])
-def scan_barcode():
+@app.route('/api/nutrition/ocr', methods=['POST'])
+def nutrition_ocr():
     """
-    Scan a barcode and return product information.
-    NEW endpoint using the nutrition-agent barcode scanner.
+    Extract nutrition facts from uploaded image using OCR.
+    Returns parsed data with confidence scores and clarification needs.
     """
-    if not USE_NUTRITION_AGENT:
-        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
+    if not USE_OCR:
+        return jsonify({'error': 'OCR service not available. Install required dependencies.'}), 503
 
-    data = request.get_json()
-
-    if not data or 'barcode' not in data:
-        return jsonify({'error': 'Missing barcode number'}), 400
-
-    barcode = str(data['barcode']).strip()
-
-    if not barcode:
-        return jsonify({'error': 'Invalid barcode'}), 400
-
-    try:
-        # Get nutrition agent service
-        agent_service = get_nutrition_agent_service()
-
-        # Scan barcode asynchronously
-        product_data = run_async(agent_service.scan_barcode(barcode))
-
-        if not product_data:
-            return jsonify({
-                'error': 'Product not found. Please check the barcode number.',
-                'suggestion': 'Try one of these test barcodes: 012000161551 (Coca-Cola), 078000113464 (Gatorade), 722252601025 (Quest Bar), 016000275683 (Cheerios)'
-            }), 404
-
-        return jsonify({
-            'success': True,
-            'product': product_data,
-            'message': 'Product scanned successfully'
-        }), 200
-
-    except Exception as e:
-        return jsonify({'error': f'Failed to scan barcode: {str(e)}'}), 500
-
-
-@app.route('/api/barcode/image', methods=['POST'])
-def scan_barcode_image():
-    """
-    Upload a barcode image and automatically extract the barcode number.
-    Then retrieve product information using the extracted barcode.
-    """
-    if not USE_BARCODE_DETECTOR:
-        return jsonify({'error': 'Barcode detector not available. Install pyzbar and opencv-python.'}), 503
-
-    if not USE_NUTRITION_AGENT:
-        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
-
-    # Check if image file is present
+    # Check if image was uploaded
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 
@@ -367,47 +329,142 @@ def scan_barcode_image():
     if file.filename == '':
         return jsonify({'error': 'Empty filename'}), 400
 
-    # Validate file type
-    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
-    if '.' not in file.filename or file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-        return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, GIF, BMP'}), 400
-
     try:
         # Read image bytes
         image_bytes = file.read()
 
-        # Extract barcode from image
-        barcode = extract_barcode_from_bytes(image_bytes)
+        # Step 1: Extract text using OCR
+        logger.info("Extracting text from nutrition label image")
+        ocr_text = extract_text_from_image(image_bytes)
 
-        if not barcode:
+        if not ocr_text or len(ocr_text.strip()) < 10:
             return jsonify({
-                'error': 'No barcode detected in image',
-                'suggestion': 'Make sure the barcode is clearly visible and well-lit'
-            }), 404
+                'success': False,
+                'error': 'Could not extract text from image. Please try manual entry.',
+                'needs_manual_entry': True
+            }), 200
 
-        # Now scan the extracted barcode
-        agent_service = get_nutrition_agent_service()
-        product_data = run_async(agent_service.scan_barcode(barcode))
+        # Step 2: Parse nutrition data from text
+        logger.info("Parsing nutrition data from OCR text")
+        parse_result = parse_nutrition_text(ocr_text)
+        nutrition_data = parse_result['data']
+        confidences = parse_result['confidences']
 
-        if not product_data:
+        # Step 3: Check if clarification needed
+        clarification_info = needs_clarification(nutrition_data, confidences)
+
+        if clarification_info['needs_clarification']:
+            # Return data with clarification form
+            form_data = get_clarification_form_data(nutrition_data, confidences)
+
             return jsonify({
-                'error': f'Barcode detected ({barcode}) but product not found in database',
-                'barcode': barcode,
-                'suggestion': 'Try one of these test barcodes: 012000161551 (Coca-Cola), 078000113464 (Gatorade), 722252601025 (Quest Bar), 016000275683 (Cheerios)'
-            }), 404
+                'success': True,
+                'needs_clarification': True,
+                'data': nutrition_data,
+                'confidences': confidences,
+                'clarification_fields': form_data,
+                'message': clarification_info['prompt_message']
+            }), 200
+        else:
+            # Data is complete and confident
+            return jsonify({
+                'success': True,
+                'needs_clarification': False,
+                'data': nutrition_data,
+                'confidences': confidences,
+                'message': 'Nutrition facts extracted successfully'
+            }), 200
 
+    except Exception as e:
+        logger.error(f"OCR processing failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'OCR processing failed: {str(e)}',
+            'needs_manual_entry': True
+        }), 200
+
+
+@app.route('/api/nutrition/manual', methods=['POST'])
+def nutrition_manual():
+    """
+    Accept manually entered nutrition facts.
+    Validates data and returns structured nutrition object.
+    """
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    try:
+        # Validate the nutrition data
+        validation_result = validate_nutrition_data(data)
+
+        if not validation_result['valid']:
+            return jsonify({
+                'success': False,
+                'error': 'Validation failed',
+                'validation_errors': validation_result['errors']
+            }), 400
+
+        # Data is valid
         return jsonify({
             'success': True,
-            'barcode': barcode,
-            'product': product_data,
-            'message': f'Barcode {barcode} detected and product found'
+            'data': data,
+            'message': 'Manual nutrition data validated successfully'
         }), 200
 
     except Exception as e:
-        return jsonify({'error': f'Failed to process image: {str(e)}'}), 500
+        logger.error(f"Manual entry validation failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Validation failed: {str(e)}'
+        }), 500
 
 
+@app.route('/api/nutrition/clarify', methods=['POST'])
+def nutrition_clarify():
+    """
+    Accept user corrections/clarifications and merge with original data.
+    """
+    data = request.get_json()
 
+    if not data or 'original_data' not in data or 'corrections' not in data:
+        return jsonify({'error': 'Missing original_data or corrections'}), 400
+
+    try:
+        original_data = data['original_data']
+        corrections = data['corrections']
+
+        # Merge corrections with original data
+        merged_data = merge_user_corrections(original_data, corrections)
+
+        # Validate merged data
+        validation_result = validate_nutrition_data(merged_data)
+
+        if not validation_result['valid']:
+            return jsonify({
+                'success': False,
+                'error': 'Validation failed after corrections',
+                'validation_errors': validation_result['errors']
+            }), 400
+
+        return jsonify({
+            'success': True,
+            'data': merged_data,
+            'message': 'Corrections applied successfully'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Clarification merge failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to apply corrections: {str(e)}'
+        }), 500
+
+
+# ============================================================================
+# NUTRITION EVALUATION
+# ============================================================================
 
 @app.route('/api/agent/evaluate', methods=['POST'])
 def evaluate_with_agent():
@@ -573,7 +630,7 @@ def index():
         'note': 'All endpoints use demo user - no authentication needed',
         'endpoints': {
             'profile': ['GET /api/profile', 'PUT /api/profile'],
-            'nutrition': ['POST /api/barcode/scan', 'POST /api/agent/evaluate', 'POST /api/agent/chat'],
+            'nutrition': ['POST /api/agent/evaluate', 'POST /api/agent/chat'],
             'weight': ['POST /api/weight', 'GET /api/weight/history']
         },
         'demo': 'Open demo.html in your browser to test!'
@@ -667,7 +724,6 @@ if __name__ == '__main__':
     print("    GET    http://localhost:5000/api/profile")
     print("    PUT    http://localhost:5000/api/profile")
     print("\n  Nutrition & AI:")
-    print("    POST   http://localhost:5000/api/barcode/scan")
     print("    POST   http://localhost:5000/api/agent/evaluate")
     print("    POST   http://localhost:5000/api/agent/chat")
     print("\n  Weight Tracking:")

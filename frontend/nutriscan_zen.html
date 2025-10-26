@@ -1393,7 +1393,7 @@
                         <div class="chat-welcome" id="chatWelcome">
                             <div class="chat-welcome-icon">👋</div>
                             <h4>Hi! I'm your AI nutrition companion</h4>
-                            <p>Scan a barcode to get started, or ask me anything about nutrition, health, and fitness!</p>
+                            <p>Upload a nutrition label or enter details manually to get started, or ask me anything about nutrition, health, and fitness!</p>
 
                             <div class="quick-actions">
                                 <button class="quick-action-btn" onclick="sendQuickMessage('What should I eat before a workout?')">
@@ -1975,7 +1975,7 @@
             formData.append('image', file);
 
             try {
-                const response = await fetch(`${API_URL}/barcode/image`, {
+                const response = await fetch(`${API_URL}/nutrition/ocr`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1983,17 +1983,30 @@
                 const result = await response.json();
                 hideLoading();
 
-                if (response.ok) {
-                    scannedProduct = result.product;
-                    document.getElementById('barcodeInput').value = result.barcode;
-                    displayProduct(result.product);
-                    showMessageBox(`Barcode ${result.barcode} detected!`, 'success');
+                if (result.success) {
+                    if (result.needs_clarification) {
+                        // Show clarification form
+                        showClarificationForm(result.data, result.clarification_fields, result.message);
+                    } else {
+                        // OCR successful, data is complete
+                        scannedProduct = {
+                            name: 'Scanned Product',
+                            nutrition: result.data,
+                            price: null
+                        };
+                        // Ask for price
+                        askForPrice(result.data);
+                    }
+                } else if (result.needs_manual_entry) {
+                    // OCR failed, prompt manual entry
+                    showMessageBox(result.error || 'OCR failed. Please enter nutrition facts manually.', 'warning');
+                    setTimeout(() => showManualInput(), 1500);
                 } else {
-                    showMessageBox(result.error, 'error');
+                    showMessageBox(result.error || 'Failed to process image', 'error');
                 }
             } catch (error) {
                 hideLoading();
-                showMessageBox('Network error!', 'error');
+                showMessageBox('Network error! Please try again.', 'error');
             }
         }
 
@@ -2097,10 +2110,6 @@
             sendEvaluationToChat(evaluation);
         }
 
-        function quickScan(barcode) {
-            document.getElementById('barcodeInput').value = barcode;
-            scanBarcode();
-        }
 
         // Utility Functions
         function showLoading() {
@@ -2121,6 +2130,337 @@
             box.textContent = message;
             box.className = `message show ${type}`;
             setTimeout(() => box.classList.remove('show'), 5000);
+        }
+
+        // ============================================================================
+        // MANUAL ENTRY & CLARIFICATION FUNCTIONS
+        // ============================================================================
+
+        function showManualInput() {
+            const manualFormHtml = `
+                <div class="card" style="max-width: 600px; margin: 30px auto;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 20px;">Manual Nutrition Entry</h3>
+                    <p style="color: var(--medium-text); margin-bottom: 25px;">Enter nutrition facts from the label</p>
+
+                    <form id="manualNutritionForm" onsubmit="submitManualEntry(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label>Total Fat (g) *</label>
+                                <input type="number" step="0.1" name="fat_total" required>
+                            </div>
+                            <div>
+                                <label>Total Sugar (g) *</label>
+                                <input type="number" step="0.1" name="sugar_total" required>
+                            </div>
+                            <div>
+                                <label>Sodium (mg) *</label>
+                                <input type="number" step="1" name="sodium" required>
+                            </div>
+                            <div>
+                                <label>Total Carbs (g) *</label>
+                                <input type="number" step="0.1" name="carbs_total" required>
+                            </div>
+                            <div>
+                                <label>Protein (g) *</label>
+                                <input type="number" step="0.1" name="protein" required>
+                            </div>
+                            <div>
+                                <label>Cholesterol (mg) *</label>
+                                <input type="number" step="1" name="cholesterol" required>
+                            </div>
+                            <div>
+                                <label>Serving Size *</label>
+                                <input type="text" name="serving_size" placeholder="e.g., 100g" required>
+                            </div>
+                            <div>
+                                <label>Servings Per Container *</label>
+                                <input type="number" step="0.1" name="servings_per_container" required>
+                            </div>
+                            <div>
+                                <label>Calories (optional)</label>
+                                <input type="number" step="1" name="calories">
+                            </div>
+                            <div>
+                                <label>Saturated Fat (g)</label>
+                                <input type="number" step="0.1" name="saturated_fat">
+                            </div>
+                            <div>
+                                <label>Trans Fat (g)</label>
+                                <input type="number" step="0.1" name="trans_fat">
+                            </div>
+                            <div>
+                                <label>Dietary Fiber (g)</label>
+                                <input type="number" step="0.1" name="dietary_fiber">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 25px;">
+                            <button type="submit" class="btn primary" style="flex: 1;">Submit</button>
+                            <button type="button" class="btn secondary" onclick="hideManualInput()" style="flex: 1;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.getElementById('results').innerHTML = manualFormHtml;
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function hideManualInput() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function submitManualEntry(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const nutritionData = {};
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    nutritionData[key] = isNaN(value) ? value : parseFloat(value);
+                }
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_URL}/nutrition/manual`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nutritionData)
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (result.success) {
+                    hideManualInput();
+                    scannedProduct = {
+                        name: 'Manual Entry',
+                        nutrition: result.data,
+                        price: null
+                    };
+                    // Ask for price
+                    askForPrice(result.data);
+                } else {
+                    showMessageBox(result.error || 'Validation failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error! Please try again.', 'error');
+            }
+        }
+
+        function showClarificationForm(originalData, clarificationFields, message) {
+            let fieldsHtml = '';
+
+            for (const [fieldName, fieldInfo] of Object.entries(clarificationFields)) {
+                const displayName = fieldInfo.display_name;
+                const currentValue = fieldInfo.value || '';
+                const status = fieldInfo.status;
+                const statusBadge = status === 'missing' ?
+                    '<span style="color: red; font-size: 0.8em;">(Missing)</span>' :
+                    `<span style="color: orange; font-size: 0.8em;">(Low Confidence: ${(fieldInfo.confidence * 100).toFixed(0)}%)</span>`;
+
+                fieldsHtml += `
+                    <div>
+                        <label>${displayName} ${statusBadge}</label>
+                        <input type="text"
+                               name="${fieldName}"
+                               value="${currentValue}"
+                               placeholder="Enter value">
+                    </div>
+                `;
+            }
+
+            const clarificationHtml = `
+                <div class="card" style="max-width: 600px; margin: 30px auto;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 15px;">Verify Nutrition Data</h3>
+                    <p style="color: var(--medium-text); margin-bottom: 25px;">${message}</p>
+
+                    <form id="clarificationForm" onsubmit="submitClarification(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            ${fieldsHtml}
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 25px;">
+                            <button type="submit" class="btn primary" style="flex: 1;">Confirm</button>
+                            <button type="button" class="btn secondary" onclick="showManualInput()" style="flex: 1;">Manual Entry Instead</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            // Store original data for later
+            window.ocrOriginalData = originalData;
+
+            document.getElementById('results').innerHTML = clarificationHtml;
+            document.getElementById('results').style.display = 'block';
+        }
+
+        async function submitClarification(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const corrections = {};
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    corrections[key] = value;
+                }
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_URL}/nutrition/clarify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        original_data: window.ocrOriginalData,
+                        corrections: corrections
+                    })
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (result.success) {
+                    document.getElementById('results').style.display = 'none';
+                    scannedProduct = {
+                        name: 'Scanned Product',
+                        nutrition: result.data,
+                        price: null
+                    };
+                    // Ask for price
+                    askForPrice(result.data);
+                } else {
+                    showMessageBox(result.error || 'Validation failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error! Please try again.', 'error');
+            }
+        }
+
+        async function askForPrice(nutritionData) {
+            const priceHtml = `
+                <div class="card" style="max-width: 500px; margin: 30px auto; text-align: center;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 15px;">Add Price (Optional)</h3>
+                    <p style="color: var(--medium-text); margin-bottom: 25px;">
+                        Enter the product price to get a value-for-money analysis
+                    </p>
+
+                    <form id="priceForm" onsubmit="submitPrice(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label>Price ($)</label>
+                            <input type="number"
+                                   step="0.01"
+                                   name="price"
+                                   placeholder="0.00"
+                                   style="font-size: 1.2rem; text-align: center;">
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn primary" style="flex: 1;">Continue</button>
+                            <button type="button" class="btn secondary" onclick="submitPrice(null)" style="flex: 1;">Skip</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            // Store nutrition data
+            window.pendingNutritionData = nutritionData;
+
+            document.getElementById('results').innerHTML = priceHtml;
+            document.getElementById('results').style.display = 'block';
+        }
+
+        async function submitPrice(event) {
+            let price = null;
+
+            if (event && event.preventDefault) {
+                event.preventDefault();
+                const form = event.target;
+                const formData = new FormData(form);
+                price = formData.get('price');
+                price = price ? parseFloat(price) : null;
+            }
+
+            // Build product object
+            const productData = {
+                name: scannedProduct.name,
+                brand: 'N/A',
+                category: 'Food',
+                price: price,
+                ...window.pendingNutritionData
+            };
+
+            // Now evaluate with the agent
+            await evaluateProduct(productData);
+        }
+
+        async function evaluateProduct(productData) {
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_URL}/agent/evaluate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product: productData })
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (result.success) {
+                    displayEvaluation(result.evaluation, productData);
+                    showMessageBox('Analysis complete!', 'success');
+                } else {
+                    showMessageBox(result.error || 'Evaluation failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error! Please try again.', 'error');
+            }
+        }
+
+        function displayEvaluation(evaluation, product) {
+            const resultHtml = `
+                <div class="card">
+                    <h2 style="color: var(--primary-green); margin-bottom: 25px;">Nutrition Analysis</h2>
+
+                    <div style="background: var(--bg-color); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                        <h3 style="color: var(--primary-text); margin-bottom: 10px;">${product.name || 'Product'}</h3>
+                        ${product.price ? `<p style="color: var(--medium-text);">Price: $${product.price.toFixed(2)}</p>` : ''}
+                    </div>
+
+                    <div style="white-space: pre-wrap; line-height: 1.8; color: var(--primary-text);">
+                        ${evaluation.summary || evaluation}
+                    </div>
+
+                    <button class="btn primary" onclick="resetScanner()" style="margin-top: 25px; width: 100%;">
+                        Scan Another Product
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('results').innerHTML = resultHtml;
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function resetScanner() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('imageInput').value = '';
+            scannedProduct = null;
+            window.ocrOriginalData = null;
+            window.pendingNutritionData = null;
         }
 
         // ============================================================================

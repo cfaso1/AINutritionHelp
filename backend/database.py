@@ -17,6 +17,18 @@ from pathlib import Path
 # Database file path
 DB_FILE = Path(__file__).parent / "nutrition_app.db"
 
+# Database connection timeout (5 seconds to handle concurrent writes)
+DB_TIMEOUT = 5.0
+
+def get_db_connection():
+    """
+    Get a database connection with proper timeout configuration.
+    SQLite doesn't handle concurrent writes well, so we set a timeout.
+    """
+    conn = sqlite3.connect(DB_FILE, timeout=DB_TIMEOUT)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 def migrate_to_imperial():
     """
     Add imperial unit columns to support feet/inches and pounds.
@@ -203,8 +215,9 @@ def create_user(username: str, email: str, password: str) -> int:
     Returns:
         int: user_id of created user, or None if creation failed
     """
+    conn = None
     try:
-        conn = sqlite3.connect(DB_FILE)
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         # Hash the password
@@ -225,16 +238,27 @@ def create_user(username: str, email: str, password: str) -> int:
         """, (user_id,))
 
         conn.commit()
-        conn.close()
 
         return user_id
 
     except sqlite3.IntegrityError as e:
         print(f"Error: Username or email already exists. {e}")
+        if conn:
+            conn.rollback()
+        return None
+    except sqlite3.OperationalError as e:
+        print(f"Database locked or busy: {e}")
+        if conn:
+            conn.rollback()
         return None
     except Exception as e:
         print(f"Error creating user: {e}")
+        if conn:
+            conn.rollback()
         return None
+    finally:
+        if conn:
+            conn.close()
 
 
 def authenticate_user(username: str, password: str) -> dict:
