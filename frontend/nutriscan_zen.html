@@ -636,12 +636,274 @@
             display: none !important;
         }
 
+        /* AI Chat Interface */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            max-height: 70vh;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
+            color: var(--white);
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .chat-header p {
+            margin: 5px 0 0 0;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--cream);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--soft-green);
+            border-radius: 3px;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 10px;
+            animation: message-fade-in 0.3s ease;
+        }
+
+        @keyframes message-fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .chat-message.ai .chat-avatar {
+            background: linear-gradient(135deg, var(--primary-green), var(--light-green));
+        }
+
+        .chat-message.user .chat-avatar {
+            background: linear-gradient(135deg, var(--soft-green), var(--mint));
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .chat-message.ai .chat-bubble {
+            background: var(--white);
+            color: var(--dark-text);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .chat-message.user .chat-bubble {
+            background: var(--primary-green);
+            color: var(--white);
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            background: var(--white);
+            border-radius: 0 0 12px 12px;
+            border-top: 1px solid var(--mint);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--mint);
+            border-radius: 20px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+        }
+
+        .chat-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--primary-green);
+            color: var(--white);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .chat-send-btn:hover {
+            background: var(--light-green);
+            transform: scale(1.05);
+        }
+
+        .chat-send-btn:disabled {
+            background: var(--soft-green);
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: var(--white);
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px var(--shadow);
+            width: fit-content;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--medium-text);
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .chat-welcome {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--medium-text);
+        }
+
+        .chat-welcome-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .chat-welcome h4 {
+            color: var(--primary-green);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .chat-welcome p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .quick-action-btn {
+            padding: 10px 15px;
+            background: var(--mint);
+            border: 1px solid var(--soft-green);
+            border-radius: 10px;
+            color: var(--primary-green);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--soft-green);
+            transform: translateX(5px);
+        }
+
         @media (max-width: 968px) {
             .hero-title { font-size: 2.5rem; }
             .features { grid-template-columns: 1fr; }
             .dashboard-content { grid-template-columns: 1fr; }
             .nutrition-grid { grid-template-columns: repeat(2, 1fr); }
             .input-row { grid-template-columns: 1fr; }
+            .chat-container { height: 500px; }
+            .chat-bubble { max-width: 85%; }
         }
     </style>
 </head>
@@ -1049,38 +1311,64 @@
                 </div>
             </div>
 
-            <!-- Sidebar -->
+            <!-- AI Chat Interface -->
             <div class="sidebar">
-                <h3>🧪 Test Products</h3>
-                <p style="color: var(--medium-text); font-size: 0.9rem; margin-bottom: 20px;">
-                    Try these sample barcodes:
-                </p>
+                <div class="chat-container">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <h3>🤖 AI Nutrition Companion</h3>
+                        <p>Your personal health assistant</p>
+                    </div>
 
-                <div class="test-barcode" onclick="quickScan('722252601025')">
-                    <strong style="color: var(--primary-green);">Quest Protein Bar</strong>
-                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">722252601025</p>
-                </div>
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Welcome Message -->
+                        <div class="chat-welcome" id="chatWelcome">
+                            <div class="chat-welcome-icon">👋</div>
+                            <h4>Hi! I'm your AI nutrition companion</h4>
+                            <p>Scan a barcode to get started, or ask me anything about nutrition, health, and fitness!</p>
 
-                <div class="test-barcode" onclick="quickScan('012000161551')">
-                    <strong style="color: var(--primary-green);">Coca-Cola Classic</strong>
-                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">012000161551</p>
-                </div>
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" onclick="sendQuickMessage('What should I eat before a workout?')">
+                                    💪 What should I eat before a workout?
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('How much protein do I need daily?')">
+                                    🥗 How much protein do I need daily?
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('What are healthy snack options?')">
+                                    🍎 What are healthy snack options?
+                                </button>
+                            </div>
+                        </div>
 
-                <div class="test-barcode" onclick="quickScan('078000113464')">
-                    <strong style="color: var(--primary-green);">Gatorade</strong>
-                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">078000113464</p>
-                </div>
+                        <!-- Typing Indicator -->
+                        <div class="chat-message ai" id="typingIndicator" style="display: none;">
+                            <div class="chat-avatar">🤖</div>
+                            <div class="typing-indicator show">
+                                <div class="typing-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="test-barcode" onclick="quickScan('016000275683')">
-                    <strong style="color: var(--primary-green);">Cheerios</strong>
-                    <p style="font-size: 0.85rem; color: var(--medium-text); margin-top: 5px;">016000275683</p>
-                </div>
-
-                <div class="info-box">
-                    <h4 style="color: var(--primary-green); margin-bottom: 10px;">💡 Tip</h4>
-                    <p style="font-size: 0.9rem; color: var(--dark-text);">
-                        AI recommendations are personalized to your goals and activity level!
-                    </p>
+                    <!-- Chat Input -->
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <input
+                                type="text"
+                                class="chat-input"
+                                id="chatInput"
+                                placeholder="Ask me anything..."
+                                onkeypress="if(event.key==='Enter') sendChatMessage()"
+                            >
+                            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
+                                ➤
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1516,6 +1804,9 @@
 
             document.getElementById('aiResults').style.display = 'block';
             showMessageBox('Analysis complete!', 'success');
+
+            // Send evaluation to chat interface
+            sendEvaluationToChat(evaluation);
         }
 
         function quickScan(barcode) {
@@ -1542,6 +1833,162 @@
             box.textContent = message;
             box.className = `message show ${type}`;
             setTimeout(() => box.classList.remove('show'), 5000);
+        }
+
+        // ============================================================================
+        // AI CHAT FUNCTIONS
+        // ============================================================================
+
+        // Chat message history
+        let chatHistory = [];
+
+        // Add message to chat
+        function addChatMessage(message, isUser = false) {
+            const chatMessages = document.getElementById('chatMessages');
+            const chatWelcome = document.getElementById('chatWelcome');
+
+            // Hide welcome message on first interaction
+            if (chatWelcome) {
+                chatWelcome.style.display = 'none';
+            }
+
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isUser ? 'user' : 'ai'}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'chat-avatar';
+            avatar.textContent = isUser ? '👤' : '🤖';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.textContent = message;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(bubble);
+
+            // Insert before typing indicator
+            const typingIndicator = document.getElementById('typingIndicator');
+            chatMessages.insertBefore(messageDiv, typingIndicator);
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Store in history
+            chatHistory.push({ message, isUser, timestamp: new Date() });
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'flex';
+
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'none';
+        }
+
+        // Send chat message to API
+        async function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            const message = chatInput.value.trim();
+
+            if (!message) return;
+
+            // Add user message to chat
+            addChatMessage(message, true);
+
+            // Clear input
+            chatInput.value = '';
+
+            // Disable send button
+            chatSendBtn.disabled = true;
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                // Prepare context with recent product if available
+                const requestData = {
+                    message: message
+                };
+
+                // Add scanned product to context if available
+                if (scannedProduct) {
+                    requestData.product = scannedProduct;
+                }
+
+                // Send to API
+                const response = await fetch(`${API_URL}/agent/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                // Hide typing indicator
+                hideTypingIndicator();
+
+                if (response.ok) {
+                    // Add AI response to chat
+                    addChatMessage(result.message, false);
+                } else {
+                    // Add error message
+                    addChatMessage('Sorry, I encountered an error. Please try again!', false);
+                    console.error('Chat error:', result.error);
+                }
+
+            } catch (error) {
+                hideTypingIndicator();
+                addChatMessage('Sorry, I\'m having trouble connecting. Please check your internet connection!', false);
+                console.error('Chat network error:', error);
+            } finally {
+                // Re-enable send button
+                chatSendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        // Send quick message (from quick action buttons)
+        function sendQuickMessage(message) {
+            const chatInput = document.getElementById('chatInput');
+            chatInput.value = message;
+            sendChatMessage();
+        }
+
+        // Send AI evaluation results to chat
+        function sendEvaluationToChat(evaluation) {
+            // Hide welcome message
+            const chatWelcome = document.getElementById('chatWelcome');
+            if (chatWelcome) {
+                chatWelcome.style.display = 'none';
+            }
+
+            // Check if companion_message exists in evaluation
+            if (evaluation && evaluation.companion_message) {
+                addChatMessage(evaluation.companion_message, false);
+            } else {
+                // Fallback: create summary from evaluation data
+                const product = evaluation.product || {};
+                const overall = evaluation.overall || {};
+
+                let message = `I analyzed ${product.name || 'this product'}!\n\n`;
+                message += `Overall Score: ${overall.score || 0}/100\n`;
+                message += `Recommendation: ${overall.recommendation || 'See details for more info'}`;
+
+                addChatMessage(message, false);
+            }
+
+            // Scroll to bottom
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         // Initialize

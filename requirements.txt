@@ -1,28 +1,31 @@
-# AI Nutrition Help - Backend Dependencies
+# ====================
+# Nutrition AI - Production Dependencies
+# Version: 2.0.0
+# ====================
 
-# Core Flask Framework
+# Web Framework
 Flask==3.0.0
 flask-cors==4.0.0
-
-# File handling and security
 Werkzeug==3.0.1
 
-# Database (already using built-in sqlite3)
-# No additional package needed for SQLite
+# AI Model - Google Gemini (Primary)
+google-genai>=1.46.0
 
-# Image Processing - For barcode detection
+# Data Validation & Models
+pydantic>=2.12.0
+
+# HTTP & Async Requests
+aiohttp==3.9.1
+requests==2.32.0
+
+# Image Processing (Barcode Detection)
 Pillow==10.1.0
 pyzbar==0.1.9
 opencv-python==4.8.1.78
-numpy<2  # Required for opencv-python compatibility
+numpy<2
 
-# AI Integration - Anthropic Claude API
-anthropic>=0.39.0
-
-# Nutrition Agent Dependencies
-aiohttp==3.9.1
-pydantic==2.5.0
-
-# Utilities
+# Environment Configuration
 python-dotenv==1.0.0
-requests==2.32.0
+
+# Note: anthropic removed as we now use Google Gemini exclusively
+# Database: Using built-in sqlite3 (no additional package needed)

@@ -502,6 +502,59 @@ def get_weight():
     }), 200
 
 
+@app.route('/api/agent/chat', methods=['POST'])
+def chat_with_agent():
+    """
+    Chat with the AI nutrition companion.
+    Send a message and optionally include context (recent product, user goals).
+    """
+    if not USE_NUTRITION_AGENT:
+        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
+
+    data = request.get_json()
+
+    if not data or 'message' not in data:
+        return jsonify({'error': 'Missing message field'}), 400
+
+    message = data['message'].strip()
+
+    if not message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+
+    # Get user profile for context
+    profile = get_user_profile(DEMO_USER_ID)
+
+    try:
+        # Build context from request
+        context = {}
+
+        # Add user profile to context
+        if profile:
+            context['user_profile'] = profile
+
+        # Add recent product if provided
+        if 'product' in data:
+            context['recent_product'] = data['product']
+
+        # Add any custom context
+        if 'context' in data:
+            context.update(data['context'])
+
+        # Get nutrition agent service
+        agent_service = get_nutrition_agent_service()
+
+        # Chat with agent
+        response = run_async(agent_service.chat(message, context if context else None))
+
+        return jsonify({
+            'success': True,
+            'message': response
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Chat failed: {str(e)}'}), 500
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """API health check endpoint."""
@@ -523,7 +576,7 @@ def index():
         'note': 'All endpoints use demo user - no authentication needed',
         'endpoints': {
             'profile': ['GET /api/profile', 'PUT /api/profile'],
-            'nutrition': ['POST /api/barcode/scan', 'POST /api/agent/evaluate'],
+            'nutrition': ['POST /api/barcode/scan', 'POST /api/agent/evaluate', 'POST /api/agent/chat'],
             'weight': ['POST /api/weight', 'GET /api/weight/history']
         },
         'demo': 'Open demo.html in your browser to test!'
@@ -542,6 +595,7 @@ if __name__ == '__main__':
     print("\n  Nutrition & AI:")
     print("    POST   http://localhost:5000/api/barcode/scan")
     print("    POST   http://localhost:5000/api/agent/evaluate")
+    print("    POST   http://localhost:5000/api/agent/chat")
     print("\n  Weight Tracking:")
     print("    POST   http://localhost:5000/api/weight")
     print("    GET    http://localhost:5000/api/weight/history")
