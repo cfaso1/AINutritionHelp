@@ -30,8 +30,9 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--cream);
-            color: var(--Fark-text);
+            color: var(--dark-text);
             line-height: 1.6;
+            padding-top: 90px; /* NEW: Prevents nav overlap */
         }
 
         /* Navigation */
@@ -949,6 +950,10 @@
         }
 
         @media (max-width: 968px) {
+            body {
+                padding-top: 140px; /* More padding for taller mobile nav */
+            }
+
             .hero-title { font-size: 2.5rem; }
             .features { grid-template-columns: 1fr; }
             .dashboard-content { grid-template-columns: 1fr; }
@@ -1530,157 +1535,311 @@
 
         </div>
     </div>
+    
     <script>
-        function parseMarkdown(text) {
-            return text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')             // *italic*
-                .replace(/`(.*?)`/g, '<code>$1</code>')           // `code`
-                .replace(/\n/g, '<br>');                          // new lines
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+function parseMarkdown(text) {
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+}
+
+// ============================================================================
+// CONFIGURATION & STATE
+// ============================================================================
+
+const API_URL = 'http://localhost:5000/api';
+let currentUser = null;
+let profileData = {};
+let scannedProduct = null;
+let chatHistory = [];
+
+// ============================================================================
+// SCREEN MANAGEMENT (IMPROVED)
+// ============================================================================
+
+const Screens = {
+    WELCOME: 'welcomeScreen',
+    PROFILE_SETUP: 'profileSetup',
+    DASHBOARD: 'dashboard',
+    SETTINGS: 'settingsPage'
+};
+
+function hideAllScreens() {
+    Object.values(Screens).forEach(screenId => {
+        const element = document.getElementById(screenId);
+        if (element) {
+            element.classList.remove('show', 'active');
+            element.classList.add('hidden');
         }
+    });
+}
 
+function showScreen(screenName) {
+    console.log(`📺 Showing screen: ${screenName}`);
+    hideAllScreens();
+    
+    const element = document.getElementById(screenName);
+    if (!element) {
+        console.error(`❌ Screen not found: ${screenName}`);
+        return;
+    }
+    
+    element.classList.remove('hidden');
+    element.classList.add('show');
+    
+    // Screen-specific setup
+    switch(screenName) {
+        case Screens.WELCOME:
+            updateNav(false);
+            break;
+        case Screens.PROFILE_SETUP:
+            updateNav(false);
+            resetProfileSetup();
+            break;
+        case Screens.DASHBOARD:
+            updateNav(true);
+            updateUserDisplay();
+            break;
+        case Screens.SETTINGS:
+            updateNav(true);
+            loadSettingsData();
+            break;
+    }
+}
 
-        // Config
-        const API_URL = 'http://localhost:5000/api';
-        let currentUser = null;
-        let profileData = {};
-        let scannedProduct = null;
+function resetProfileSetup() {
+    // Reset to first question
+    document.querySelectorAll('.question-card').forEach(q => q.classList.remove('active'));
+    const firstQuestion = document.getElementById('q1');
+    if (firstQuestion) firstQuestion.classList.add('active');
+    
+    // Reset progress dots
+    document.querySelectorAll('.progress-dot').forEach((dot, i) => {
+        if (i === 0) dot.classList.add('active');
+        else dot.classList.remove('active');
+    });
+    
+    // Clear form data
+    profileData = {};
+}
 
-        // Initialize
-        function init() {
-            const savedUser = localStorage.getItem('nutriscan_user');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
+// Convenience functions
+function showWelcomeScreen() { showScreen(Screens.WELCOME); }
+function showProfileSetup() { showScreen(Screens.PROFILE_SETUP); }
+function showDashboard() { showScreen(Screens.DASHBOARD); }
+function showSettings() { showScreen(Screens.SETTINGS); }
+
+// ============================================================================
+// NAVIGATION & UI UPDATES
+// ============================================================================
+
+function updateNav(loggedIn) {
+    const navButtons = document.getElementById('navButtons');
+    const userBannerNav = document.getElementById('userBannerNav');
+
+    if (loggedIn) {
+        navButtons.style.display = 'none';
+        userBannerNav.classList.add('show');
+    } else {
+        navButtons.style.display = 'flex';
+        userBannerNav.classList.remove('show');
+    }
+}
+
+function updateUserDisplay() {
+    if (!currentUser) return;
+    
+    const initials = currentUser.username.substring(0, 2).toUpperCase();
+    document.getElementById('userAvatar').textContent = initials;
+    document.getElementById('userName').textContent = currentUser.username;
+
+    if (currentUser.profile && currentUser.profile.goal_type) {
+        const goalText = currentUser.profile.goal_type.replace('_', ' ');
+        const goal = goalText.charAt(0).toUpperCase() + goalText.slice(1);
+        document.getElementById('userGoal').textContent = `Goal: ${goal}`;
+    } else {
+        document.getElementById('userGoal').textContent = 'Complete your profile';
+    }
+}
+
+// ============================================================================
+// MODAL MANAGEMENT
+// ============================================================================
+
+function showLogin() {
+    closeModal();
+    document.getElementById('loginModal').classList.add('show');
+}
+
+function showSignup() {
+    closeModal();
+    document.getElementById('signupModal').classList.add('show');
+}
+
+function closeModal() {
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
+    clearMessages();
+}
+
+function clearMessages() {
+    document.querySelectorAll('.message').forEach(m => m.classList.remove('show'));
+}
+
+function showMessage(elementId, message, type = 'error') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    el.textContent = message;
+    el.className = `message show ${type}`;
+    setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ============================================================================
+// AUTHENTICATION
+// ============================================================================
+
+async function handleSignup(e) {
+    e.preventDefault();
+    const username = document.getElementById('signupUsername').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+
+    try {
+        const response = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log('✅ Signup successful, user_id:', result.user_id);
+            
+            currentUser = { 
+                user_id: result.user_id, 
+                username, 
+                email,
+                profile: null  // New users have no profile
+            };
+            
+            localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+            closeModal();
+            
+            console.log('👤 New user - showing profile setup');
+            showProfileSetup();
+        } else {
+            showMessage('signupMessage', result.error || 'Signup failed', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Signup error:', error);
+        showMessage('signupMessage', 'Network error. Please try again.', 'error');
+    }
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log('✅ Login successful');
+            
+            currentUser = result.user;
+            localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+            closeModal();
+            
+            // Load profile from server
+            await loadUserProfile();
+
+            const complete = hasProfile(currentUser.profile);
+            complete ? showDashboard() : showProfileSetup();
+            
+            if (hasCompleteProfile) {
+                console.log('✅ Profile complete - showing dashboard');
                 showDashboard();
+            } else {
+                console.log('⚠️ Profile incomplete - showing setup');
+                showProfileSetup();
             }
+        } else {
+            showMessage('loginMessage', result.error || 'Login failed', 'error');
         }
-
-        // Modal Functions
-        function showLogin() {
-            closeModal();
-            document.getElementById('loginModal').classList.add('show');
-        }
-
-        function showSignup() {
-            closeModal();
-            document.getElementById('signupModal').classList.add('show');
-        }
-
-        function closeModal() {
-            document.querySelectorAll('.modal').forEach(m => m.classList.remove('show'));
-            clearMessages();
-        }
-
-        function clearMessages() {
-            document.querySelectorAll('.message').forEach(m => m.classList.remove('show'));
-        }
-
-        function showMessage(elementId, message, type = 'error') {
-            const el = document.getElementById(elementId);
-            el.textContent = message;
-            el.className = `message show ${type}`;
-            setTimeout(() => el.classList.remove('show'), 5000);
-        }
-
-        // Authentication
-        async function handleLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-
-            try {
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    currentUser = result.user;
-                    localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
-                    closeModal();
-                    await loadUserProfile();
-                    showDashboard();
-                } else {
-                    showMessage('loginMessage', result.error || 'Login failed', 'error');
-                }
-            } catch (error) {
-                showMessage('loginMessage', 'Network error. Try: demo_user / demo123', 'error');
-            }
-        }
-
-        async function handleSignup(e) {
-            e.preventDefault();
-            const username = document.getElementById('signupUsername').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-
-            try {
-                const response = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    currentUser = { user_id: result.user_id, username, email };
-                    localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
-                    closeModal();
-                    showProfileSetup();
-                } else {
-                    showMessage('signupMessage', result.error || 'Signup failed', 'error');
-                }
-            } catch (error) {
-                showMessage('signupMessage', 'Network error. Please try again.', 'error');
-            }
-        }
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        showMessage('loginMessage', 'Network error. Try: demo_user / demo123', 'error');
+    }
+}
 
         function logout() {
             currentUser = null;
             localStorage.removeItem('nutriscan_user');
-            hideAllScreens();
-            document.getElementById('welcomeScreen').classList.remove('hidden');
-            updateNav(false);
+            location.reload();
         }
 
-        // Profile Setup
-        function showProfileSetup() {
-            hideAllScreens();
-            document.getElementById('profileSetup').classList.add('show');
-        }
+// ============================================================================
+// PROFILE MANAGEMENT
+// ============================================================================
 
-        function nextQuestion(num) {
-            if (num === 2) {
-        // Validate height and weight before continuing
+async function loadUserProfile() {
+    try {
+        const response = await fetch(`${API_URL}/profile`);
+        if (response.ok) {
+            const result = await response.json();
+            currentUser.profile = result.profile;
+            localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+            console.log('✅ Profile loaded:', currentUser.profile);
+        } else {
+            console.log('⚠️ No profile found for user');
+        }
+    } catch (error) {
+        console.error('❌ Failed to load profile:', error);
+    }
+}
+
+// ============================================================================
+// PROFILE SETUP FLOW
+// ============================================================================
+
+function nextQuestion(num) {
+    // Validation for question 1 (physical profile)
+    if (num === 2) {
         const heightInput = document.getElementById('profileHeight').value.trim();
         const weightInput = document.getElementById('profileWeight').value.trim();
         const genderInput = document.getElementById('profileGender').value;
         const ageInput = document.getElementById('profileAge').value;
 
-        // Validate gender
         if (!genderInput) {
             alert("Please select your gender.");
             return;
         }
 
-        // Validate age
         if (!ageInput) {
             alert("Please select your age range.");
             return;
         }
 
-        // Validate height format
         const heightPattern = /^\d+'\d{1,2}$/;
         if (!heightPattern.test(heightInput)) {
             alert("Height must be in format 5'8 (feet'inches with apostrophe).\nExample: 5'8 or 6'2");
-            return; // Stop here, don't continue
+            return;
         }
 
-        // Validate height range
         const [feet, inches] = heightInput.split("'").map(Number);
         if (feet < 3 || feet > 8) {
             alert("Height must be between 3 and 8 feet.");
@@ -1691,14 +1850,12 @@
             return;
         }
 
-        // Validate weight
         const weight = parseFloat(weightInput);
         if (!weight || weight < 66 || weight > 660) {
             alert("Weight must be between 66 and 660 pounds.");
             return;
         }
 
-        // If all validation passes, save the data
         profileData.height = heightInput;
         profileData.weight = weight;
         profileData.gender = genderInput;
@@ -1709,7 +1866,10 @@
     document.querySelectorAll('.question-card').forEach(q => q.classList.remove('active'));
 
     // Show the requested question
-    document.getElementById(`q${num}`).classList.add('active');
+    const targetQuestion = document.getElementById(`q${num}`);
+    if (targetQuestion) {
+        targetQuestion.classList.add('active');
+    }
 
     // Update progress dots
     document.querySelectorAll('.progress-dot').forEach((dot, i) => {
@@ -1718,12 +1878,13 @@
     });
 }
 
-        function setProfileData(key, value) {
-            profileData[key] = value;
-        }
+function setProfileData(key, value) {
+    profileData[key] = value;
+    console.log(`📝 Profile data set: ${key} = ${value}`);
+}
 
-        async function submitProfile() {
-            try {
+async function submitProfile() {
+    try {
         const heightRaw = (profileData.height || '').toString().trim();
         const weightRaw = (profileData.weight || '').toString().trim();
 
@@ -1760,7 +1921,8 @@
 
         console.log('[DEBUG] submitProfile payload:', payload);
 
-        // Use the setup endpoint for initial profile
+        console.log('📤 Submitting profile:', payload);
+
         const response = await fetch(`${API_URL}/profile/setup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1768,6 +1930,7 @@
         });
 
         if (response.ok) {
+            console.log('✅ Profile saved successfully');
             await loadUserProfile();
             showDashboard();
         } else {
@@ -1775,84 +1938,66 @@
             alert(error.error || 'Failed to save profile');
         }
     } catch (error) {
-        console.error('Profile save error:', error);
+        console.error('❌ Profile save error:', error);
         alert('Failed to save profile. Please try again.');
     }
 }
 
-        async function loadUserProfile() {
-            try {
-                const response = await fetch(`${API_URL}/profile`);
-                if (response.ok) {
-                    const result = await response.json();
-                    currentUser.profile = result.profile;
-                    localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
-                }
-            } catch (error) {
-                console.error('Failed to load profile:', error);
-            }
-        }
+// ============================================================================
+// SETTINGS PAGE
+// ============================================================================
 
-        // Settings Page
-        function showSettings() {
-            hideAllScreens();
-            document.getElementById('settingsPage').classList.add('show');
+function loadSettingsData() {
+    if (!currentUser || !currentUser.profile) return;
+    
+    const p = currentUser.profile;
+    
+    // Height
+    if (p.height_feet !== null && p.height_feet !== undefined &&
+        p.height_inches !== null && p.height_inches !== undefined) {
+        document.getElementById('editHeight').value = `${p.height_feet}'${p.height_inches}`;
+    } else if (p.height_cm) {
+        const totalInches = p.height_cm / 2.54;
+        const feet = Math.floor(totalInches / 12);
+        const inches = Math.round(totalInches - feet * 12);
+        document.getElementById('editHeight').value = `${feet}'${inches}`;
+    }
 
-            // Load current profile data
-                if (currentUser && currentUser.profile) {
-                    const p = currentUser.profile;
-                    // Use stored imperial values directly if available, otherwise convert from metric
-                    if (p.height_feet !== null && p.height_feet !== undefined &&
-                        p.height_inches !== null && p.height_inches !== undefined) {
-                        document.getElementById('editHeight').value = `${p.height_feet}'${p.height_inches}`;
-                    } else if (p.height_cm) {
-                        const totalInches = p.height_cm / 2.54;
-                        const feet = Math.floor(totalInches / 12);
-                        const inches = Math.round(totalInches - feet * 12);
-                        document.getElementById('editHeight').value = `${feet}'${inches}`;
-                    } else {
-                        document.getElementById('editHeight').value = '';
-                    }
+    // Weight
+    if (p.weight_lbs !== null && p.weight_lbs !== undefined) {
+        document.getElementById('editWeight').value = Math.round(p.weight_lbs);
+    } else if (p.current_weight_kg) {
+        const lbs = Math.round(p.current_weight_kg / 0.453592);
+        document.getElementById('editWeight').value = lbs;
+    }
 
-                    if (p.weight_lbs !== null && p.weight_lbs !== undefined) {
-                        document.getElementById('editWeight').value = Math.round(p.weight_lbs);
-                    } else if (p.current_weight_kg) {
-                        const lbs = Math.round(p.current_weight_kg / 0.453592);
-                        document.getElementById('editWeight').value = lbs;
-                    } else {
-                        document.getElementById('editWeight').value = '';
-                    }
+    // Other fields
+    document.getElementById('editGoal').value = p.goal_type || 'general_health';
+    document.getElementById('editActivity').value = p.activity_level || 'moderately_active';
+    document.getElementById('editDiet').value = p.diet_type || 'standard';
+    document.getElementById('editGender').value = p.gender || 'male';
+    document.getElementById('editAge').value = p.age_category || '26-35';
+    document.getElementById('editDietaryRestrictions').value = p.dietary_restrictions || '';
+}
 
-                    document.getElementById('editGoal').value = p.goal_type || 'general_health';
-                    document.getElementById('editActivity').value = p.activity_level || 'moderately_active';
-                    document.getElementById('editDiet').value = p.diet_type || 'standard';
-                    document.getElementById('editGender').value = p.gender || 'male';
-                    document.getElementById('editAge').value = p.age_category || '26-35';
-                    document.getElementById('editDietaryRestrictions').value = p.dietary_restrictions || '';
-                }
-        }
+async function saveProfile() {
+    const heightRaw = document.getElementById('editHeight').value.trim();
+    const weightRaw = document.getElementById('editWeight').value.trim();
+    const gender = document.getElementById('editGender').value;
+    const ageCategory = document.getElementById('editAge').value;
+    const dietaryRestrictions = document.getElementById('editDietaryRestrictions').value.trim();
 
-        async function saveProfile() {
-            // Read values
-            const heightRaw = (document.getElementById('editHeight').value || '').toString().trim();
-            const weightRaw = (document.getElementById('editWeight').value || '').toString().trim();
-            const gender = document.getElementById('editGender').value;
-            const ageCategory = document.getElementById('editAge').value;
-            const dietaryRestrictions = (document.getElementById('editDietaryRestrictions').value || '').trim();
+    const heightPattern = /^\d+'\d{1,2}$/;
+    if (!heightPattern.test(heightRaw)) {
+        showMessage('settingsMessage', "Height must be in format 5'8 (feet'apostrophe'inches).", 'error');
+        return;
+    }
 
-            // Validate height format (no decimals allowed, must be feet'apostrophe'inches)
-            const heightPattern = /^\d+'\d{1,2}$/;
-            if (!heightPattern.test(heightRaw)) {
-                showMessage('settingsMessage', "Height must be in format 5'8 (feet'apostrophe'inches).", 'error');
-                return;
-            }
-
-            // Validate weight (must be numeric)
-            const weightVal = parseFloat(weightRaw);
-            if (Number.isNaN(weightVal) || weightVal <= 0) {
-                showMessage('settingsMessage', 'Please enter a valid weight in pounds (whole number).', 'error');
-                return;
-            }
+    const weightVal = parseFloat(weightRaw);
+    if (Number.isNaN(weightVal) || weightVal <= 0) {
+        showMessage('settingsMessage', 'Please enter a valid weight in pounds.', 'error');
+        return;
+    }
 
             // Build payload - round weight to integer pounds to reduce precision issues
             const updatedProfile = {
@@ -1866,234 +2011,75 @@
                 dietary_restrictions: dietaryRestrictions
             };
 
-            // Debug payload sent to server
-            console.log('[DEBUG] Sending profile payload:', updatedProfile);
+    try {
+        const response = await fetch(`${API_URL}/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedProfile)
+        });
+
+        if (response.ok) {
+            await loadUserProfile();
+            showMessage('settingsMessage', 'Profile updated successfully!', 'success');
+            setTimeout(() => showDashboard(), 2000);
+        } else {
+            const resJson = await response.json().catch(() => ({}));
+            showMessage('settingsMessage', resJson.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('❌ saveProfile error:', error);
+        showMessage('settingsMessage', 'Network error', 'error');
+    }
+}
+
+// ============================================================================
+// IMAGE UPLOAD & NUTRITION SCANNING
+// ============================================================================
+
+async function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showLoading();
+    hideResults();
+
+            const formData = new FormData();
+            formData.append('image', file);
 
             try {
-                const response = await fetch(`${API_URL}/profile`, {
+                const response = await fetch(`${API_URL}/nutrition/ocr`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedProfile)
-                });
-
-                if (response.ok) {
-                    await loadUserProfile();
-                    showMessage('settingsMessage', 'Profile updated successfully!', 'success');
-                    setTimeout(() => showDashboard(), 2000);
-                } else {
-                    const resJson = await response.json().catch(() => ({}));
-                    showMessage('settingsMessage', resJson.error || 'Failed to update profile', 'error');
-                }
-            } catch (error) {
-                console.error('saveProfile error:', error);
-                showMessage('settingsMessage', 'Network error', 'error');
-            }
-        }
-
-        function showDashboard() {
-            hideAllScreens();
-            document.getElementById('dashboard').classList.add('show');
-            updateNav(true);
-            updateUserDisplay();
-        }
-
-        function hideAllScreens() {
-            document.getElementById('welcomeScreen').classList.add('hidden');
-            document.getElementById('profileSetup').classList.remove('show');
-            document.getElementById('settingsPage').classList.remove('show');
-            document.getElementById('dashboard').classList.remove('show');
-        }
-
-        function updateNav(loggedIn) {
-            const navButtons = document.getElementById('navButtons');
-            const userBannerNav = document.getElementById('userBannerNav');
-
-            if (loggedIn) {
-                navButtons.style.display = 'none';
-                userBannerNav.classList.add('show');
-            } else {
-                navButtons.style.display = 'flex';
-                userBannerNav.classList.remove('show');
-            }
-        }
-
-        function updateUserDisplay() {
-            if (currentUser) {
-                const initials = currentUser.username.substring(0, 2).toUpperCase();
-                document.getElementById('userAvatar').textContent = initials;
-                document.getElementById('userName').textContent = currentUser.username;
-
-                if (currentUser.profile) {
-                    const goalText = (currentUser.profile.goal_type || 'general_health').replace('_', ' ');
-                    const goal = goalText.charAt(0).toUpperCase() + goalText.slice(1);
-                    document.getElementById('userGoal').textContent = `Goal: ${goal}`;
-                } else {
-                    document.getElementById('userGoal').textContent = 'Complete your profile';
-                }
-            }
-        }
-
-        // Barcode Scanning
-        async function scanBarcode() {
-            const barcode = document.getElementById('barcodeInput').value.trim();
-
-            if (!barcode) {
-                showMessageBox('Please enter a barcode number', 'error');
-                return;
-            }
-
-            showLoading();
-            hideResults();
-
-            try {
-                const response = await fetch(`${API_URL}/barcode/scan`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ barcode })
+                    body: formData
                 });
 
                 const result = await response.json();
                 hideLoading();
 
-                if (response.ok) {
-                    scannedProduct = result.product;
-                    displayProduct(result.product);
-                    showMessageBox('Product found!', 'success');
+                if (result.success) {
+                    if (result.needs_clarification) {
+                        // Show clarification form
+                        showClarificationForm(result.data, result.clarification_fields, result.message);
+                    } else {
+                        // OCR successful, data is complete
+                        scannedProduct = {
+                            name: 'Scanned Product',
+                            nutrition: result.data,
+                            price: null
+                        };
+                        // Ask for price
+                        askForPrice(result.data);
+                    }
+                } else if (result.needs_manual_entry) {
+                    // OCR failed, prompt manual entry
+                    showMessageBox(result.error || 'OCR failed. Please enter nutrition facts manually.', 'warning');
+                    setTimeout(() => showManualInput(), 1500);
                 } else {
-                    showMessageBox(result.error, 'error');
+                    showMessageBox(result.error || 'Failed to process image', 'error');
                 }
             } catch (error) {
                 hideLoading();
-                showMessageBox('Network error. Make sure the server is running!', 'error');
+                showMessageBox('Network error! Please try again.', 'error');
             }
-        }
-
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('imagePreview').innerHTML =
-                    `<img src="${e.target.result}" style="max-width: 400px; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow);">`;
-            };
-            reader.readAsDataURL(file);
-
-            showLoading();
-            hideResults();
-
-            // DEMO MODE: Simulate successful OCR with mock data
-            // Simulate processing delay
-            setTimeout(() => {
-                hideLoading();
-
-                // Mock nutrition data - realistic values for a typical food product
-                const mockNutritionData = {
-                    fat_total: 12.5,
-                    sugar_total: 8.0,
-                    sodium: 450,
-                    carbs_total: 35.0,
-                    protein: 10.0,
-                    cholesterol: 25,
-                    serving_size: '100g',
-                    servings_per_container: 2.5,
-                    calories: 280,
-                    saturated_fat: 3.5,
-                    dietary_fiber: 4.0
-                };
-
-                scannedProduct = {
-                    name: 'Sample Product',
-                    nutrition: mockNutritionData,
-                    price: null
-                };
-
-                // Show success message
-                showMessageBox('✓ Nutrition facts extracted successfully!', 'success');
-
-                // Display nutrition facts first
-                displayNutritionFacts(mockNutritionData);
-            }, 1500); // 1.5 second delay to simulate processing
-        }
-
-        function displayNutritionFacts(nutritionData) {
-            const nutritionHtml = `
-                <div class="card" style="width: 100%; max-width: 100%; margin: 0; padding: 25px; background: var(--white); border-radius: 20px; box-shadow: 0 4px 20px var(--shadow);">
-                    <h2 style="color: var(--primary-green); margin-bottom: 20px; font-size: 1.6rem; text-align: center; border-bottom: 3px solid var(--primary-green); padding-bottom: 15px;">
-                        📊 Nutrition Facts
-                    </h2>
-
-                    <div style="background: var(--mint); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: 600; color: var(--primary-green);">
-                            <span>Serving Size</span>
-                            <span>${nutritionData.serving_size}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: var(--medium-text); margin-top: 5px;">
-                            <span>Servings Per Container</span>
-                            <span>${nutritionData.servings_per_container}</span>
-                        </div>
-                    </div>
-
-                    ${nutritionData.calories ? `
-                    <div style="background: var(--primary-green); color: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
-                        <div style="font-size: 0.9rem; margin-bottom: 5px;">Calories</div>
-                        <div style="font-size: 2.5rem; font-weight: 700;">${nutritionData.calories}</div>
-                    </div>
-                    ` : ''}
-
-                    <div style="border-top: 8px solid var(--dark-text); padding-top: 15px;">
-                        <div style="display: grid; gap: 12px;">
-                            ${createNutrientRow('Total Fat', nutritionData.fat_total, 'g', true)}
-                            ${nutritionData.saturated_fat ? createNutrientRow('Saturated Fat', nutritionData.saturated_fat, 'g', false, true) : ''}
-                            ${createNutrientRow('Cholesterol', nutritionData.cholesterol, 'mg', true)}
-                            ${createNutrientRow('Sodium', nutritionData.sodium, 'mg', true)}
-                            ${createNutrientRow('Total Carbohydrate', nutritionData.carbs_total, 'g', true)}
-                            ${nutritionData.dietary_fiber ? createNutrientRow('Dietary Fiber', nutritionData.dietary_fiber, 'g', false, true) : ''}
-                            ${createNutrientRow('Total Sugars', nutritionData.sugar_total, 'g', false, true)}
-                            ${createNutrientRow('Protein', nutritionData.protein, 'g', true)}
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 25px; display: flex; gap: 10px;">
-                        <button class="btn primary" onclick="proceedToPrice()" style="flex: 1;">
-                            Continue to Analysis
-                        </button>
-                        <button class="btn secondary" onclick="resetScanner()" style="flex: 1;">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = nutritionHtml;
-            resultsDiv.style.display = 'block';
-
-            // Scroll to the nutrition facts
-            setTimeout(() => {
-                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
-        }
-
-        function createNutrientRow(name, value, unit, bold = false, indent = false) {
-            const weight = bold ? '600' : '400';
-            const leftPadding = indent ? '20px' : '0';
-            const borderTop = bold ? '1px solid var(--soft-green)' : 'none';
-
-            return `
-                <div style="display: flex; justify-content: space-between; padding: 10px ${leftPadding}; border-top: ${borderTop};">
-                    <span style="font-weight: ${weight}; color: var(--dark-text);">${name}</span>
-                    <span style="font-weight: ${weight}; color: var(--dark-text);">${value}${unit}</span>
-                </div>
-            `;
-        }
-
-        function proceedToPrice() {
-            // Store the current nutrition data
-            const nutritionData = scannedProduct.nutrition;
-
-            // Ask for price
-            askForPrice(nutritionData);
         }
 
         function displayProduct(product) {
@@ -2196,10 +2182,6 @@
             sendEvaluationToChat(evaluation);
         }
 
-        function quickScan(barcode) {
-            document.getElementById('barcodeInput').value = barcode;
-            scanBarcode();
-        }
 
         // Utility Functions
         function showLoading() {
@@ -2223,177 +2205,261 @@
         }
 
         // ============================================================================
-        // MANUAL ENTRY & FORM FUNCTIONS
+        // MANUAL ENTRY & CLARIFICATION FUNCTIONS
         // ============================================================================
 
         function showManualInput() {
-            console.log('showManualInput() called');
-
-            // Hide other UI elements
-            hideLoading();
-            hideResults();
-
             const manualFormHtml = `
-                <div class="card" style="width: 100%; max-width: 100%; margin: 0; padding: 25px; background: var(--white); border-radius: 20px; box-shadow: 0 4px 20px var(--shadow);">
-                    <h3 style="color: var(--primary-green); margin-bottom: 15px; font-size: 1.4rem;">📝 Manual Nutrition Entry</h3>
-                    <p style="color: var(--medium-text); margin-bottom: 20px; font-size: 0.95rem;">Enter nutrition facts from the label</p>
+                <div class="card" style="max-width: 600px; margin: 30px auto;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 20px;">Manual Nutrition Entry</h3>
+                    <p style="color: var(--medium-text); margin-bottom: 25px;">Enter nutrition facts from the label</p>
 
                     <form id="manualNutritionForm" onsubmit="submitManualEntry(event)">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
                                 <label>Total Fat (g) *</label>
-                                <input type="number" step="0.1" name="fat_total" class="form-input" placeholder="10.0" required>
+                                <input type="number" step="0.1" name="fat_total" required>
                             </div>
                             <div>
                                 <label>Total Sugar (g) *</label>
-                                <input type="number" step="0.1" name="sugar_total" class="form-input" placeholder="5.0" required>
+                                <input type="number" step="0.1" name="sugar_total" required>
                             </div>
                             <div>
                                 <label>Sodium (mg) *</label>
-                                <input type="number" step="1" name="sodium" class="form-input" placeholder="500" required>
+                                <input type="number" step="1" name="sodium" required>
                             </div>
                             <div>
                                 <label>Total Carbs (g) *</label>
-                                <input type="number" step="0.1" name="carbs_total" class="form-input" placeholder="30.0" required>
+                                <input type="number" step="0.1" name="carbs_total" required>
                             </div>
                             <div>
                                 <label>Protein (g) *</label>
-                                <input type="number" step="0.1" name="protein" class="form-input" placeholder="8.0" required>
+                                <input type="number" step="0.1" name="protein" required>
                             </div>
                             <div>
                                 <label>Cholesterol (mg) *</label>
-                                <input type="number" step="1" name="cholesterol" class="form-input" placeholder="20" required>
+                                <input type="number" step="1" name="cholesterol" required>
                             </div>
                             <div>
                                 <label>Serving Size *</label>
-                                <input type="text" name="serving_size" class="form-input" placeholder="100g" required>
+                                <input type="text" name="serving_size" placeholder="e.g., 100g" required>
                             </div>
                             <div>
                                 <label>Servings Per Container *</label>
-                                <input type="number" step="0.1" name="servings_per_container" class="form-input" placeholder="2" required>
+                                <input type="number" step="0.1" name="servings_per_container" required>
                             </div>
                             <div>
                                 <label>Calories (optional)</label>
-                                <input type="number" step="1" name="calories" class="form-input" placeholder="250">
+                                <input type="number" step="1" name="calories">
                             </div>
                             <div>
                                 <label>Saturated Fat (g)</label>
-                                <input type="number" step="0.1" name="saturated_fat" class="form-input" placeholder="2.0">
+                                <input type="number" step="0.1" name="saturated_fat">
                             </div>
                             <div>
                                 <label>Trans Fat (g)</label>
-                                <input type="number" step="0.1" name="trans_fat" class="form-input" placeholder="0">
+                                <input type="number" step="0.1" name="trans_fat">
                             </div>
                             <div>
                                 <label>Dietary Fiber (g)</label>
-                                <input type="number" step="0.1" name="dietary_fiber" class="form-input" placeholder="3.0">
+                                <input type="number" step="0.1" name="dietary_fiber">
                             </div>
                         </div>
 
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="submit" class="btn primary" style="flex: 1;">Submit</button>
+                    <button type="button" class="btn" onclick="hideManualInput()" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+            document.getElementById('results').innerHTML = manualFormHtml;
+            document.getElementById('results').style.display = 'block';
+        }
+
+function hideManualInput() {
+    document.getElementById('resultsPanel').classList.remove('show');
+}
+
+async function submitManualEntry(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const nutritionData = {};
+    for (const [key, value] of formData.entries()) {
+        if (value) {
+            nutritionData[key] = isNaN(value) ? value : parseFloat(value);
+        }
+    }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_URL}/nutrition/manual`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nutritionData)
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (result.success) {
+                    hideManualInput();
+                    scannedProduct = {
+                        name: 'Manual Entry',
+                        nutrition: result.data,
+                        price: null
+                    };
+                    // Ask for price
+                    askForPrice(result.data);
+                } else {
+                    showMessageBox(result.error || 'Validation failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error! Please try again.', 'error');
+            }
+        }
+
+        function showClarificationForm(originalData, clarificationFields, message) {
+            let fieldsHtml = '';
+
+            for (const [fieldName, fieldInfo] of Object.entries(clarificationFields)) {
+                const displayName = fieldInfo.display_name;
+                const currentValue = fieldInfo.value || '';
+                const status = fieldInfo.status;
+                const statusBadge = status === 'missing' ?
+                    '<span style="color: red; font-size: 0.8em;">(Missing)</span>' :
+                    `<span style="color: orange; font-size: 0.8em;">(Low Confidence: ${(fieldInfo.confidence * 100).toFixed(0)}%)</span>`;
+
+                fieldsHtml += `
+                    <div>
+                        <label>${displayName} ${statusBadge}</label>
+                        <input type="text"
+                               name="${fieldName}"
+                               value="${currentValue}"
+                               placeholder="Enter value">
+                    </div>
+                `;
+            }
+
+            const clarificationHtml = `
+                <div class="card" style="max-width: 600px; margin: 30px auto;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 15px;">Verify Nutrition Data</h3>
+                    <p style="color: var(--medium-text); margin-bottom: 25px;">${message}</p>
+
+                    <form id="clarificationForm" onsubmit="submitClarification(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            ${fieldsHtml}
+                        </div>
+
                         <div style="display: flex; gap: 10px; margin-top: 25px;">
-                            <button type="submit" class="btn primary" style="flex: 1;">Submit</button>
-                            <button type="button" class="btn secondary" onclick="hideManualInput()" style="flex: 1;">Cancel</button>
+                            <button type="submit" class="btn primary" style="flex: 1;">Confirm</button>
+                            <button type="button" class="btn secondary" onclick="showManualInput()" style="flex: 1;">Manual Entry Instead</button>
                         </div>
                     </form>
                 </div>
             `;
 
-            const resultsDiv = document.getElementById('results');
-            if (!resultsDiv) {
-                console.error('ERROR: results div not found!');
-                return;
-            }
+            // Store original data for later
+            window.ocrOriginalData = originalData;
 
-            resultsDiv.innerHTML = manualFormHtml;
-            resultsDiv.style.display = 'block';
-            console.log('Manual entry form displayed successfully');
-
-            // Scroll to the form
-            setTimeout(() => {
-                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+            document.getElementById('results').innerHTML = clarificationHtml;
+            document.getElementById('results').style.display = 'block';
         }
 
-        function hideManualInput() {
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('results').innerHTML = '';
-        }
-
-        async function submitManualEntry(event) {
+        async function submitClarification(event) {
             event.preventDefault();
 
             const form = event.target;
             const formData = new FormData(form);
 
-            const nutritionData = {};
+            const corrections = {};
             for (const [key, value] of formData.entries()) {
                 if (value) {
-                    nutritionData[key] = isNaN(value) ? value : parseFloat(value);
+                    corrections[key] = value;
                 }
             }
 
-            // Store in scannedProduct
-            scannedProduct = {
-                name: 'Manual Entry',
-                nutrition: nutritionData,
-                price: null
-            };
+            showLoading();
 
-            // Display nutrition facts
-            displayNutritionFacts(nutritionData);
-            showMessageBox('✓ Manual nutrition data entered successfully!', 'success');
+            try {
+                const response = await fetch(`${API_URL}/nutrition/clarify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        original_data: window.ocrOriginalData,
+                        corrections: corrections
+                    })
+                });
+
+                const result = await response.json();
+                hideLoading();
+
+                if (result.success) {
+                    document.getElementById('results').style.display = 'none';
+                    scannedProduct = {
+                        name: 'Scanned Product',
+                        nutrition: result.data,
+                        price: null
+                    };
+                    // Ask for price
+                    askForPrice(result.data);
+                } else {
+                    showMessageBox(result.error || 'Validation failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessageBox('Network error! Please try again.', 'error');
+            }
         }
 
         async function askForPrice(nutritionData) {
             const priceHtml = `
-                <div class="card" style="width: 100%; max-width: 100%; margin: 0; padding: 25px; background: var(--white); border-radius: 20px; box-shadow: 0 4px 20px var(--shadow); text-align: center;">
-                    <h3 style="color: var(--primary-green); margin-bottom: 15px; font-size: 1.4rem;">💰 Add Price (Optional)</h3>
-                    <p style="color: var(--medium-text); margin-bottom: 20px; font-size: 0.95rem;">
+                <div class="card" style="max-width: 500px; margin: 30px auto; text-align: center;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 15px;">Add Price (Optional)</h3>
+                    <p style="color: var(--medium-text); margin-bottom: 25px;">
                         Enter the product price to get a value-for-money analysis
                     </p>
 
                     <form id="priceForm" onsubmit="submitPrice(event)" style="display: flex; flex-direction: column; gap: 15px;">
                         <div>
-                            <label style="font-size: 1.1rem; margin-bottom: 10px; display: block;">Price ($)</label>
+                            <label>Price ($)</label>
                             <input type="number"
                                    step="0.01"
                                    name="price"
-                                   class="form-input"
                                    placeholder="0.00"
-                                   style="font-size: 1.3rem; text-align: center; padding: 15px;">
+                                   style="font-size: 1.2rem; text-align: center;">
                         </div>
 
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" class="btn primary" style="flex: 1;">Continue</button>
-                            <button type="button" class="btn secondary" onclick="submitPrice(null)" style="flex: 1;">Skip</button>
-                        </div>
-                    </form>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn primary" style="flex: 1;">Continue</button>
+                    <button type="button" class="btn" onclick="submitPrice(null)" style="flex: 1;">Skip</button>
                 </div>
-            `;
+            </form>
+        </div>
+    `;
 
-            // Store nutrition data
-            window.pendingNutritionData = nutritionData;
+    window.pendingNutritionData = nutritionData;
 
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = priceHtml;
-            resultsDiv.style.display = 'block';
-
-            // Scroll to the form
-            setTimeout(() => {
-                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+            document.getElementById('results').innerHTML = priceHtml;
+            document.getElementById('results').style.display = 'block';
         }
 
-        async function submitPrice(event) {
-            let price = null;
+async function submitPrice(event) {
+    let price = null;
 
-            if (event && event.preventDefault) {
-                event.preventDefault();
-                const form = event.target;
-                const formData = new FormData(form);
-                price = formData.get('price');
-                price = price ? parseFloat(price) : null;
-            }
+    if (event && event.preventDefault) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        price = formData.get('price');
+        price = price ? parseFloat(price) : null;
+    }
 
             // Build product object
             const productData = {
@@ -2410,21 +2476,20 @@
 
         async function evaluateProduct(productData) {
             showLoading();
-            hideResults();
 
-            try {
-                const response = await fetch(`${API_URL}/agent/evaluate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product: productData })
-                });
+    try {
+        const response = await fetch(`${API_URL}/agent/evaluate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product: scannedProduct })
+        });
 
-                const result = await response.json();
-                hideLoading();
+        const result = await response.json();
+        hideLoading();
 
                 if (result.success) {
                     displayEvaluation(result.evaluation, productData);
-                    showMessageBox('✓ Analysis complete!', 'success');
+                    showMessageBox('Analysis complete!', 'success');
                 } else {
                     showMessageBox(result.error || 'Evaluation failed', 'error');
                 }
@@ -2436,203 +2501,230 @@
 
         function displayEvaluation(evaluation, product) {
             const resultHtml = `
-                <div class="card" style="width: 100%; max-width: 100%; margin: 0; padding: 25px; background: var(--white); border-radius: 20px; box-shadow: 0 4px 20px var(--shadow);">
-                    <h2 style="color: var(--primary-green); margin-bottom: 20px; font-size: 1.5rem;">🧠 Nutrition Analysis</h2>
+                <div class="card">
+                    <h2 style="color: var(--primary-green); margin-bottom: 25px;">Nutrition Analysis</h2>
 
-                    <div style="background: var(--mint); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                        <h3 style="color: var(--primary-green); margin-bottom: 8px; font-size: 1.1rem;">${product.name || 'Product'}</h3>
-                        ${product.price ? `<p style="color: var(--medium-text); font-size: 0.95rem;">Price: $${product.price.toFixed(2)}</p>` : ''}
+                    <div style="background: var(--bg-color); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                        <h3 style="color: var(--primary-text); margin-bottom: 10px;">${product.name || 'Product'}</h3>
+                        ${product.price ? `<p style="color: var(--medium-text);">Price: $${product.price.toFixed(2)}</p>` : ''}
                     </div>
 
-                    <div style="white-space: pre-wrap; line-height: 1.7; color: var(--dark-text); font-size: 0.95rem;">
+                    <div style="white-space: pre-wrap; line-height: 1.8; color: var(--primary-text);">
                         ${evaluation.summary || evaluation}
                     </div>
 
-                    <button class="btn primary" onclick="resetScanner()" style="margin-top: 20px; width: 100%;">
+                    <button class="btn primary" onclick="resetScanner()" style="margin-top: 25px; width: 100%;">
                         Scan Another Product
                     </button>
                 </div>
             `;
 
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = resultHtml;
-            resultsDiv.style.display = 'block';
-
-            // Scroll to the results
-            setTimeout(() => {
-                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+            document.getElementById('results').innerHTML = resultHtml;
+            document.getElementById('results').style.display = 'block';
         }
 
         function resetScanner() {
             document.getElementById('results').style.display = 'none';
             document.getElementById('results').innerHTML = '';
             document.getElementById('imagePreview').innerHTML = '';
-            const imageInput = document.getElementById('imageInput');
-            if (imageInput) imageInput.value = '';
+            document.getElementById('imageInput').value = '';
             scannedProduct = null;
             window.ocrOriginalData = null;
             window.pendingNutritionData = null;
         }
 
-        // ============================================================================
-        // AI CHAT FUNCTIONS
-        // ============================================================================
+// ============================================================================
+// AI CHAT FUNCTIONS
+// ============================================================================
 
-        // Chat message history
-        let chatHistory = [];
+function addChatMessage(message, isUser = false) {
+    const chatMessages = document.getElementById('chatMessages');
+    const chatWelcome = document.getElementById('chatWelcome');
 
-        // Add message to chat
-        function addChatMessage(message, isUser = false) {
-            const chatMessages = document.getElementById('chatMessages');
-            const chatWelcome = document.getElementById('chatWelcome');
+    // Hide welcome message on first interaction
+    if (chatWelcome) {
+        chatWelcome.style.display = 'none';
+    }
 
-            // Hide welcome message on first interaction
-            if (chatWelcome) {
-                chatWelcome.style.display = 'none';
-            }
+    // Create message element
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isUser ? 'user' : 'ai'}`;
 
-            // Create message element
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${isUser ? 'user' : 'ai'}`;
+    const avatar = document.createElement('div');
+    avatar.className = 'chat-avatar';
+    avatar.textContent = isUser ? '👤' : '🤖';
 
-            const avatar = document.createElement('div');
-            avatar.className = 'chat-avatar';
-            avatar.textContent = isUser ? '👤' : '🤖';
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    bubble.innerHTML = parseMarkdown(message);
 
-            const bubble = document.createElement('div');
-            bubble.className = 'chat-bubble';
-            bubble.innerHTML = parseMarkdown(message);   
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(bubble);
 
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(bubble);
+    // Insert before typing indicator
+    const typingIndicator = document.getElementById('typingIndicator');
+    chatMessages.insertBefore(messageDiv, typingIndicator);
 
-            // Insert before typing indicator
-            const typingIndicator = document.getElementById('typingIndicator');
-            chatMessages.insertBefore(messageDiv, typingIndicator);
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // Scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+    // Store in history
+    chatHistory.push({ message, isUser, timestamp: new Date() });
+}
 
-            // Store in history
-            chatHistory.push({ message, isUser, timestamp: new Date() });
+function showTypingIndicator() {
+    const typingIndicator = document.getElementById('typingIndicator');
+    typingIndicator.style.display = 'flex';
+
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const typingIndicator = document.getElementById('typingIndicator');
+    typingIndicator.style.display = 'none';
+}
+
+async function sendChatMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+    const message = chatInput.value.trim();
+
+    if (!message) return;
+
+    // Add user message to chat
+    addChatMessage(message, true);
+
+    // Clear input
+    chatInput.value = '';
+
+    // Disable send button
+    chatSendBtn.disabled = true;
+
+    // Show typing indicator
+    showTypingIndicator();
+
+    try {
+        // Prepare context with recent product if available
+        const requestData = {
+            message: message
+        };
+
+        // Add scanned product to context if available
+        if (scannedProduct) {
+            requestData.product = scannedProduct;
         }
 
-        // Show typing indicator
-        function showTypingIndicator() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            typingIndicator.style.display = 'flex';
+        // Send to API
+        const response = await fetch(`${API_URL}/agent/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
 
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+        const result = await response.json();
 
         // Hide typing indicator
-        function hideTypingIndicator() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            typingIndicator.style.display = 'none';
+        hideTypingIndicator();
+
+        if (response.ok) {
+            // Add AI response to chat
+            addChatMessage(result.message, false);
+        } else {
+            // Add error message
+            addChatMessage('Sorry, I encountered an error. Please try again!', false);
+            console.error('Chat error:', result.error);
         }
 
-        // Send chat message to API
-        async function sendChatMessage() {
-            const chatInput = document.getElementById('chatInput');
-            const chatSendBtn = document.getElementById('chatSendBtn');
-            const message = chatInput.value.trim();
+    } catch (error) {
+        hideTypingIndicator();
+        addChatMessage('Sorry, I\'m having trouble connecting. Please check your internet connection!', false);
+        console.error('Chat network error:', error);
+    } finally {
+        // Re-enable send button
+        chatSendBtn.disabled = false;
+        chatInput.focus();
+    }
+}
 
-            if (!message) return;
+function sendQuickMessage(message) {
+    const chatInput = document.getElementById('chatInput');
+    chatInput.value = message;
+    sendChatMessage();
+}
 
-            // Add user message to chat
-            addChatMessage(message, true);
+function sendEvaluationToChat(evaluation) {
+    // Hide welcome message
+    const chatWelcome = document.getElementById('chatWelcome');
+    if (chatWelcome) {
+        chatWelcome.style.display = 'none';
+    }
 
-            // Clear input
-            chatInput.value = '';
+    // Check if companion_message exists in evaluation
+    if (evaluation && evaluation.companion_message) {
+        addChatMessage(evaluation.companion_message, false);
+    } else {
+        // Fallback: create summary from evaluation data
+        const product = evaluation.product || {};
+        const overall = evaluation.overall || {};
 
-            // Disable send button
-            chatSendBtn.disabled = true;
+        let message = `I analyzed ${product.name || 'this product'}!\n\n`;
+        message += `Overall Score: ${overall.score || 0}/100\n`;
+        message += `Recommendation: ${overall.recommendation || 'See details for more info'}`;
 
-            // Show typing indicator
-            showTypingIndicator();
+        addChatMessage(message, false);
+    }
 
-            try {
-                // Prepare context with recent product if available
-                const requestData = {
-                    message: message
-                };
+    // Scroll to bottom
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-                // Add scanned product to context if available
-                if (scannedProduct) {
-                    requestData.product = scannedProduct;
-                }
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 
-                // Send to API
-                const response = await fetch(`${API_URL}/agent/chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestData)
-                });
+function hasProfile(p) {
+  if (!p) return false;
+  const hasHeight =
+    (typeof p.height === 'string' && p.height.length > 0) ||
+    (Number.isFinite(p.height_cm) && p.height_cm > 0) ||
+    (Number.isFinite(p.height_feet) && Number.isFinite(p.height_inches));
+  const hasGoal = !!p.goal_type;
+  return hasHeight && hasGoal;
+}
 
-                const result = await response.json();
-
-                // Hide typing indicator
-                hideTypingIndicator();
-
-                if (response.ok) {
-                    // Add AI response to chat
-                    addChatMessage(result.message, false);
-                } else {
-                    // Add error message
-                    addChatMessage('Sorry, I encountered an error. Please try again!', false);
-                    console.error('Chat error:', result.error);
-                }
-
-            } catch (error) {
-                hideTypingIndicator();
-                addChatMessage('Sorry, I\'m having trouble connecting. Please check your internet connection!', false);
-                console.error('Chat network error:', error);
-            } finally {
-                // Re-enable send button
-                chatSendBtn.disabled = false;
-                chatInput.focus();
-            }
+function init() {
+    console.log('🚀 Initializing BalanceBot...');
+    
+    const savedUser = localStorage.getItem('nutriscan_user');
+    
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            console.log('👤 Found saved user:', currentUser.username);
+            
+            // Check if profile is complete
+            const complete = hasProfile(currentUser.profile);
+            complete ? showDashboard() : showProfileSetup();
+            
+        } catch (error) {
+            console.error('❌ Error parsing saved user:', error);
+            localStorage.removeItem('nutriscan_user');
+            showWelcomeScreen();
         }
+    } else {
+        console.log('👋 No saved user - showing welcome screen');
+        showWelcomeScreen();
+    }
+}
 
-        // Send quick message (from quick action buttons)
-        function sendQuickMessage(message) {
-            const chatInput = document.getElementById('chatInput');
-            chatInput.value = message;
-            sendChatMessage();
-        }
-
-        // Send AI evaluation results to chat
-        function sendEvaluationToChat(evaluation) {
-            // Hide welcome message
-            const chatWelcome = document.getElementById('chatWelcome');
-            if (chatWelcome) {
-                chatWelcome.style.display = 'none';
-            }
-
-            // Check if companion_message exists in evaluation
-            if (evaluation && evaluation.companion_message) {
-                addChatMessage(evaluation.companion_message, false);
-            } else {
-                // Fallback: create summary from evaluation data
-                const product = evaluation.product || {};
-                const overall = evaluation.overall || {};
-
-                let message = `I analyzed ${product.name || 'this product'}!\n\n`;
-                message += `Overall Score: ${overall.score || 0}/100\n`;
-                message += `Recommendation: ${overall.recommendation || 'See details for more info'}`;
-
-                addChatMessage(message, false);
-            }
-
-            // Scroll to bottom
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // Initialize
-        init();
-    </script>
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
 </body>
 </html>
