@@ -1038,12 +1038,27 @@
                 </p>
                 <div class="input-row">
                     <div class="form-group">
-                        <label class="form-label">Height (ft)</label>
-                        <input type="number" class="form-input" id="profileHeight" placeholder="5.8" min="3" max="8" required>
+                        <label class="form-label">Height (ft'in)</label>
+                       <div class="form-group">
+    <input 
+        type="text" 
+        class="form-input" 
+        id="profileHeight" 
+        placeholder="5'8" 
+        required 
+        pattern="^\d+'\d{1,2}$" 
+        title="Format: 5'8 (feet'apostrophe'inches)"
+        oninput="this.setCustomValidity('')"
+        oninvalid="this.setCustomValidity('Enter height as feet\'inches, like 5\'8')"
+    >
+    <small style="color: var(--medium-text); font-size: 0.85rem; display: block; margin-top: 5px;">
+        Use apostrophe (') between feet and inches. Example: 5'8
+    </small>
+</div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Weight (lbs)</label>
-                        <input type="number" class="form-input" id="profileWeight" placeholder="150" min="66" max="660" step="0.1" required>
+                        <input type="number" class="form-input" id="profileWeight" placeholder="150" min="66" max="660" step="1" required>
                     </div>
                 </div>
                 <button class="btn primary" onclick="nextQuestion(2)" style="width: 100%; margin-top: 20px;">
@@ -1139,8 +1154,8 @@
                 <h2>📊 Physical Profile</h2>
                 <div class="input-row">
                     <div class="form-group">
-                        <label class="form-label">Height (ft)</label>
-                        <input type="number" class="form-input" id="editHeight" min="3" max="8" step="0.1">
+                        <label class="form-label">Height (ft'in)</label>
+                        <input type="text" class="form-input" id="editHeight" placeholder="5'8">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Weight (lbs)</label>
@@ -1490,22 +1505,52 @@
 
         function nextQuestion(num) {
             if (num === 2) {
-                profileData.height = document.getElementById('profileHeight').value;
-                profileData.weight = document.getElementById('profileWeight').value;
-                if (!profileData.height || !profileData.weight) {
-                    alert('Please enter both height and weight');
-                    return;
-                }
-            }
-
-            document.querySelectorAll('.question-card').forEach(q => q.classList.remove('active'));
-            document.getElementById(`q${num}`).classList.add('active');
-
-            document.querySelectorAll('.progress-dot').forEach((dot, i) => {
-                if (i < num) dot.classList.add('active');
-                else dot.classList.remove('active');
-            });
+        // Validate height and weight before continuing
+        const heightInput = document.getElementById('profileHeight').value.trim();
+        const weightInput = document.getElementById('profileWeight').value.trim();
+        
+        // Validate height format
+        const heightPattern = /^\d+'\d{1,2}$/;
+        if (!heightPattern.test(heightInput)) {
+            alert("Height must be in format 5'8 (feet'inches with apostrophe).\nExample: 5'8 or 6'2");
+            return; // Stop here, don't continue
         }
+        
+        // Validate height range
+        const [feet, inches] = heightInput.split("'").map(Number);
+        if (feet < 3 || feet > 8) {
+            alert("Height must be between 3 and 8 feet.");
+            return;
+        }
+        if (inches < 0 || inches > 11) {
+            alert("Inches must be between 0 and 11.");
+            return;
+        }
+        
+        // Validate weight
+        const weight = parseFloat(weightInput);
+        if (!weight || weight < 66 || weight > 660) {
+            alert("Weight must be between 66 and 660 pounds.");
+            return;
+        }
+        
+        // If all validation passes, save the data
+        profileData.height = heightInput;
+        profileData.weight = weight;
+    }
+
+    // Hide all question cards
+    document.querySelectorAll('.question-card').forEach(q => q.classList.remove('active'));
+    
+    // Show the requested question
+    document.getElementById(`q${num}`).classList.add('active');
+
+    // Update progress dots
+    document.querySelectorAll('.progress-dot').forEach((dot, i) => {
+        if (i < num) dot.classList.add('active');
+        else dot.classList.remove('active');
+    });
+}
 
         function setProfileData(key, value) {
             profileData[key] = value;
@@ -1513,29 +1558,50 @@
 
         async function submitProfile() {
             try {
-                const response = await fetch(`${API_URL}/profile`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        height_ft: parseFloat(profileData.height),
-                        current_weight_lbs: parseFloat(profileData.weight),
-                        goal_type: profileData.goal,
-                        activity_level: profileData.activity,
-                        diet_type: profileData.diet
-                    })
-                });
-
-                if (response.ok) {
-                    await loadUserProfile();
-                    showDashboard();
-                } else {
-                    showDashboard();
-                }
-            } catch (error) {
-                console.error('Profile save error:', error);
-                showDashboard();
-            }
+        const heightRaw = (profileData.height || '').toString().trim();
+        const weightRaw = (profileData.weight || '').toString().trim();
+        
+        const heightPattern = /^\d+'\d{1,2}$/;
+        if (!heightPattern.test(heightRaw)) {
+            alert("Height must be in format 5'8 (feet'apostrophe'inches).");
+            return;
         }
+        
+        const weightVal = parseFloat(weightRaw);
+        if (Number.isNaN(weightVal) || weightVal <= 0) {
+            alert('Please enter a valid weight in pounds.');
+            return;
+        }
+        
+        const payload = {
+            height: heightRaw,
+            current_weight_lbs: weightVal,
+            goal_type: profileData.goal,
+            activity_level: profileData.activity,
+            diet_type: profileData.diet
+        };
+
+        console.log('[DEBUG] submitProfile payload:', payload);
+
+        // Use the setup endpoint for initial profile
+        const response = await fetch(`${API_URL}/profile/setup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            await loadUserProfile();
+            showDashboard();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Failed to save profile');
+        }
+    } catch (error) {
+        console.error('Profile save error:', error);
+        alert('Failed to save profile. Please try again.');
+    }
+}
 
         async function loadUserProfile() {
             try {
@@ -1556,24 +1622,61 @@
             document.getElementById('settingsPage').classList.add('show');
 
             // Load current profile data
-            if (currentUser && currentUser.profile) {
-                const p = currentUser.profile;
-                document.getElementById('editHeight').value = p.height_cm || '';
-                document.getElementById('editWeight').value = p.current_weight_kg || '';
-                document.getElementById('editGoal').value = p.goal_type || 'general_health';
-                document.getElementById('editActivity').value = p.activity_level || 'moderately_active';
-                document.getElementById('editDiet').value = p.diet_type || 'standard';
-            }
+                if (currentUser && currentUser.profile) {
+                    const p = currentUser.profile;
+                    // Convert stored cm/kg back to user-friendly ft'in and lbs
+                    if (p.height_cm) {
+                        const totalInches = p.height_cm / 2.54;
+                        const feet = Math.floor(totalInches / 12);
+                        const inches = Math.round(totalInches - feet * 12);
+                        document.getElementById('editHeight').value = `${feet}'${inches}`;
+                    } else {
+                        document.getElementById('editHeight').value = '';
+                    }
+
+                    if (p.current_weight_kg) {
+                        const lbs = Math.round(p.current_weight_kg / 0.453592);
+                        document.getElementById('editWeight').value = lbs;
+                    } else {
+                        document.getElementById('editWeight').value = '';
+                    }
+
+                    document.getElementById('editGoal').value = p.goal_type || 'general_health';
+                    document.getElementById('editActivity').value = p.activity_level || 'moderately_active';
+                    document.getElementById('editDiet').value = p.diet_type || 'standard';
+                }
         }
 
         async function saveProfile() {
+            // Read values
+            const heightRaw = (document.getElementById('editHeight').value || '').toString().trim();
+            const weightRaw = (document.getElementById('editWeight').value || '').toString().trim();
+
+            // Validate height format (no decimals allowed, must be feet'apostrophe'inches)
+            const heightPattern = /^\d+'\d{1,2}$/;
+            if (!heightPattern.test(heightRaw)) {
+                showMessage('settingsMessage', "Height must be in format 5'8 (feet'apostrophe'inches).", 'error');
+                return;
+            }
+
+            // Validate weight (must be numeric)
+            const weightVal = parseFloat(weightRaw);
+            if (Number.isNaN(weightVal) || weightVal <= 0) {
+                showMessage('settingsMessage', 'Please enter a valid weight in pounds (whole number).', 'error');
+                return;
+            }
+
+            // Build payload - round weight to integer pounds to reduce precision issues
             const updatedProfile = {
-                height_cm: parseFloat(document.getElementById('editHeight').value),
-                current_weight_kg: parseFloat(document.getElementById('editWeight').value),
+                height: heightRaw, // e.g. "5'8"
+                current_weight_lbs: Math.round(weightVal),
                 goal_type: document.getElementById('editGoal').value,
                 activity_level: document.getElementById('editActivity').value,
                 diet_type: document.getElementById('editDiet').value
             };
+
+            // Debug payload sent to server
+            console.log('[DEBUG] Sending profile payload:', updatedProfile);
 
             try {
                 const response = await fetch(`${API_URL}/profile`, {
@@ -1587,9 +1690,11 @@
                     showMessage('settingsMessage', 'Profile updated successfully!', 'success');
                     setTimeout(() => showDashboard(), 2000);
                 } else {
-                    showMessage('settingsMessage', 'Failed to update profile', 'error');
+                    const resJson = await response.json().catch(() => ({}));
+                    showMessage('settingsMessage', resJson.error || 'Failed to update profile', 'error');
                 }
             } catch (error) {
+                console.error('saveProfile error:', error);
                 showMessage('settingsMessage', 'Network error', 'error');
             }
         }
@@ -1746,32 +1851,34 @@
         }
 
         async function analyzeProduct() {
-            if (!scannedProduct) return;
+    if (!scannedProduct) {
+        showMessageBox('Please scan a product first', 'error');
+        return;
+    }
 
-            showLoading();
-            document.getElementById('aiResults').style.display = 'none';
+    showLoading();
 
-            try {
-                const response = await fetch(`${API_URL}/agent/evaluate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product: scannedProduct })
-                });
+    try {
+        const response = await fetch(`${API_URL}/agent/evaluate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product: scannedProduct })
+        });
 
-                const result = await response.json();
-                hideLoading();
+        const result = await response.json();
+        hideLoading();
 
-                if (response.ok) {
-                    displayAIResults(result.evaluation);
-                } else {
-                    showMessageBox('AI analysis failed: ' + result.error, 'error');
-                }
-            } catch (error) {
-                hideLoading();
-                showMessageBox('Network error during analysis!', 'error');
-            }
+        if (response.ok) {
+            displayAIResults(result.evaluation);
+        } else {
+            showMessageBox(result.error || 'Analysis failed', 'error');
         }
-
+    } catch (error) {
+        hideLoading();
+        showMessageBox('Network error during analysis', 'error');
+        console.error(error);
+    }
+}
         function displayAIResults(evaluation) {
             document.getElementById('overallScore').textContent = evaluation.overall.score + '/100';
             document.getElementById('overallRecommendation').textContent =

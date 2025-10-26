@@ -17,6 +17,43 @@ from pathlib import Path
 # Database file path
 DB_FILE = Path(__file__).parent / "nutrition_app.db"
 
+def migrate_to_imperial():
+    """
+    Add imperial unit columns to support feet/inches and pounds.
+    """
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    try:
+        # Check existing columns
+        cursor.execute("PRAGMA table_info(user_profiles)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        # Add imperial height columns
+        if 'height_feet' not in columns:
+            print("Adding 'height_feet' column...")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_feet INTEGER")
+        
+        if 'height_inches' not in columns:
+            print("Adding 'height_inches' column...")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_inches INTEGER")
+        
+        if 'height_display' not in columns:
+            print("Adding 'height_display' column...")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_display TEXT")
+        
+        # Add imperial weight column
+        if 'weight_lbs' not in columns:
+            print("Adding 'weight_lbs' column...")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN weight_lbs REAL")
+
+        conn.commit()
+        print("✓ Database migrated to support imperial units!")
+
+    except Exception as e:
+        print(f"Migration error: {e}")
+    finally:
+        conn.close()
 
 def hash_password(password: str, salt: str = None) -> tuple:
     """
@@ -264,12 +301,13 @@ def update_user_profile(user_id: int, profile_data: dict) -> bool:
 
         # Build dynamic UPDATE query
         valid_fields = [
-            'date_of_birth', 'gender', 'height_cm', 'current_weight_kg',
-            'goal_type', 'target_weight_kg', 'activity_level', 'diet_type',
-            'allergies', 'dietary_restrictions', 'bmi',
-            'daily_calorie_target', 'daily_protein_target_g',
-            'daily_carbs_target_g', 'daily_fat_target_g'
-        ]
+        'date_of_birth', 'gender', 'height_cm', 'current_weight_kg',
+        'height_feet', 'height_inches', 'height_display', 'weight_lbs',  # ADD THIS LINE
+        'goal_type', 'target_weight_kg', 'activity_level', 'diet_type',
+        'allergies', 'dietary_restrictions', 'bmi',
+        'daily_calorie_target', 'daily_protein_target_g',
+        'daily_carbs_target_g', 'daily_fat_target_g'
+    ]
 
         # Filter only valid fields
         update_fields = {k: v for k, v in profile_data.items() if k in valid_fields}

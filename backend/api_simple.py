@@ -27,11 +27,11 @@ from backend.database import (
     add_weight_entry,
     get_weight_history,
     calculate_bmi,
-    migrate_database
+    migrate_database,
+    migrate_to_imperial
 )
 # DEPRECATED: Old OCR-based nutrition scanner
 # from backend.nutrition_reader import extract_text_from_image, parse_nutrition_info
-
 # NEW: Nutrition Agent Service (barcode-based)
 try:
     from backend.nutrition_agent_service import get_nutrition_agent_service, run_async
@@ -69,7 +69,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # Initialize database and create a demo user
 init_database()
-migrate_database()  # Run migrations for existing databases
+migrate_database()  # Run migrations for price column
+migrate_to_imperial()  # Run imperial unit migration
 
 # Create a single demo user for the hackathon (user_id will always be 1)
 DEMO_USER_ID = 1
@@ -206,51 +207,145 @@ def login():
 def get_profile():
     """Get demo user's profile."""
     profile = get_user_profile(DEMO_USER_ID)
-    if profile:
-        return jsonify({'success': True, 'profile': profile}), 200
-    else:
+    
+    if not profile:
         return jsonify({'error': 'Profile not found'}), 404
-
+    
+    return jsonify({
+        'success': True,
+        'profile': profile
+    }), 200
 
 @app.route('/api/profile', methods=['PUT', 'POST'])
 def update_profile():
-    """Update demo user profile."""
+    """Update demo user profile - stores in imperial units."""
     data = request.get_json() or {}
+    print("[DEBUG] /api/profile called with payload:", data)
 
-    # Parse height in format: 5'4
+    import re
+
+    # Validate and parse height in feet'inches format
     if 'height' in data:
+        height_str = str(data['height']).strip()
+        
+        # Must be in format like 5'8 (only apostrophe allowed)
+        if not re.match(r"^\d+'\d+\"?$", height_str):
+            return jsonify({
+                'error': "Height must be in format feet'inches (e.g., 5'8). Use only an apostrophe (')."
+            }), 400
+        
         try:
-            feet, inches = data['height'].split("'")
-            height_cm = (int(feet) * 12 + int(inches)) * 2.54
-            data['height_cm'] = height_cm
-        except Exception:
-            return jsonify({'error': "Height must be in format 5'4"}), 400
+            # Remove trailing quote if present
+            height_str = height_str.rstrip('"')
+            feet, inches = height_str.split("'")
+            feet = int(feet)
+            inches = int(inches)
+            
+            # Validate ranges
+            if not (3 <= feet <= 8):
+                return jsonify({'error': 'Height feet must be between 3 and 8'}), 400
+            if not (0 <= inches <= 11):
+                return jsonify({'error': 'Height inches must be between 0 and 11'}), 400
+            
+            # Store as separate fields
+            data['height_feet'] = feet
+            data['height_inches'] = inches
+            # Also store the formatted string for display
+            data['height_display'] = f"{feet}'{inches}\""
+            
+            # Remove the original 'height' key
+            data.pop('height')
+            
+            print(f"[DEBUG] Parsed height: {feet}'{inches}\"")
+            
+        except Exception as e:
+            print("[DEBUG] Height parse failed:", e)
+            return jsonify({
+                'error': "Invalid height format. Use feet'inches (e.g., 5'8)"
+            }), 400
 
-    # Convert weight (lbs → kg)
-    if 'weight_lbs' in data:
+    # Handle weight in pounds
+    if 'weight' in data or 'weight_lbs' in data or 'current_weight_lbs' in data:
+        weight_lbs = data.get('weight') or data.get('weight_lbs') or data.get('current_weight_lbs')
+        
         try:
-            weight_kg = float(data['weight_lbs']) * 0.453592
-            data['current_weight_kg'] = weight_kg
-        except Exception:
-            return jsonify({'error': 'Weight must be numeric'}), 400
+            weight_lbs = float(weight_lbs)
+            
+            # Validate range (66-660 lbs is reasonable)
+            if not (66 <= weight_lbs <= 660):
+                return jsonify({
+                    'error': 'Weight must be between 66 and 660 pounds'
+                }), 400
+            
+            # Store as weight_lbs
+            data['weight_lbs'] = round(weight_lbs, 1)
+            
+            # Remove other weight keys
+            data.pop('weight', None)
+            data.pop('current_weight_lbs', None)
+            
+            print(f"[DEBUG] Parsed weight: {weight_lbs} lbs")
+            
+        except (ValueError, TypeError) as e:
+            print("[DEBUG] Weight parse failed:", e)
+            return jsonify({
+                'error': 'Weight must be a valid number in pounds'
+            }), 400
 
-    # Validate ranges
-    if not (100 <= data.get('height_cm', 0) <= 250):
-        return jsonify({'error': 'Height must be between 100–250 cm (3.3–8.2 ft)'}), 400
+    # Calculate BMI if we have both height and weight
+    # Use existing values if new ones weren't provided
+    profile = get_user_profile(DEMO_USER_ID)
+    
+    height_feet = data.get('height_feet') or (profile.get('height_feet') if profile else None)
+    height_inches = data.get('height_inches') or (profile.get('height_inches') if profile else None)
+    weight_lbs = data.get('weight_lbs') or (profile.get('weight_lbs') if profile else None)
+    
+    if height_feet and height_inches is not None and weight_lbs:
+        # BMI formula: (weight_lbs / (height_inches^2)) * 703
+        total_height_inches = (height_feet * 12) + height_inches
+        bmi = (weight_lbs / (total_height_inches ** 2)) * 703
+        data['bmi'] = round(bmi, 1)
+        print(f"[DEBUG] Calculated BMI: {bmi:.1f}")
 
-    if not (30 <= data.get('current_weight_kg', 0) <= 300):
-        return jsonify({'error': 'Weight must be between 30–300 kg (66–660 lbs)'}), 400
+    # Ensure numeric fields are proper types
+    numeric_fields = [
+        'height_feet', 'height_inches', 'weight_lbs', 'bmi',
+        'daily_calorie_target', 'daily_protein_target_g',
+        'daily_carbs_target_g', 'daily_fat_target_g'
+    ]
+    
+    for field in numeric_fields:
+        if field in data:
+            try:
+                data[field] = float(data[field])
+            except (ValueError, TypeError) as e:
+                print(f'[DEBUG] Type conversion error for {field}:', e)
+                return jsonify({
+                    'error': f'{field} must be a valid number'
+                }), 400
 
-    # Auto-calculate BMI
-    if 'height_cm' in data and 'current_weight_kg' in data:
-        data['bmi'] = calculate_bmi(data['current_weight_kg'], data['height_cm'])
+    # Debug output
+    print('[DEBUG] Data to save:', {k: (type(v).__name__, v) for k, v in data.items()})
 
-    # Save profile
+    # Save profile to database
     success = update_user_profile(DEMO_USER_ID, data)
+    print(f"[DEBUG] update_user_profile returned: {success}")
+    
     if success:
+        # Retrieve updated profile
         profile = get_user_profile(DEMO_USER_ID)
-        return jsonify({'success': True, 'message': 'Profile updated', 'profile': profile}), 200
-    return jsonify({'error': 'Failed to update profile'}), 400
+        print(f"[DEBUG] Retrieved profile after save: {profile}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Profile updated successfully',
+            'profile': profile
+        }), 200
+    else:
+        print("[DEBUG] Failed to update profile in database")
+        return jsonify({
+            'error': 'Failed to update profile in database'
+        }), 400
 
 # ============================================================================
 # NUTRITION SCANNING - NEW BARCODE-BASED SYSTEM
@@ -582,6 +677,90 @@ def index():
         'demo': 'Open demo.html in your browser to test!'
     }), 200
 
+@app.route('/api/profile/setup', methods=['POST'])
+def initial_profile_setup():
+    """Initial profile setup - for first-time user onboarding."""
+    data = request.get_json() or {}
+    print("[DEBUG] Initial profile setup called with:", data)
+
+    import re
+
+    # Validate and parse height
+    if 'height' not in data:
+        return jsonify({'error': 'Height is required'}), 400
+    
+    height_str = str(data['height']).strip()
+    if not re.match(r"^\d+'\d+\"?$", height_str):
+        return jsonify({'error': "Height must be in format feet'inches (e.g., 5'8)"}), 400
+    
+    try:
+        height_str = height_str.rstrip('"')
+        feet, inches = height_str.split("'")
+        feet, inches = int(feet), int(inches)
+        
+        if not (3 <= feet <= 8) or not (0 <= inches <= 11):
+            return jsonify({'error': 'Invalid height range'}), 400
+        
+        data['height_feet'] = feet
+        data['height_inches'] = inches
+        data['height_display'] = f"{feet}'{inches}\""
+        data.pop('height')
+        
+    except Exception as e:
+        print("[DEBUG] Height parse error:", e)
+        return jsonify({'error': 'Invalid height format'}), 400
+
+    # Validate and parse weight
+    weight_key = 'current_weight_lbs' if 'current_weight_lbs' in data else 'weight'
+    if weight_key not in data:
+        return jsonify({'error': 'Weight is required'}), 400
+    
+    try:
+        weight_lbs = float(data[weight_key])
+        if not (66 <= weight_lbs <= 660):
+            return jsonify({'error': 'Weight must be between 66 and 660 pounds'}), 400
+        
+        data['weight_lbs'] = round(weight_lbs, 1)
+        data.pop(weight_key, None)
+        data.pop('weight', None)
+        
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Weight must be a valid number'}), 400
+
+    # Calculate BMI
+    total_height_inches = (data['height_feet'] * 12) + data['height_inches']
+    bmi = (data['weight_lbs'] / (total_height_inches ** 2)) * 703
+    data['bmi'] = round(bmi, 1)
+
+    print(f"[DEBUG] Saving initial profile: {data}")
+
+    # Save to database
+    success = update_user_profile(DEMO_USER_ID, data)
+    
+    if success:
+        profile = get_user_profile(DEMO_USER_ID)
+        return jsonify({
+            'success': True,
+            'message': 'Profile created successfully',
+            'profile': profile
+        }), 201
+    else:
+        return jsonify({'error': 'Failed to save profile'}), 500
+
+
+    
+
+    fetch('http://localhost:5000/api/profile/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        height: "5'8",
+        weight: 150,
+        goal_type: 'weight_loss',
+        activity_level: 'moderately_active',
+        diet_type: 'standard'
+    })
+})
 
 if __name__ == '__main__':
     print("\n" + "="*70)
