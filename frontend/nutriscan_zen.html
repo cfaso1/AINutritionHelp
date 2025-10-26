@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriScan - Your Nutrition Partner</title>
+    <title>BalanceBot - Your Nutrition Partner</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
 
@@ -407,6 +407,7 @@
             display: grid;
             grid-template-columns: 1fr 380px;
             gap: 30px;
+            align-items: stretch
         }
 
         .scanner-section {
@@ -427,7 +428,7 @@
         .section-subtitle {
             text-align: center;
             color: var(--medium-text);
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
 
         .scan-area {
@@ -640,8 +641,7 @@
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 600px;
-            max-height: 70vh;
+            height: 80vh;
         }
 
         .chat-header {
@@ -913,7 +913,7 @@
         <div class="nav-content">
             <div class="logo">
                 <span>🌿</span>
-                NutriScan
+                BalanceBot
             </div>
             <div id="navButtons">
                 <button class="btn" onclick="showLogin()">Login</button>
@@ -932,7 +932,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">📷</div>
                     <h3>Smart Scanning</h3>
-                    <p>Instantly identify products with barcode uploads</p>
+                    <p>Instantly identify products with photo uploads</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🧠</div>
@@ -989,7 +989,7 @@
     <div class="modal" id="signupModal">
         <div class="modal-content">
             <button class="close-modal" onclick="closeModal()">&times;</button>
-            <h2 class="modal-title">Join NutriScan</h2>
+            <h2 class="modal-title">Join BalanceBot</h2>
             <p style="text-align: center; color: var(--medium-text); margin-bottom: 30px;">
                 Start your personalized nutrition journey
             </p>
@@ -1229,25 +1229,75 @@
         </div>
 
         <div class="dashboard-content">
+            <!-- AI Chat Interface -->
+            <div class="sidebar">
+                <div class="chat-container">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <h3>🤖 AI Nutrition Companion</h3>
+                        <p>Your personal health assistant</p>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Welcome Message -->
+                        <div class="chat-welcome" id="chatWelcome">
+                            <div class="chat-welcome-icon">👋</div>
+                            <h4>Hi! I'm your AI nutrition companion</h4>
+                            <p>Scan a barcode to get started, or ask me anything about nutrition, health, and fitness!</p>
+
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" onclick="sendQuickMessage('What should I eat before a workout?')">
+                                    💪 What should I eat before a workout?
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('How much protein do I need daily?')">
+                                    🥗 How much protein do I need daily?
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('What are healthy snack options?')">
+                                    🍎 What are healthy snack options?
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Typing Indicator -->
+                        <div class="chat-message ai" id="typingIndicator" style="display: none;">
+                            <div class="chat-avatar">🤖</div>
+                            <div class="typing-indicator show">
+                                <div class="typing-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <input
+                                type="text"
+                                class="chat-input"
+                                id="chatInput"
+                                placeholder="Ask me anything..."
+                                onkeypress="if(event.key==='Enter') sendChatMessage()"
+                            >
+                            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
+                                ➤
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Main Panel -->
             <div class="main-panel">
                 <div class="scanner-section">
                     <h2 class="section-title">Scan Your Food</h2>
-                    <p class="section-subtitle">Enter a barcode or upload an image</p>
-
-                    <!-- Barcode Input -->
-                    <div style="margin: 30px 0;">
-                        <input type="text"
-                               class="form-input"
-                               id="barcodeInput"
-                               placeholder="Enter barcode number (e.g., 722252601025)"
-                               style="text-align: center;"
-                               onkeypress="if(event.key==='Enter') scanBarcode()">
-                        <button class="btn primary" onclick="scanBarcode()" style="width: 100%; margin-top: 15px;">
-                            🔍 Scan Barcode
-                        </button>
-                    </div>
-
+                    <p class="section-subtitle">Upload or Enter Nutrition Facts</p>
+                    <!-- Manual Input Button -->
+                    <button class="btn secondary" id="manualInputBtn" style="width: 100%;" onclick="showManualInput()">
+                        ✏️ Manual Input
+                    </button>
                     <!-- Image Upload -->
                     <div class="scan-area" onclick="document.getElementById('imageInput').click()">
                         <input type="file"
@@ -1256,13 +1306,12 @@
                                style="display: none;"
                                onchange="handleImageUpload(event)">
                         <div style="font-size: 3rem; margin-bottom: 10px;">📸</div>
-                        <p style="color: var(--primary-green); font-weight: 500;">Upload Barcode Image</p>
+                        <p style="color: var(--primary-green); font-weight: 500;">Upload Nutrition Facts Image</p>
                         <p style="font-size: 0.9rem; color: var(--medium-text); margin-top: 10px;">
                             Click to browse or drag & drop
                         </p>
                     </div>
 
-                    <div id="imagePreview" style="margin: 20px 0; text-align: center;"></div>
                 </div>
 
                 <!-- Loading -->
@@ -1326,70 +1375,18 @@
                 </div>
             </div>
 
-            <!-- AI Chat Interface -->
-            <div class="sidebar">
-                <div class="chat-container">
-                    <!-- Chat Header -->
-                    <div class="chat-header">
-                        <h3>🤖 AI Nutrition Companion</h3>
-                        <p>Your personal health assistant</p>
-                    </div>
-
-                    <!-- Chat Messages -->
-                    <div class="chat-messages" id="chatMessages">
-                        <!-- Welcome Message -->
-                        <div class="chat-welcome" id="chatWelcome">
-                            <div class="chat-welcome-icon">👋</div>
-                            <h4>Hi! I'm your AI nutrition companion</h4>
-                            <p>Scan a barcode to get started, or ask me anything about nutrition, health, and fitness!</p>
-
-                            <div class="quick-actions">
-                                <button class="quick-action-btn" onclick="sendQuickMessage('What should I eat before a workout?')">
-                                    💪 What should I eat before a workout?
-                                </button>
-                                <button class="quick-action-btn" onclick="sendQuickMessage('How much protein do I need daily?')">
-                                    🥗 How much protein do I need daily?
-                                </button>
-                                <button class="quick-action-btn" onclick="sendQuickMessage('What are healthy snack options?')">
-                                    🍎 What are healthy snack options?
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Typing Indicator -->
-                        <div class="chat-message ai" id="typingIndicator" style="display: none;">
-                            <div class="chat-avatar">🤖</div>
-                            <div class="typing-indicator show">
-                                <div class="typing-dots">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Input -->
-                    <div class="chat-input-area">
-                        <div class="chat-input-wrapper">
-                            <input
-                                type="text"
-                                class="chat-input"
-                                id="chatInput"
-                                placeholder="Ask me anything..."
-                                onkeypress="if(event.key==='Enter') sendChatMessage()"
-                            >
-                            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
-                                ➤
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
-
     <script>
+        function parseMarkdown(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')             // *italic*
+                .replace(/`(.*?)`/g, '<code>$1</code>')           // `code`
+                .replace(/\n/g, '<br>');                          // new lines
+        }
+
+
         // Config
         const API_URL = 'http://localhost:5000/api';
         let currentUser = null;
@@ -1969,7 +1966,7 @@
 
             const bubble = document.createElement('div');
             bubble.className = 'chat-bubble';
-            bubble.textContent = message;
+            bubble.innerHTML = parseMarkdown(message);   
 
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(bubble);
