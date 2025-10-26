@@ -32,6 +32,7 @@
             background: var(--cream);
             color: var(--Fark-text);
             line-height: 1.6;
+            padding-top: 90px; /* NEW: Prevents nav overlap */
         }
 
         /* Navigation */
@@ -949,6 +950,10 @@
         }
 
         @media (max-width: 968px) {
+            body {
+                padding-top: 140px; /* More padding for taller mobile nav */
+            }
+            
             .hero-title { font-size: 2.5rem; }
             .features { grid-template-columns: 1fr; }
             .dashboard-content { grid-template-columns: 1fr; }
