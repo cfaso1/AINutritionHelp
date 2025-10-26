@@ -30,7 +30,7 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--cream);
-            color: var(--Fark-text);
+            color: var(--dark-text);
             line-height: 1.6;
             padding-top: 90px; /* NEW: Prevents nav overlap */
         }
@@ -1762,11 +1762,9 @@ async function handleLogin(e) {
             
             // Load profile from server
             await loadUserProfile();
-            
-            // Determine which screen to show
-            const hasCompleteProfile = currentUser.profile && 
-                                      currentUser.profile.goal_type && 
-                                      currentUser.profile.height;
+
+            const complete = hasProfile(currentUser.profile);
+            complete ? showDashboard() : showProfileSetup();
             
             if (hasCompleteProfile) {
                 console.log('✅ Profile complete - showing dashboard');
@@ -2625,6 +2623,16 @@ function sendEvaluationToChat(evaluation) {
 // INITIALIZATION
 // ============================================================================
 
+function hasProfile(p) {
+  if (!p) return false;
+  const hasHeight =
+    (typeof p.height === 'string' && p.height.length > 0) ||
+    (Number.isFinite(p.height_cm) && p.height_cm > 0) ||
+    (Number.isFinite(p.height_feet) && Number.isFinite(p.height_inches));
+  const hasGoal = !!p.goal_type;
+  return hasHeight && hasGoal;
+}
+
 function init() {
     console.log('🚀 Initializing BalanceBot...');
     
@@ -2636,17 +2644,9 @@ function init() {
             console.log('👤 Found saved user:', currentUser.username);
             
             // Check if profile is complete
-            const hasCompleteProfile = currentUser.profile && 
-                                      currentUser.profile.goal_type && 
-                                      currentUser.profile.height;
+            const complete = hasProfile(currentUser.profile);
+            complete ? showDashboard() : showProfileSetup();
             
-            if (hasCompleteProfile) {
-                console.log('✅ Profile complete - showing dashboard');
-                showDashboard();
-            } else {
-                console.log('⚠️ Profile incomplete - showing setup');
-                showProfileSetup();
-            }
         } catch (error) {
             console.error('❌ Error parsing saved user:', error);
             localStorage.removeItem('nutriscan_user');
