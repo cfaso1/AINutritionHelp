@@ -5,18 +5,24 @@ Usage: python run.py
 """
 
 import sys
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Check for required Google API key
+GOOGLE_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_KEY:
+    print("\n❌ ERROR: Missing GOOGLE_API_KEY in .env file")
+    print("\n📝 To fix this:")
+    print("   1. Get an API key from: https://aistudio.google.com/apikey")
+    print("   2. Add it to your .env file: GOOGLE_API_KEY=your_key_here")
+    print("   3. Restart the server\n")
+    sys.exit(1)
 
-import os
-ANTH_KEY = os.getenv("ANTHROPIC_API_KEY")
-assert ANTH_KEY, "Missing ANTHROPIC_API_KEY"
-
-print("KEY_LOADED:", bool(os.getenv("ANTHROPIC_API_KEY")))
+print("✅ Google API Key loaded")
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -28,7 +34,7 @@ if __name__ == '__main__':
     print("\n" + "="*70)
     print("🍎 AI Nutrition Help API Server")
     print("="*70)
-    print("\n✨ Features: Barcode Scanner | Multi-Agent AI | Health Goals\n")
+    print("\n✨ Features: Barcode Scanner | AI Chat | Multi-Agent Analysis\n")
     print("API Endpoints:")
     print("  Authentication:")
     print("    POST   http://localhost:5000/api/auth/register")
@@ -40,14 +46,14 @@ if __name__ == '__main__':
     print("    POST   http://localhost:5000/api/barcode/scan")
     print("    POST   http://localhost:5000/api/barcode/image")
     print("    POST   http://localhost:5000/api/agent/evaluate")
+    print("    POST   http://localhost:5000/api/agent/chat        👈 NEW!")
     print("\n  Weight Tracking:")
     print("    POST   http://localhost:5000/api/weight")
     print("    GET    http://localhost:5000/api/weight/history")
     print("\n" + "="*70)
-    print("\n🚀 Open frontend/demo.html in your browser!")
+    print("\n🚀 Open frontend/nutriscan_zen.html in your browser!")
     print("   Demo Account: demo_user / demo123")
-    print("\n💡 TIP: Make sure to install dependencies:")
-    print("   pip install -r requirements.txt")
+    print("\n💡 Powered by Google Gemini 2.0-flash")
     print("="*70 + "\n")
 
     app.run(debug=True, host='0.0.0.0', port=5000)

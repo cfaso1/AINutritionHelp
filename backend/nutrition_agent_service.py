@@ -27,17 +27,12 @@ class NutritionAgentService:
     This is a wrapper around the new agent system for backward compatibility.
     """
 
-    def __init__(self, anthropic_api_key: str = None, barcode_api_key: str = None):
+    def __init__(self):
         """
         Initialize the nutrition agent service.
 
-        Args:
-            anthropic_api_key: NOT USED - kept for backward compatibility
-            barcode_api_key: NOT USED - kept for backward compatibility
+        Uses Google Gemini API (configured via agent/.env file).
         """
-        # The new system uses Google Gemini API, so we ignore these keys
-        # They're kept for backward compatibility
-
         # Initialize the new agent service
         self._new_service = get_new_service()
 
