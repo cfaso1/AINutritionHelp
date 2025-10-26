@@ -1297,7 +1297,6 @@
                         </p>
                     </div>
 
-                    <div id="imagePreview" style="margin: 20px 0; text-align: center;"></div>
                 </div>
 
                 <!-- Loading -->
@@ -1363,8 +1362,16 @@
 
         </div>
     </div>
-
     <script>
+        function parseMarkdown(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')             // *italic*
+                .replace(/`(.*?)`/g, '<code>$1</code>')           // `code`
+                .replace(/\n/g, '<br>');                          // new lines
+        }
+
+
         // Config
         const API_URL = 'http://localhost:5000/api';
         let currentUser = null;
@@ -1852,7 +1859,7 @@
 
             const bubble = document.createElement('div');
             bubble.className = 'chat-bubble';
-            bubble.textContent = message;
+            bubble.innerHTML = parseMarkdown(message);   
 
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(bubble);
