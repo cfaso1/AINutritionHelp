@@ -317,7 +317,54 @@ I'm here to help you make informed choices for your health journey. Keep it up! 
 
         if "recent_product" in context:
             product = context["recent_product"]
-            context_parts.append(f"\nRecently scanned: {product.get('name', 'Unknown')}")
+            product_info = [f"RECENTLY SCANNED PRODUCT:"]
+            product_info.append(f"- Name: {product.get('name', 'Unknown Product')}")
+
+            if product.get('price'):
+                product_info.append(f"- Price: ${product['price']}")
+
+            # Include detailed nutrition data if available
+            nutrition = product.get('nutrition', {})
+            if nutrition:
+                product_info.append("\nNUTRITION FACTS:")
+
+                if nutrition.get('serving_size'):
+                    product_info.append(f"- Serving Size: {nutrition['serving_size']}")
+
+                if nutrition.get('servings_per_container'):
+                    product_info.append(f"- Servings Per Container: {nutrition['servings_per_container']}")
+
+                if nutrition.get('calories'):
+                    product_info.append(f"- Calories: {nutrition['calories']}")
+
+                if nutrition.get('fat_total') is not None:
+                    product_info.append(f"- Total Fat: {nutrition['fat_total']}g")
+
+                if nutrition.get('saturated_fat') is not None:
+                    product_info.append(f"  - Saturated Fat: {nutrition['saturated_fat']}g")
+
+                if nutrition.get('trans_fat') is not None:
+                    product_info.append(f"  - Trans Fat: {nutrition['trans_fat']}g")
+
+                if nutrition.get('cholesterol') is not None:
+                    product_info.append(f"- Cholesterol: {nutrition['cholesterol']}mg")
+
+                if nutrition.get('sodium') is not None:
+                    product_info.append(f"- Sodium: {nutrition['sodium']}mg")
+
+                if nutrition.get('carbs_total') is not None:
+                    product_info.append(f"- Total Carbohydrates: {nutrition['carbs_total']}g")
+
+                if nutrition.get('dietary_fiber') is not None:
+                    product_info.append(f"  - Dietary Fiber: {nutrition['dietary_fiber']}g")
+
+                if nutrition.get('sugar_total') is not None:
+                    product_info.append(f"  - Total Sugars: {nutrition['sugar_total']}g")
+
+                if nutrition.get('protein') is not None:
+                    product_info.append(f"- Protein: {nutrition['protein']}g")
+
+            context_parts.append("\n" + "\n".join(product_info))
 
         return "\n".join(context_parts) if context_parts else ""
 

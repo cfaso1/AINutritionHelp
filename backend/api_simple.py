@@ -354,6 +354,16 @@ def nutrition_ocr():
         clarification_info = needs_clarification(nutrition_data, confidences)
 
         if clarification_info['needs_clarification']:
+            # If ALL priority fields are missing, OCR failed completely - suggest manual entry
+            missing_count = len(clarification_info['missing_fields'])
+            if missing_count >= 7:  # Most/all fields missing
+                return jsonify({
+                    'success': False,
+                    'error': 'Could not extract nutrition data from image. Please use manual entry.',
+                    'needs_manual_entry': True,
+                    'ocr_text_length': len(ocr_text)
+                }), 200
+
             # Return data with clarification form
             form_data = get_clarification_form_data(nutrition_data, confidences)
 
