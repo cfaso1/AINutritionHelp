@@ -192,6 +192,120 @@
             box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
         }
 
+        /* Enhanced Manual Input Form Styles */
+        .manual-input-container {
+            background: linear-gradient(135deg, var(--white) 0%, var(--mint) 100%);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary-green);
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-group label .required {
+            color: #d32f2f;
+            font-size: 0.85rem;
+        }
+
+        .form-group label .icon {
+            font-size: 1.1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 14px;
+            font-size: 15px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--white);
+            color: var(--dark-text);
+            box-sizing: border-box;
+        }
+
+        .form-group input:hover {
+            border-color: var(--soft-green);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .form-group input::placeholder {
+            color: var(--light-text);
+            font-style: italic;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .manual-input-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .manual-input-header h3 {
+            color: var(--primary-green);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .manual-input-header p {
+            color: var(--medium-text);
+            font-size: 1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .form-actions button {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 1rem;
+            border-radius: 12px;
+        }
+
+        @media (max-width: 968px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .manual-input-container {
+                padding: 25px 20px;
+            }
+
+            .form-group input {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
+
         .message {
             padding: 15px;
             margin-bottom: 20px;
@@ -2210,69 +2324,71 @@ async function handleImageUpload(event) {
 
         function showManualInput() {
             const manualFormHtml = `
-                <div class="card" style="max-width: 600px; margin: 30px auto;">
-                    <h3 style="color: var(--primary-green); margin-bottom: 20px;">Manual Nutrition Entry</h3>
-                    <p style="color: var(--medium-text); margin-bottom: 25px;">Enter nutrition facts from the label</p>
+                <div class="manual-input-container" style="max-width: 700px; margin: 30px auto;">
+                    <div class="manual-input-header">
+                        <h3>📊 Manual Nutrition Entry</h3>
+                        <p>Enter the nutrition facts from your product label</p>
+                    </div>
 
                     <form id="manualNutritionForm" onsubmit="submitManualEntry(event)">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div>
-                                <label>Total Fat (g) *</label>
-                                <input type="number" step="0.1" name="fat_total" required>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label><span class="icon">🔥</span> Calories <span class="required">*</span></label>
+                                <input type="number" step="1" name="calories" placeholder="e.g., 250" required>
                             </div>
-                            <div>
-                                <label>Total Sugar (g) *</label>
-                                <input type="number" step="0.1" name="sugar_total" required>
+                            <div class="form-group">
+                                <label><span class="icon">💪</span> Protein (g) <span class="required">*</span></label>
+                                <input type="number" step="0.1" name="protein" placeholder="e.g., 8.5" required>
                             </div>
-                            <div>
-                                <label>Sodium (mg) *</label>
-                                <input type="number" step="1" name="sodium" required>
+                            <div class="form-group">
+                                <label><span class="icon">🌾</span> Total Carbs (g) <span class="required">*</span></label>
+                                <input type="number" step="0.1" name="carbs_total" placeholder="e.g., 45.0" required>
                             </div>
-                            <div>
-                                <label>Total Carbs (g) *</label>
-                                <input type="number" step="0.1" name="carbs_total" required>
+                            <div class="form-group">
+                                <label><span class="icon">🍬</span> Total Sugar (g) <span class="required">*</span></label>
+                                <input type="number" step="0.1" name="sugar_total" placeholder="e.g., 12.0" required>
                             </div>
-                            <div>
-                                <label>Protein (g) *</label>
-                                <input type="number" step="0.1" name="protein" required>
+                            <div class="form-group">
+                                <label><span class="icon">🥑</span> Total Fat (g) <span class="required">*</span></label>
+                                <input type="number" step="0.1" name="fat_total" placeholder="e.g., 10.0" required>
                             </div>
-                            <div>
-                                <label>Cholesterol (mg) *</label>
-                                <input type="number" step="1" name="cholesterol" required>
+                            <div class="form-group">
+                                <label><span class="icon">🥓</span> Saturated Fat (g)</label>
+                                <input type="number" step="0.1" name="saturated_fat" placeholder="e.g., 3.0">
                             </div>
-                            <div>
-                                <label>Serving Size *</label>
-                                <input type="text" name="serving_size" placeholder="e.g., 100g" required>
+                            <div class="form-group">
+                                <label><span class="icon">🧂</span> Sodium (mg) <span class="required">*</span></label>
+                                <input type="number" step="1" name="sodium" placeholder="e.g., 200" required>
                             </div>
-                            <div>
-                                <label>Servings Per Container *</label>
-                                <input type="number" step="0.1" name="servings_per_container" required>
+                            <div class="form-group">
+                                <label><span class="icon">❤️</span> Cholesterol (mg) <span class="required">*</span></label>
+                                <input type="number" step="1" name="cholesterol" placeholder="e.g., 15" required>
                             </div>
-                            <div>
-                                <label>Calories (optional)</label>
-                                <input type="number" step="1" name="calories">
+                            <div class="form-group">
+                                <label><span class="icon">🌿</span> Dietary Fiber (g)</label>
+                                <input type="number" step="0.1" name="dietary_fiber" placeholder="e.g., 3.5">
                             </div>
-                            <div>
-                                <label>Saturated Fat (g)</label>
-                                <input type="number" step="0.1" name="saturated_fat">
+                            <div class="form-group">
+                                <label><span class="icon">⚠️</span> Trans Fat (g)</label>
+                                <input type="number" step="0.1" name="trans_fat" placeholder="e.g., 0.0">
                             </div>
-                            <div>
-                                <label>Trans Fat (g)</label>
-                                <input type="number" step="0.1" name="trans_fat">
+                            <div class="form-group">
+                                <label><span class="icon">📏</span> Serving Size <span class="required">*</span></label>
+                                <input type="text" name="serving_size" placeholder="e.g., 100g or 1 cup" required>
                             </div>
-                            <div>
-                                <label>Dietary Fiber (g)</label>
-                                <input type="number" step="0.1" name="dietary_fiber">
+                            <div class="form-group">
+                                <label><span class="icon">📦</span> Servings Per Container <span class="required">*</span></label>
+                                <input type="number" step="0.1" name="servings_per_container" placeholder="e.g., 2.5" required>
                             </div>
                         </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 25px;">
-                    <button type="submit" class="btn primary" style="flex: 1;">Submit</button>
-                    <button type="button" class="btn" onclick="hideManualInput()" style="flex: 1;">Cancel</button>
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary">✓ Submit Entry</button>
+                            <button type="button" class="btn" onclick="hideManualInput()">✕ Cancel</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
-        </div>
-    `;
+            `;
 
             document.getElementById('results').innerHTML = manualFormHtml;
             document.getElementById('results').style.display = 'block';
