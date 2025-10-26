@@ -1638,9 +1638,7 @@
         function logout() {
             currentUser = null;
             localStorage.removeItem('nutriscan_user');
-            hideAllScreens();
-            document.getElementById('welcomeScreen').classList.remove('hidden');
-            updateNav(false);
+            location.reload();
         }
 
         // Profile Setup
