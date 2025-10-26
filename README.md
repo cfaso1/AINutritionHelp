@@ -1,6 +1,6 @@
 # 🍎 AI Nutrition Help
 
-Scan product barcodes, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from a multi-agent AI system.
+Scan products, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from a multi-agent AI system.
 
 ---
 
@@ -29,7 +29,7 @@ python backend/api_simple.py
 ## ✨ Features
 
 ### Core Capabilities
-- 🔍 **Barcode Scanner** - Scan product barcodes or upload images
+- 🔍 **Item Scanner** - Scan nutrition facts or upload images
 - 🤖 **AI Chat Companion** - Conversational nutrition assistant powered by Gemini 2.0
 - ❤️ **Health Evaluator** - Analyzes nutrition alignment with health goals
 - 💪 **Fitness Evaluator** - Evaluates products for fitness objectives
@@ -92,19 +92,11 @@ Navigate to Settings and configure:
 - Daily targets (calories, protein, etc.)
 
 ### 3. **Scan Products**
-- **Enter barcode manually** (e.g., `722252601025`)
-- **Upload barcode image** - automatically extracts barcode
+- **Enter data manually** (e.g., `protein: `)
+- **Upload data image** - automatically extracts data
 - View product information and nutrition facts
 
-### 4. **Get AI Analysis**
-- Click "Get AI Analysis" button
-- View comprehensive evaluation:
-  - Health score and recommendations
-  - Fitness alignment and timing
-  - Price assessment
-- **AI companion message appears in chat automatically!**
-
-### 5. **Chat with AI**
+### 4. **Chat with AI**
 - Ask questions in the chat interface
 - Get personalized nutrition advice
 - AI remembers your scanned products
@@ -152,7 +144,7 @@ The chat interface provides a conversational AI companion that:
 
 **Auto-Trigger on Scan:**
 ```
-User scans barcode → AI analyzes product →
+User scans item → AI analyzes product →
 Companion message appears in chat automatically
 ```
 
@@ -184,41 +176,22 @@ User types question → AI responds with personalized advice
 
 ---
 
-## 🧪 Test Barcodes
-
-Try these sample products:
-
-| Product | Barcode | Notes |
-|---------|---------|-------|
-| Quest Protein Bar | `722252601025` | High protein, low sugar ✅ |
-| Coca-Cola Classic | `012000161551` | High sugar ⚠️ |
-| Gatorade | `078000113464` | Sports drink |
-| Cheerios | `016000275683` | Breakfast cereal |
-
----
 
 ## 🔧 Configuration
 
 ### Required: Google API Key
 
-The agent system uses **Google Gemini 2.0-flash** (not Anthropic Claude).
+The agent system uses **Google Gemini 2.0-flash** 
 
 **Create `agent/.env`:**
 ```env
 GOOGLE_API_KEY=your_google_api_key_here
-BARCODE_LOOKUP_API_KEY=your_barcode_api_key  # Optional
 ```
 
 **Get API Key:**
 1. Go to https://aistudio.google.com/apikey
 2. Create a new API key
 3. Add to `agent/.env`
-
-### Optional: Barcode Lookup API
-For real product data, get a key from:
-- https://www.barcodelookup.com/api
-
-Without this, the app uses mock data for test barcodes.
 
 ---
 
@@ -246,7 +219,7 @@ Without this, the app uses mock data for test barcodes.
 
 ### Data Flow
 ```
-1. User scans barcode
+1. User scans item
 2. Product info retrieved
 3. All 3 evaluators run in parallel (asyncio)
 4. Results combined
@@ -347,22 +320,6 @@ python -c "from main_agent import get_agent; print(get_agent())"
 # Look for errors when starting api_simple.py
 ```
 
-### Barcode Image Upload Not Working
-
-**Cause:** Missing system dependencies
-
-**Fix:**
-```bash
-# Ubuntu/Debian:
-sudo apt-get install libzbar0
-
-# macOS:
-brew install zbar
-
-# Then reinstall Python package:
-pip install pyzbar
-```
-
 ### Frontend Can't Connect to API
 
 **Check:**
@@ -386,9 +343,6 @@ The agent also supports Google Agent Development Kit:
 # Start ADK agent
 ./venv/bin/adk run agent
 
-# Then interact via CLI:
-> Can you scan barcode 722252601025?
-> Evaluate barcode 722252601025 for muscle building
 ```
 
 This is useful for testing the agent outside the web interface.
@@ -399,15 +353,13 @@ This is useful for testing the agent outside the web interface.
 
 - **Agent Response Time:** 2-4 seconds (all 3 agents in parallel)
 - **Chat Response Time:** 1-2 seconds
-- **Barcode Lookup:** <1 second
-- **Image Barcode Detection:** 1-2 seconds
+- **Image Detection:** 1-2 seconds
 
 ---
 
 ## 🎯 Roadmap
 
 - [ ] Save chat history to database
-- [ ] Support markdown formatting in chat
 - [ ] Add message timestamps
 - [ ] Export chat conversations
 - [ ] Voice input for chat
@@ -418,24 +370,6 @@ This is useful for testing the agent outside the web interface.
 
 ---
 
-## 📝 Development Notes
-
-### Recent Changes (v2.0)
-- ✅ Migrated from Anthropic Claude to Google Gemini
-- ✅ Added AI chat interface (replaced "Example Barcodes")
-- ✅ Integrated chat with barcode scanning
-- ✅ Auto-trigger chat messages on product analysis
-- ✅ Added quick action buttons
-- ✅ Improved UI/UX with animations
-
-### Migration Summary
-The codebase was refactored to:
-1. Use Google Gemini instead of Claude
-2. Consolidate agent code into `agent/` directory
-3. Add conversational chat capability
-4. Improve frontend with modern chat UI
-
----
 
 ## 📄 License
 
@@ -465,12 +399,6 @@ python backend/api_simple.py
 # Check API health
 curl http://localhost:5000/api/health
 ```
-
-**Common Issues:**
-1. ❌ "Nutrition agent not available" → Add Google API key to `agent/.env`
-2. ❌ Chat not working → Check browser console (F12)
-3. ❌ Barcode image upload fails → Install libzbar
-4. ❌ Database errors → Delete `backend/nutrition_app.db` and restart
 
 ---
 
