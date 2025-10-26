@@ -30,7 +30,7 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--cream);
-            color: var(--dark-text);
+            color: var(--Fark-text);
             line-height: 1.6;
         }
 
@@ -670,7 +670,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">📷</div>
                     <h3>Smart Scanning</h3>
-                    <p>Instantly identify products with barcode technology</p>
+                    <p>Instantly identify products with barcode uploads</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🧠</div>
@@ -753,7 +753,7 @@
             </form>
 
             <p style="text-align: center; margin-top: 30px; color: var(--medium-text);">
-                Have an account? <a href="#" onclick="showLogin(); return false;" style="color: var(--primary-green); font-weight: 500;">Sign In</a>
+                Have an account? <a href="#" onclick="showLogin(); return false;" style="color: var(--primary-green); font-weight: 500;">Login</a>
             </p>
         </div>
     </div>
@@ -776,12 +776,12 @@
                 </p>
                 <div class="input-row">
                     <div class="form-group">
-                        <label class="form-label">Height (cm)</label>
-                        <input type="number" class="form-input" id="profileHeight" placeholder="175" required>
+                        <label class="form-label">Height (ft)</label>
+                        <input type="number" class="form-input" id="profileHeight" placeholder="5.8" min="3" max="8" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Weight (kg)</label>
-                        <input type="number" class="form-input" id="profileWeight" placeholder="70" step="0.1" required>
+                        <label class="form-label">Weight (lbs)</label>
+                        <input type="number" class="form-input" id="profileWeight" placeholder="150" min="66" max="660" step="0.1" required>
                     </div>
                 </div>
                 <button class="btn primary" onclick="nextQuestion(2)" style="width: 100%; margin-top: 20px;">
@@ -877,12 +877,12 @@
                 <h2>📊 Physical Profile</h2>
                 <div class="input-row">
                     <div class="form-group">
-                        <label class="form-label">Height (cm)</label>
-                        <input type="number" class="form-input" id="editHeight">
+                        <label class="form-label">Height (ft)</label>
+                        <input type="number" class="form-input" id="editHeight" min="3" max="8" step="0.1">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Weight (kg)</label>
-                        <input type="number" class="form-input" id="editWeight" step="0.1">
+                        <label class="form-label">Weight (lbs)</label>
+                        <input type="number" class="form-input" id="editWeight" min="66" max="660" step="0.1">
                     </div>
                 </div>
             </div>
@@ -1229,8 +1229,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        height_cm: parseFloat(profileData.height),
-                        current_weight_kg: parseFloat(profileData.weight),
+                        height_ft: parseFloat(profileData.height),
+                        current_weight_lbs: parseFloat(profileData.weight),
                         goal_type: profileData.goal,
                         activity_level: profileData.activity,
                         diet_type: profileData.diet
@@ -1323,10 +1323,7 @@
         function updateNav(loggedIn) {
             const navButtons = document.getElementById('navButtons');
             if (loggedIn) {
-                navButtons.innerHTML = `
-                    <button class="btn" onclick="showSettings()">Settings</button>
-                    <button class="btn" onclick="logout()">Logout</button>
-                `;
+                navButtons.innerHTML = '';
             } else {
                 navButtons.innerHTML = `
                     <button class="btn" onclick="showLogin()">Login</button>

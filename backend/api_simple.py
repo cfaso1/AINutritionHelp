@@ -215,20 +215,42 @@ def get_profile():
 @app.route('/api/profile', methods=['PUT', 'POST'])
 def update_profile():
     """Update demo user profile."""
-    data = request.get_json()
+    data = request.get_json() or {}
 
-    # Auto-calculate BMI if height and weight provided
+    # Parse height in format: 5'4
+    if 'height' in data:
+        try:
+            feet, inches = data['height'].split("'")
+            height_cm = (int(feet) * 12 + int(inches)) * 2.54
+            data['height_cm'] = height_cm
+        except Exception:
+            return jsonify({'error': "Height must be in format 5'4"}), 400
+
+    # Convert weight (lbs → kg)
+    if 'weight_lbs' in data:
+        try:
+            weight_kg = float(data['weight_lbs']) * 0.453592
+            data['current_weight_kg'] = weight_kg
+        except Exception:
+            return jsonify({'error': 'Weight must be numeric'}), 400
+
+    # Validate ranges
+    if not (100 <= data.get('height_cm', 0) <= 250):
+        return jsonify({'error': 'Height must be between 100–250 cm (3.3–8.2 ft)'}), 400
+
+    if not (30 <= data.get('current_weight_kg', 0) <= 300):
+        return jsonify({'error': 'Weight must be between 30–300 kg (66–660 lbs)'}), 400
+
+    # Auto-calculate BMI
     if 'height_cm' in data and 'current_weight_kg' in data:
         data['bmi'] = calculate_bmi(data['current_weight_kg'], data['height_cm'])
 
+    # Save profile
     success = update_user_profile(DEMO_USER_ID, data)
-
     if success:
         profile = get_user_profile(DEMO_USER_ID)
         return jsonify({'success': True, 'message': 'Profile updated', 'profile': profile}), 200
-    else:
-        return jsonify({'error': 'Failed to update profile'}), 400
-
+    return jsonify({'error': 'Failed to update profile'}), 400
 
 # ============================================================================
 # NUTRITION SCANNING - NEW BARCODE-BASED SYSTEM

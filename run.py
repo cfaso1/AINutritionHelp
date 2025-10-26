@@ -11,6 +11,13 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+
+import os
+ANTH_KEY = os.getenv("ANTHROPIC_API_KEY")
+assert ANTH_KEY, "Missing ANTHROPIC_API_KEY"
+
+print("KEY_LOADED:", bool(os.getenv("ANTHROPIC_API_KEY")))
+
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
