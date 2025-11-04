@@ -19,7 +19,7 @@ cd ..
 python backend/api_simple.py
 
 # 4. Open the frontend
-# Open: frontend/nutriscan_zen.html in your browser
+# Open: frontend/index.html in your browser
 ```
 
 **Demo Login:** `demo_user` / `demo123`
@@ -57,8 +57,9 @@ AINutritionHelp/
 │   └── uploads/                   # Uploaded images
 │
 ├── frontend/
-│   ├── nutriscan_zen.html         # Main app with AI chat interface
-│   └── demo.html                  # Legacy version
+│   ├── index.html                 # Main app with AI chat interface
+│   ├── app.js                     # Frontend JavaScript logic
+│   └── styles.css                 # Application styles
 │
 ├── agent/                          # AI Agent System (NEW)
 │   ├── main_agent.py              # Main orchestrator
@@ -116,11 +117,12 @@ Navigate to Settings and configure:
 - `GET /profile` - Get user profile
 - `PUT /profile` - Update profile
 
-### Barcode & Analysis
-- `POST /barcode/scan` - Scan barcode number
-- `POST /barcode/image` - Upload barcode image
+### Nutrition Scanning & Analysis
+- `POST /nutrition/ocr` - Upload nutrition label image (OCR)
+- `POST /nutrition/manual` - Submit manual nutrition entry
+- `POST /nutrition/clarify` - Clarify/correct OCR results
 - `POST /agent/evaluate` - Get AI evaluation (3 agents)
-- `POST /agent/chat` - Chat with AI companion ✨ **NEW**
+- `POST /agent/chat` - Chat with AI companion ✨
 
 ### Weight Tracking
 - `POST /weight` - Log weight

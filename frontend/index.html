@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BalanceBot - Your Nutrition Partner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-content">
+            <div class="logo">
+                <span>🌿</span>
+                BalanceBot
+            </div>
+            <div id="navButtons">
+                <button class="btn" onclick="showLogin()">Login</button>
+                <button class="btn primary" onclick="showSignup()">Sign Up</button>
+            </div>
+            <div class="user-banner" id="userBannerNav">
+                <div class="user-info-section clickable" onclick="showSettings()">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <h3 id="userName">User</h3>
+                        <div class="user-goal" id="userGoal">Loading...</div>
+                    </div>
+                </div>
+                <div class="user-banner-buttons">
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Welcome Screen -->
+    <section class="welcome-screen" id="welcomeScreen">
+        <div class="hero-content">
+            <h1 class="hero-title">Your Nutrition Partner</h1>
+            <p class="hero-subtitle">Make informed food choices with AI-powered insights</p>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">📷</div>
+                    <h3>Smart Scanning</h3>
+                    <p>Instantly identify products with photo uploads</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>AI Analysis</h3>
+                    <p>Get personalized nutrition insights for your goals</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💚</div>
+                    <h3>Holistic Health</h3>
+                    <p>Track your wellness journey with expert guidance</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 60px;">
+                <button class="btn primary" onclick="showSignup()" style="font-size: 16px; padding: 18px 50px;">
+                    Get Started
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <h2 class="modal-title">Welcome Back</h2>
+            <p class="modal-subtitle">Sign in to continue your wellness journey</p>
+
+            <div class="message" id="loginMessage"></div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">
+                    Sign In
+                </button>
+            </form>
+
+            <p class="modal-footer">
+                New here? <a href="#" onclick="showSignup(); return false;">Create Account</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <h2 class="modal-title">Join BalanceBot</h2>
+            <p class="modal-subtitle">Start your personalized nutrition journey</p>
+
+            <div class="message" id="signupMessage"></div>
+
+            <form onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="signupUsername" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="signupPassword" required>
+                </div>
+                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">
+                    Create Account
+                </button>
+            </form>
+
+            <p class="modal-footer">
+                Have an account? <a href="#" onclick="showLogin(); return false;">Login</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Profile Setup -->
+    <section class="profile-setup" id="profileSetup">
+        <div class="profile-container">
+            <div class="progress-tracker">
+                <div class="progress-dot active" id="prog1"></div>
+                <div class="progress-dot" id="prog2"></div>
+                <div class="progress-dot" id="prog3"></div>
+                <div class="progress-dot" id="prog4"></div>
+                <div class="progress-dot" id="prog5"></div>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="question-card active" id="q1">
+                <h3 class="question-title">Your Physical Profile</h3>
+                <p class="question-subtitle">Help us personalize your experience</p>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label">Height (ft'in)</label>
+                        <input type="text" class="form-input" id="profileHeight" placeholder="5'8"
+                               pattern="^\d+'\d{1,2}$" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Weight (lbs)</label>
+                        <input type="number" class="form-input" id="profileWeight" placeholder="150"
+                               min="66" max="660" step="1" required>
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="profileGender" required>
+                            <option value="">Select...</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <select class="form-select" id="profileAge" required>
+                            <option value="">Select...</option>
+                            <option value="18-25">18-25</option>
+                            <option value="26-35">26-35</option>
+                            <option value="36-45">36-45</option>
+                            <option value="46-55">46-55</option>
+                            <option value="56-65">56-65</option>
+                            <option value="65+">65+</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn primary" onclick="nextQuestion(2)" style="width: 100%; margin-top: 20px;">
+                    Continue
+                </button>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question-card" id="q2">
+                <h3 class="question-title">Your Primary Goal</h3>
+                <p class="question-subtitle">What would you like to achieve?</p>
+                <div class="button-grid">
+                    <button class="btn" onclick="setProfileData('goal', 'weight_loss'); nextQuestion(3)">
+                        Weight Loss
+                    </button>
+                    <button class="btn" onclick="setProfileData('goal', 'muscle_gain'); nextQuestion(3)">
+                        Build Muscle
+                    </button>
+                    <button class="btn" onclick="setProfileData('goal', 'maintain'); nextQuestion(3)">
+                        Maintain Weight
+                    </button>
+                    <button class="btn" onclick="setProfileData('goal', 'general_health'); nextQuestion(3)">
+                        General Health
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question-card" id="q3">
+                <h3 class="question-title">Activity Level</h3>
+                <p class="question-subtitle">How active is your lifestyle?</p>
+                <div class="button-grid">
+                    <button class="btn" onclick="setProfileData('activity', 'sedentary'); nextQuestion(4)">
+                        Sedentary<br><small>Little exercise</small>
+                    </button>
+                    <button class="btn" onclick="setProfileData('activity', 'lightly_active'); nextQuestion(4)">
+                        Lightly Active<br><small>1-3 days/week</small>
+                    </button>
+                    <button class="btn" onclick="setProfileData('activity', 'moderately_active'); nextQuestion(4)">
+                        Moderately Active<br><small>3-5 days/week</small>
+                    </button>
+                    <button class="btn" onclick="setProfileData('activity', 'very_active'); nextQuestion(4)">
+                        Very Active<br><small>Daily exercise</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question-card" id="q4">
+                <h3 class="question-title">Dietary Preferences</h3>
+                <p class="question-subtitle">What's your preferred diet type?</p>
+                <div class="button-grid">
+                    <button class="btn" onclick="setProfileData('diet', 'standard'); nextQuestion(5)">Standard</button>
+                    <button class="btn" onclick="setProfileData('diet', 'vegetarian'); nextQuestion(5)">Vegetarian</button>
+                    <button class="btn" onclick="setProfileData('diet', 'vegan'); nextQuestion(5)">Vegan</button>
+                    <button class="btn" onclick="setProfileData('diet', 'keto'); nextQuestion(5)">Keto</button>
+                    <button class="btn" onclick="setProfileData('diet', 'paleo'); nextQuestion(5)">Paleo</button>
+                    <button class="btn" onclick="setProfileData('diet', 'gluten_free'); nextQuestion(5)">Gluten-Free</button>
+                </div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="question-card" id="q5">
+                <h3 class="question-title">Dietary Restrictions</h3>
+                <p class="question-subtitle">Select any that apply</p>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="gluten_free" class="dietary-restriction-checkbox">
+                        <span>Gluten-Free</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="diabetes" class="dietary-restriction-checkbox">
+                        <span>Diabetes</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="lactose_intolerant" class="dietary-restriction-checkbox">
+                        <span>Lactose Intolerant</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="low_sodium" class="dietary-restriction-checkbox">
+                        <span>Low Sodium</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="heart_healthy" class="dietary-restriction-checkbox">
+                        <span>Heart Healthy</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" value="none" class="dietary-restriction-checkbox">
+                        <span>None</span>
+                    </label>
+                </div>
+                <button class="btn primary" onclick="submitProfile()" style="width: 100%; margin-top: 20px;">
+                    Complete Setup
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Settings Page -->
+    <section class="settings-page" id="settingsPage">
+        <div class="settings-container">
+            <h1 class="page-title">Profile Settings</h1>
+
+            <div class="message" id="settingsMessage"></div>
+
+            <div class="settings-card">
+                <h2>Physical Profile</h2>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label">Height (ft'in)</label>
+                        <input type="text" class="form-input" id="editHeight" placeholder="5'8">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Weight (lbs)</label>
+                        <input type="number" class="form-input" id="editWeight" min="66" max="660" step="0.1">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="editGender">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <select class="form-select" id="editAge">
+                            <option value="18-25">18-25</option>
+                            <option value="26-35">26-35</option>
+                            <option value="36-45">36-45</option>
+                            <option value="46-55">46-55</option>
+                            <option value="56-65">56-65</option>
+                            <option value="65+">65+</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h2>Health Goals</h2>
+                <div class="form-group">
+                    <label class="form-label">Primary Goal</label>
+                    <select class="form-select" id="editGoal">
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="muscle_gain">Build Muscle</option>
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="general_health">General Health</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Activity Level</label>
+                    <select class="form-select" id="editActivity">
+                        <option value="sedentary">Sedentary</option>
+                        <option value="lightly_active">Lightly Active</option>
+                        <option value="moderately_active">Moderately Active</option>
+                        <option value="very_active">Very Active</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Diet Type</label>
+                    <select class="form-select" id="editDiet">
+                        <option value="standard">Standard</option>
+                        <option value="vegetarian">Vegetarian</option>
+                        <option value="vegan">Vegan</option>
+                        <option value="keto">Keto</option>
+                        <option value="paleo">Paleo</option>
+                        <option value="gluten_free">Gluten-Free</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dietary Restrictions</label>
+                    <input type="text" class="form-input" id="editDietaryRestrictions"
+                           placeholder="e.g., Gluten-Free, Diabetes">
+                    <small class="form-hint">Separate multiple restrictions with commas</small>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button class="btn primary" onclick="saveProfile()">Save Changes</button>
+                <button class="btn" onclick="showDashboard()">Cancel</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard -->
+    <main class="dashboard" id="dashboard">
+        <div class="dashboard-content">
+            <!-- AI Chat -->
+            <aside class="sidebar">
+                <div class="chat-container">
+                    <header class="chat-header">
+                        <h3>AI Nutrition Companion</h3>
+                        <p>Your personal health assistant</p>
+                    </header>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-welcome" id="chatWelcome">
+                            <div class="chat-welcome-icon">👋</div>
+                            <h4>Hi! I'm your AI nutrition companion</h4>
+                            <p>Scan a product to get started, or ask me anything about nutrition!</p>
+
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" onclick="sendQuickMessage('What should I eat before a workout?')">
+                                    What should I eat before a workout?
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('How much protein do I need daily?')">
+                                    How much protein do I need daily?
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('What are healthy snack options?')">
+                                    What are healthy snack options?
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="chat-message ai" id="typingIndicator" style="display: none;">
+                            <div class="chat-avatar">🤖</div>
+                            <div class="typing-indicator show">
+                                <div class="typing-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <input type="text" class="chat-input" id="chatInput"
+                                   placeholder="Ask me anything..."
+                                   onkeypress="if(event.key==='Enter') sendChatMessage()">
+                            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="results"></div>
+            </aside>
+
+            <!-- Main Panel -->
+            <section class="main-panel">
+                <article class="scanner-section">
+                    <h2 class="section-title">Scan Your Food</h2>
+                    <p class="section-subtitle">Upload or Enter Nutrition Facts</p>
+
+                    <button class="btn secondary btn-full" onclick="showManualInput()">
+                        Manual Input
+                    </button>
+
+                    <div class="scan-area" onclick="document.getElementById('imageInput').click()">
+                        <input type="file" id="imageInput" accept="image/*"
+                               style="display: none;" onchange="handleImageUpload(event)">
+                        <div class="scan-icon">📸</div>
+                        <p class="scan-title">Upload Nutrition Facts Image</p>
+                        <p class="scan-hint">Click to browse or drag & drop</p>
+                    </div>
+                </article>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing nutrition data...</p>
+                </div>
+
+                <div class="message" id="messageBox"></div>
+
+                <!-- Results Panel -->
+                <article class="results-panel" id="resultsPanel">
+                    <div class="product-header">
+                        <h3 class="product-name" id="productName">-</h3>
+                        <p class="product-brand" id="productBrand">-</p>
+                        <p class="product-meta">
+                            <span id="productCategory">-</span> • $<span id="productPrice">-</span>
+                        </p>
+                    </div>
+
+                    <h4 class="nutrition-title">Nutrition Facts</h4>
+                    <div class="nutrition-grid" id="nutritionGrid"></div>
+
+                    <button class="btn primary btn-full" onclick="analyzeProduct()"
+                            id="analyzeBtn" disabled>Get AI Analysis</button>
+
+                    <!-- AI Results -->
+                    <div id="aiResults">
+                        <div class="overall-rating">
+                            <h4>Overall Rating</h4>
+                            <div class="score-display" id="overallScore">-</div>
+                            <p id="overallRecommendation">-</p>
+                        </div>
+
+                        <div class="ai-analysis">
+                            <h4 class="analysis-title">Health Alignment</h4>
+                            <p><strong>Score:</strong> <span id="healthScore">-</span>/100</p>
+                            <p id="healthSummary">-</p>
+                            <div id="healthPros"></div>
+                            <div id="healthCons"></div>
+                        </div>
+
+                        <div class="ai-analysis">
+                            <h4 class="analysis-title">Fitness Alignment</h4>
+                            <p><strong>Score:</strong> <span id="fitnessScore">-</span>/100</p>
+                            <p id="fitnessSummary">-</p>
+                            <p><strong>Best for:</strong> <span id="fitnessBestFor">-</span></p>
+                            <p id="fitnessRec">-</p>
+                        </div>
+
+                        <div class="ai-analysis">
+                            <h4 class="analysis-title">Price Evaluation</h4>
+                            <p><strong>Rating:</strong> <span id="priceRating">-</span></p>
+                            <p id="priceSummary">-</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
