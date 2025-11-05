@@ -10,8 +10,11 @@ USAGE:
 import sqlite3
 import hashlib
 import secrets
+import logging
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 # Database file path
@@ -43,32 +46,32 @@ def migrate_to_imperial():
 
         # Add imperial height columns
         if 'height_feet' not in columns:
-            print("Adding 'height_feet' column...")
+            logger.debug("Adding 'height_feet' column")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_feet INTEGER")
 
         if 'height_inches' not in columns:
-            print("Adding 'height_inches' column...")
+            logger.debug("Adding 'height_inches' column")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_inches INTEGER")
 
         if 'height_display' not in columns:
-            print("Adding 'height_display' column...")
+            logger.debug("Adding 'height_display' column")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_display TEXT")
 
         # Add imperial weight column
         if 'weight_lbs' not in columns:
-            print("Adding 'weight_lbs' column...")
+            logger.debug("Adding 'weight_lbs' column")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN weight_lbs REAL")
 
         # Add age category column
         if 'age_category' not in columns:
-            print("Adding 'age_category' column...")
+            logger.debug("Adding 'age_category' column")
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN age_category TEXT")
 
         conn.commit()
-        print("✓ Database migrated to support imperial units and age category!")
+        logger.debug("Database migrated to support imperial units and age category")
 
     except Exception as e:
-        print(f"Migration error: {e}")
+        logger.error(f"Migration error: {e}")
     finally:
         conn.close()
 
@@ -200,7 +203,7 @@ def init_database():
     conn.commit()
     conn.close()
 
-    print(f"Database initialized successfully at: {DB_FILE}")
+    logger.debug(f"Database initialized at: {DB_FILE}")
 
 
 def create_user(username: str, email: str, password: str) -> int:
@@ -242,17 +245,17 @@ def create_user(username: str, email: str, password: str) -> int:
         return user_id
 
     except sqlite3.IntegrityError as e:
-        print(f"Error: Username or email already exists. {e}")
+        logger.debug(f"Username or email already exists: {e}")
         if conn:
             conn.rollback()
         return None
     except sqlite3.OperationalError as e:
-        print(f"Database locked or busy: {e}")
+        logger.error(f"Database locked or busy: {e}")
         if conn:
             conn.rollback()
         return None
     except Exception as e:
-        print(f"Error creating user: {e}")
+        logger.error(f"Error creating user: {e}")
         if conn:
             conn.rollback()
         return None
@@ -362,7 +365,7 @@ def update_user_profile(user_id: int, profile_data: dict) -> bool:
         return True
 
     except Exception as e:
-        print(f"Error updating profile: {e}")
+        logger.error(f"Error updating profile: {e}")
         return False
 
 
@@ -439,7 +442,7 @@ def log_nutrition(user_id: int, nutrition_json: str, meal_type: str = 'other',
         return log_id
 
     except Exception as e:
-        print(f"Error logging nutrition: {e}")
+        logger.error(f"Error logging nutrition: {e}")
         return None
 
 
@@ -513,7 +516,7 @@ def add_weight_entry(user_id: int, weight_kg: float, notes: str = None) -> int:
         return weight_id
 
     except Exception as e:
-        print(f"Error adding weight entry: {e}")
+        logger.error(f"Error adding weight entry: {e}")
         return None
 
 
@@ -567,13 +570,13 @@ def migrate_database():
         columns = [column[1] for column in cursor.fetchall()]
 
         if 'price' not in columns:
-            print("Adding 'price' column to nutrition_logs table...")
+            logger.debug("Adding 'price' column to nutrition_logs table")
             cursor.execute("ALTER TABLE nutrition_logs ADD COLUMN price REAL")
             conn.commit()
-            print("Migration completed successfully!")
+            logger.debug("Migration completed successfully")
 
     except Exception as e:
-        print(f"Migration error: {e}")
+        logger.error(f"Migration error: {e}")
     finally:
         conn.close()
 

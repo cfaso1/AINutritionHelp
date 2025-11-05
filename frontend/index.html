@@ -414,39 +414,11 @@
                 </div>
 
                 <div id="results"></div>
-            </aside>
 
-            <!-- Main Panel -->
-            <section class="main-panel">
-                <article class="scanner-section">
-                    <h2 class="section-title">Scan Your Food</h2>
-                    <p class="section-subtitle">Upload or Enter Nutrition Facts</p>
-
-                    <button class="btn secondary btn-full" onclick="showManualInput()">
-                        Manual Input
-                    </button>
-
-                    <div class="scan-area" onclick="document.getElementById('imageInput').click()">
-                        <input type="file" id="imageInput" accept="image/*"
-                               style="display: none;" onchange="handleImageUpload(event)">
-                        <div class="scan-icon">📸</div>
-                        <p class="scan-title">Upload Nutrition Facts Image</p>
-                        <p class="scan-hint">Click to browse or drag & drop</p>
-                    </div>
-                </article>
-
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>Analyzing nutrition data...</p>
-                </div>
-
-                <div class="message" id="messageBox"></div>
-
-                <!-- Results Panel -->
+                <!-- Results Panel - Moved here to display under chat -->
                 <article class="results-panel" id="resultsPanel">
                     <div class="product-header">
                         <h3 class="product-name" id="productName">-</h3>
-                        <p class="product-brand" id="productBrand">-</p>
                         <p class="product-meta">
                             <span id="productCategory">-</span> • $<span id="productPrice">-</span>
                         </p>
@@ -489,6 +461,33 @@
                         </div>
                     </div>
                 </article>
+            </aside>
+
+            <!-- Main Panel -->
+            <section class="main-panel">
+                <article class="scanner-section">
+                    <h2 class="section-title">Scan Your Food</h2>
+                    <p class="section-subtitle">Upload or Enter Nutrition Facts</p>
+
+                    <button class="btn secondary btn-full" onclick="showManualInput()">
+                        Manual Input
+                    </button>
+
+                    <div class="scan-area" onclick="document.getElementById('imageInput').click()">
+                        <input type="file" id="imageInput" accept="image/*"
+                               style="display: none;" onchange="handleImageUpload(event)">
+                        <div class="scan-icon">📸</div>
+                        <p class="scan-title">Upload Nutrition Facts Image</p>
+                        <p class="scan-hint">Click to browse or drag & drop</p>
+                    </div>
+                </article>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing nutrition data...</p>
+                </div>
+
+                <div class="message" id="messageBox"></div>
             </section>
         </div>
     </main>

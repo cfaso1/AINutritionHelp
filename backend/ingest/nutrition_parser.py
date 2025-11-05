@@ -122,127 +122,147 @@ def parse_nutrition_text(text: str) -> Dict[str, Any]:
         Dictionary with 'data' (nutrition values) and 'confidences' (per-field confidence)
     """
     logger.info("Parsing nutrition text")
+    logger.debug(f"Raw text to parse: {text}")
 
     data = {}
     confidences = {}
 
-    # Priority fields with multiple pattern variations
+    # Priority fields with multiple pattern variations (more flexible now)
 
-    # Total Fat
-    fat_patterns = [
-        r'Total\s+Fat[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Fat,?\s+Total[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Fat[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, fat_patterns)
-    if value is not None:
-        data['fat_total'] = value
-        confidences['fat_total'] = conf
-
-    # Sugar
-    sugar_patterns = [
-        r'Total\s+Sugars?[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Sugars?,?\s+Total[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Sugars?[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, sugar_patterns)
-    if value is not None:
-        data['sugar_total'] = value
-        confidences['sugar_total'] = conf
-
-    # Sodium
-    sodium_patterns = [
-        r'Sodium[:\s]+(\d+(?:\.\d+)?)\s*(mg|milligrams?)',
-        r'Na[:\s]+(\d+(?:\.\d+)?)\s*(mg|milligrams?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, sodium_patterns)
-    if value is not None:
-        data['sodium'] = value
-        confidences['sodium'] = conf
-
-    # Total Carbohydrates
-    carbs_patterns = [
-        r'Total\s+Carbohydrate[s]?[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Carbohydrate[s]?,?\s+Total[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Carbs?[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, carbs_patterns)
-    if value is not None:
-        data['carbs_total'] = value
-        confidences['carbs_total'] = conf
-
-    # Protein
-    protein_patterns = [
-        r'Protein[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, protein_patterns)
-    if value is not None:
-        data['protein'] = value
-        confidences['protein'] = conf
-
-    # Cholesterol
-    cholesterol_patterns = [
-        r'Cholesterol[:\s]+(\d+(?:\.\d+)?)\s*(mg|milligrams?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, cholesterol_patterns)
-    if value is not None:
-        data['cholesterol'] = value
-        confidences['cholesterol'] = conf
-
-    # Serving Size (more complex, can have various units)
-    serving_patterns = [
-        r'Serving\s+Size[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?|oz|cup|cups?|pieces?|items?)',
-        r'Serv\.\s+Size[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?|oz|cup|cups?|pieces?|items?)',
-    ]
-    value, unit, conf = find_nutrition_field(text, serving_patterns, unit_required=False)
-    if value is not None:
-        data['serving_size'] = f"{value}{unit if unit else 'g'}"
-        confidences['serving_size'] = conf if unit else conf * 0.7
-
-    # Servings Per Container
-    servings_per_patterns = [
-        r'Servings?\s+[Pp]er\s+Container[:\s]+(\d+(?:\.\d+)?)',
-        r'Servings?[:\s]+(\d+(?:\.\d+)?)',
-    ]
-    value, _, conf = find_nutrition_field(text, servings_per_patterns, unit_required=False)
-    if value is not None:
-        data['servings_per_container'] = value
-        confidences['servings_per_container'] = conf
-
-    # Optional: Calories
+    # Optional: Calories (prioritize this)
     calorie_patterns = [
-        r'Calories[:\s]+(\d+(?:\.\d+)?)',
+        r'Calories[:\s-]*(\d+(?:\.\d+)?)',
+        r'Energy[:\s-]*(\d+(?:\.\d+)?)',
+        r'(?:^|\n)(\d+)\s*(?:cal|kcal)',
     ]
     value, _, conf = find_nutrition_field(text, calorie_patterns, unit_required=False)
     if value is not None:
         data['calories'] = value
         confidences['calories'] = conf
 
-    # Optional: Saturated Fat
-    sat_fat_patterns = [
-        r'Saturated\s+Fat[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Sat\.\s+Fat[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
+    # Protein (more flexible patterns)
+    protein_patterns = [
+        r'Protein[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Prot[.\s:]*(\d+(?:\.\d+)?)\s*(g)?',
+        r'(?:^|\n)Protein.*?(\d+(?:\.\d+)?)',
     ]
-    value, unit, conf = find_nutrition_field(text, sat_fat_patterns)
+    value, unit, conf = find_nutrition_field(text, protein_patterns, unit_required=False)
+    if value is not None:
+        data['protein'] = value
+        confidences['protein'] = conf
+
+    # Total Carbohydrates (more flexible)
+    carbs_patterns = [
+        r'Total\s+Carbohydrate[s]?[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Carbohydrate[s]?[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Carbs?[:\s-]*(\d+(?:\.\d+)?)\s*(g)?',
+        r'(?:^|\n)Carb.*?(\d+(?:\.\d+)?)',
+    ]
+    value, unit, conf = find_nutrition_field(text, carbs_patterns, unit_required=False)
+    if value is not None:
+        data['carbs_total'] = value
+        confidences['carbs_total'] = conf
+
+    # Sugar (more flexible)
+    sugar_patterns = [
+        r'Total\s+Sugars?[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Sugars?,?\s+Total[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Sugars?[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'(?:^|\n)Sugar.*?(\d+(?:\.\d+)?)',
+    ]
+    value, unit, conf = find_nutrition_field(text, sugar_patterns, unit_required=False)
+    if value is not None:
+        data['sugar_total'] = value
+        confidences['sugar_total'] = conf
+
+    # Total Fat (more flexible)
+    fat_patterns = [
+        r'Total\s+Fat[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Fat,?\s+Total[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Fat[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'(?:^|\n)Fat.*?(\d+(?:\.\d+)?)',
+    ]
+    value, unit, conf = find_nutrition_field(text, fat_patterns, unit_required=False)
+    if value is not None:
+        data['fat_total'] = value
+        confidences['fat_total'] = conf
+
+    # Sodium (more flexible)
+    sodium_patterns = [
+        r'Sodium[:\s-]*(\d+(?:\.\d+)?)\s*(mg|milligrams?)?',
+        r'Na[:\s-]*(\d+(?:\.\d+)?)\s*(mg)?',
+        r'Salt[:\s-]*(\d+(?:\.\d+)?)\s*(mg)?',
+        r'(?:^|\n)Sodium.*?(\d+(?:\.\d+)?)',
+    ]
+    value, unit, conf = find_nutrition_field(text, sodium_patterns, unit_required=False)
+    if value is not None:
+        data['sodium'] = value
+        confidences['sodium'] = conf
+
+    # Cholesterol (more flexible)
+    cholesterol_patterns = [
+        r'Cholesterol[:\s-]*(\d+(?:\.\d+)?)\s*(mg|milligrams?)?',
+        r'Chol[.\s:]*(\d+(?:\.\d+)?)\s*(mg)?',
+        r'(?:^|\n)Cholesterol.*?(\d+(?:\.\d+)?)',
+    ]
+    value, unit, conf = find_nutrition_field(text, cholesterol_patterns, unit_required=False)
+    if value is not None:
+        data['cholesterol'] = value
+        confidences['cholesterol'] = conf
+
+    # Serving Size (more flexible)
+    serving_patterns = [
+        r'Serving\s+Size[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?|oz|ml|cup|cups?|pieces?|items?)?',
+        r'Serv[.\s]+Size[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?|oz|ml)?',
+        r'Per\s+Serving[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'(?:^|\n)Serving.*?(\d+(?:\.\d+)?)\s*(g|oz)?',
+    ]
+    value, unit, conf = find_nutrition_field(text, serving_patterns, unit_required=False)
+    if value is not None:
+        data['serving_size'] = f"{value}{unit if unit else 'g'}"
+        confidences['serving_size'] = conf if unit else conf * 0.7
+
+    # Servings Per Container (more flexible)
+    servings_per_patterns = [
+        r'Servings?\s+[Pp]er\s+Container[:\s-]*(\d+(?:\.\d+)?)',
+        r'Servings?[:\s-]*(\d+(?:\.\d+)?)',
+        r'Container[:\s-]*(\d+(?:\.\d+)?)\s*servings?',
+        r'(?:^|\n).*?(\d+)\s*servings?',
+    ]
+    value, _, conf = find_nutrition_field(text, servings_per_patterns, unit_required=False)
+    if value is not None:
+        data['servings_per_container'] = value
+        confidences['servings_per_container'] = conf
+
+    # Optional: Saturated Fat (more flexible)
+    sat_fat_patterns = [
+        r'Saturated\s+Fat[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Sat[.\s]+Fat[:\s-]*(\d+(?:\.\d+)?)\s*(g)?',
+        r'(?:^|\n)Saturated.*?(\d+(?:\.\d+)?)',
+    ]
+    value, unit, conf = find_nutrition_field(text, sat_fat_patterns, unit_required=False)
     if value is not None:
         data['saturated_fat'] = value
         confidences['saturated_fat'] = conf
 
-    # Optional: Trans Fat
+    # Optional: Trans Fat (more flexible)
     trans_fat_patterns = [
-        r'Trans\s+Fat[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
+        r'Trans\s+Fat[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Trans[.\s]+Fat[:\s-]*(\d+(?:\.\d+)?)\s*(g)?',
+        r'(?:^|\n)Trans.*?(\d+(?:\.\d+)?)',
     ]
-    value, unit, conf = find_nutrition_field(text, trans_fat_patterns)
+    value, unit, conf = find_nutrition_field(text, trans_fat_patterns, unit_required=False)
     if value is not None:
         data['trans_fat'] = value
         confidences['trans_fat'] = conf
 
-    # Optional: Dietary Fiber
+    # Optional: Dietary Fiber (more flexible)
     fiber_patterns = [
-        r'Dietary\s+Fiber[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
-        r'Fiber[:\s]+(\d+(?:\.\d+)?)\s*(g|grams?)',
+        r'Dietary\s+Fiber[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'Fiber[:\s-]*(\d+(?:\.\d+)?)\s*(g|grams?)?',
+        r'(?:^|\n)Fiber.*?(\d+(?:\.\d+)?)',
     ]
-    value, unit, conf = find_nutrition_field(text, fiber_patterns)
+    value, unit, conf = find_nutrition_field(text, fiber_patterns, unit_required=False)
     if value is not None:
         data['dietary_fiber'] = value
         confidences['dietary_fiber'] = conf

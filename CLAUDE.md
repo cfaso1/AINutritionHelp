@@ -19,7 +19,7 @@ pip install -r requirements.txt
 python run.py
 
 # Or directly run the API
-python backend/api_simple.py
+python backend/api.py
 
 # Test the agent system
 python -c "from agent import get_agent; print(get_agent())"
@@ -47,7 +47,7 @@ python agent/demo.py
 - Real-time chat interface for AI companion
 
 **2. Backend API** (`backend/`)
-- Flask REST API (`api_simple.py`) - main entry point
+- Flask REST API (`api.py`) - main entry point
 - Routes handle: auth, profiles, barcode scanning, AI chat
 - SQLite database integration (`database.py`)
 - Image OCR pipeline (`ingest/`) for manual nutrition data extraction
@@ -80,7 +80,7 @@ Frontend displays results + chat message
 ## 🏗️ Key Components
 
 ### Backend Structure
-- **api_simple.py** - Flask app, REST endpoints, request routing
+- **api.py** - Flask app, REST endpoints, request routing
 - **database.py** - SQLite schema, user/profile/weight tracking
 - **nutrition_agent_service.py** - Wrapper to integrate agent with Flask
 - **ingest/** - OCR pipeline for extracting nutrition facts from images
@@ -152,7 +152,7 @@ GET  /api/health                     # Health check
 5. Update response formatter to include new results
 
 ### Adding New API Endpoint
-1. Define route in `backend/api_simple.py` using `@app.route()`
+1. Define route in `backend/api.py` using `@app.route()`
 2. Extract JSON data with `request.get_json()`
 3. Call agent service or database function
 4. Return JSON response with `jsonify()`
@@ -167,7 +167,7 @@ GET  /api/health                     # Health check
 ### Updating Database Schema
 1. Modify schema in `database.py`
 2. Add migration function (see existing `migrate_database()` pattern)
-3. Call migration in `api_simple.py` startup
+3. Call migration in `api.py` startup
 4. Update corresponding database helper functions
 
 ---
@@ -255,7 +255,7 @@ sqlite3 nutrition.db "SELECT * FROM users;"
 
 | File | Purpose | Key Classes/Functions |
 |------|---------|----------------------|
-| `backend/api_simple.py` | Main Flask app | app, routes, error handling |
+| `backend/api.py` | Main Flask app | app, routes, error handling |
 | `backend/database.py` | Database operations | init_database, create_user, get_user_profile |
 | `backend/nutrition_agent_service.py` | Agent integration | get_nutrition_agent_service, run_async |
 | `agent/main_agent.py` | AI orchestration | NutritionAgent, evaluate_product, chat |

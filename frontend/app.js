@@ -14,14 +14,23 @@ const Screens = {
 
 // Screen Management
 function showScreen(screenName) {
+    // Hide all screens first
     Object.values(Screens).forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.classList.remove('show', 'hidden');
+        if (el) {
+            el.classList.remove('show');
+            el.style.display = 'none';
+        }
     });
 
+    // Show the requested screen
     const element = document.getElementById(screenName);
-    if (element) element.classList.add('show');
+    if (element) {
+        element.classList.add('show');
+        element.style.display = ''; // Reset to CSS default
+    }
 
+    // Update navigation based on screen
     if (screenName === Screens.WELCOME) updateNav(false);
     else if (screenName === Screens.PROFILE_SETUP) { updateNav(false); resetProfileSetup(); }
     else if (screenName === Screens.DASHBOARD) { updateNav(true); updateUserDisplay(); }
@@ -346,7 +355,12 @@ async function handleImageUpload(event) {
     if (!file) return;
 
     showLoading();
-    hideResults();
+
+    // Reset previous results
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('resultsPanel').classList.remove('show');
+    document.getElementById('aiResults').style.display = 'none';
 
     const formData = new FormData();
     formData.append('image', file);
@@ -364,8 +378,8 @@ async function handleImageUpload(event) {
             if (result.needs_clarification) {
                 showClarificationForm(result.data, result.clarification_fields, result.message);
             } else {
-                scannedProduct = { name: 'Scanned Product', nutrition: result.data, price: null };
-                askForPrice(result.data);
+                // OCR was successful - show clarification form to allow price and name input
+                showClarificationForm(result.data, {}, 'OCR successful! Please add item name and price.');
             }
         } else if (result.needs_manual_entry) {
             showMessageBox(result.error || 'OCR failed. Please enter nutrition facts manually.', 'error');
@@ -381,7 +395,6 @@ async function handleImageUpload(event) {
 
 function displayProduct(product) {
     document.getElementById('productName').textContent = product.name || 'Unknown';
-    document.getElementById('productBrand').textContent = product.brand || 'Unknown';
     document.getElementById('productCategory').textContent = product.category || 'Uncategorized';
     document.getElementById('productPrice').textContent = product.price ? product.price.toFixed(2) : '0.00';
 
@@ -393,24 +406,37 @@ function displayProduct(product) {
             { key: 'calories', label: 'Calories', unit: '' },
             { key: 'protein', label: 'Protein', unit: 'g' },
             { key: 'carbohydrates', label: 'Carbs', unit: 'g' },
+            { key: 'carbs_total', label: 'Carbs', unit: 'g' },
             { key: 'sugar', label: 'Sugar', unit: 'g' },
+            { key: 'sugar_total', label: 'Sugar', unit: 'g' },
             { key: 'fat', label: 'Fat', unit: 'g' },
+            { key: 'fat_total', label: 'Fat', unit: 'g' },
             { key: 'sodium', label: 'Sodium', unit: 'mg' }
         ];
 
+        // Track which nutrients we've displayed to avoid duplicates
+        const displayedKeys = new Set();
+
         nutrients.forEach(n => {
-            const value = product.nutrition[n.key] || 0;
-            grid.innerHTML += `
-                <div class="stat-box">
-                    <span class="stat-value">${value}${n.unit}</span>
-                    <span class="stat-label">${n.label}</span>
-                </div>
-            `;
+            const value = product.nutrition[n.key];
+            if (value !== undefined && value !== null && !displayedKeys.has(n.label)) {
+                displayedKeys.add(n.label);
+                grid.innerHTML += `
+                    <div class="stat-box">
+                        <span class="stat-value">${value}${n.unit}</span>
+                        <span class="stat-label">${n.label}</span>
+                    </div>
+                `;
+            }
         });
     }
 
+    // Show the results panel and enable analyze button
     document.getElementById('resultsPanel').classList.add('show');
     document.getElementById('analyzeBtn').disabled = false;
+
+    // Hide AI results initially
+    document.getElementById('aiResults').style.display = 'none';
 }
 
 async function analyzeProduct() {
@@ -442,48 +468,8 @@ async function analyzeProduct() {
     }
 }
 
-function displayAIResults(evaluation) {
-    document.getElementById('overallScore').textContent = evaluation.overall.score + '/100';
-    document.getElementById('overallRecommendation').textContent =
-        (evaluation.overall.recommendation_emoji || '') + ' ' + evaluation.overall.recommendation;
-
-    document.getElementById('healthScore').textContent = evaluation.health_analysis.score;
-    document.getElementById('healthSummary').textContent = evaluation.health_analysis.summary;
-
-    if (evaluation.health_analysis.pros && evaluation.health_analysis.pros.length) {
-        document.getElementById('healthPros').innerHTML =
-            '<strong style="color: var(--primary-green);">Benefits:</strong><ul style="margin-left: 20px; margin-top: 10px;">' +
-            evaluation.health_analysis.pros.map(p => `<li style="margin: 5px 0;">${p}</li>`).join('') +
-            '</ul>';
-    }
-
-    if (evaluation.health_analysis.cons && evaluation.health_analysis.cons.length) {
-        document.getElementById('healthCons').innerHTML =
-            '<strong style="color: #d32f2f;">Considerations:</strong><ul style="margin-left: 20px; margin-top: 10px;">' +
-            evaluation.health_analysis.cons.map(c => `<li style="margin: 5px 0;">${c}</li>`).join('') +
-            '</ul>';
-    }
-
-    document.getElementById('fitnessScore').textContent = evaluation.fitness_analysis.score;
-    document.getElementById('fitnessSummary').textContent = evaluation.fitness_analysis.summary;
-    document.getElementById('fitnessBestFor').textContent = evaluation.fitness_analysis.best_for || '-';
-    document.getElementById('fitnessRec').textContent = evaluation.fitness_analysis.recommendation || '-';
-
-    document.getElementById('priceRating').textContent = evaluation.price_analysis.rating || '-';
-    document.getElementById('priceSummary').textContent = evaluation.price_analysis.summary || '-';
-
-    document.getElementById('aiResults').style.display = 'block';
-    showMessageBox('Analysis complete!', 'success');
-
-    sendEvaluationToChat(evaluation);
-}
-
 function showLoading() { document.getElementById('loading').classList.add('show'); }
 function hideLoading() { document.getElementById('loading').classList.remove('show'); }
-function hideResults() {
-    document.getElementById('resultsPanel').classList.remove('show');
-    document.getElementById('aiResults').style.display = 'none';
-}
 function showMessageBox(message, type) {
     const box = document.getElementById('messageBox');
     box.textContent = message;
@@ -496,63 +482,72 @@ function showManualInput() {
     const html = `
         <div class="manual-input-container">
             <div class="manual-input-header">
-                <h3>Manual Nutrition Entry</h3>
+                <h3>📝 Manual Nutrition Entry</h3>
                 <p>Enter the nutrition facts from your product label</p>
             </div>
             <form id="manualNutritionForm" onsubmit="submitManualEntry(event)">
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Calories *</label>
-                        <input type="number" step="1" name="calories" placeholder="250" required>
+                    <div class="form-group full-width-field">
+                        <label class="form-label">🏷️ Item Name *</label>
+                        <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Protein (g) *</label>
-                        <input type="number" step="0.1" name="protein" placeholder="8.5" required>
+                        <label class="form-label">🔥 Calories *</label>
+                        <input type="number" class="form-input enhanced-input" step="1" name="calories" placeholder="e.g., 250" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Total Carbs (g) *</label>
-                        <input type="number" step="0.1" name="carbs_total" placeholder="45.0" required>
+                        <label class="form-label">💪 Protein (g) *</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="protein" placeholder="e.g., 8.5" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Total Sugar (g) *</label>
-                        <input type="number" step="0.1" name="sugar_total" placeholder="12.0" required>
+                        <label class="form-label">🌾 Total Carbs (g) *</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="carbs_total" placeholder="e.g., 45.0" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Total Fat (g) *</label>
-                        <input type="number" step="0.1" name="fat_total" placeholder="10.0" required>
+                        <label class="form-label">🍭 Total Sugar (g) *</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="sugar_total" placeholder="e.g., 12.0" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Saturated Fat (g)</label>
-                        <input type="number" step="0.1" name="saturated_fat" placeholder="3.0">
+                        <label class="form-label">🥑 Total Fat (g) *</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="fat_total" placeholder="e.g., 10.0" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Sodium (mg) *</label>
-                        <input type="number" step="1" name="sodium" placeholder="200" required>
+                        <label class="form-label">🧈 Saturated Fat (g)</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="saturated_fat" placeholder="e.g., 3.0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Cholesterol (mg) *</label>
-                        <input type="number" step="1" name="cholesterol" placeholder="15" required>
+                        <label class="form-label">🧂 Sodium (mg) *</label>
+                        <input type="number" class="form-input enhanced-input" step="1" name="sodium" placeholder="e.g., 200" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Dietary Fiber (g)</label>
-                        <input type="number" step="0.1" name="dietary_fiber" placeholder="3.5">
+                        <label class="form-label">🩺 Cholesterol (mg) *</label>
+                        <input type="number" class="form-input enhanced-input" step="1" name="cholesterol" placeholder="e.g., 15" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Trans Fat (g)</label>
-                        <input type="number" step="0.1" name="trans_fat" placeholder="0.0">
+                        <label class="form-label">🌿 Dietary Fiber (g)</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="dietary_fiber" placeholder="e.g., 3.5">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Serving Size *</label>
-                        <input type="text" name="serving_size" placeholder="100g or 1 cup" required>
+                        <label class="form-label">⚠️ Trans Fat (g)</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="trans_fat" placeholder="e.g., 0.0">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Servings Per Container *</label>
-                        <input type="number" step="0.1" name="servings_per_container" placeholder="2.5" required>
+                        <label class="form-label">📏 Serving Size (g) *</label>
+                        <input type="text" class="form-input enhanced-input" name="serving_size" placeholder="e.g., 100" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📦 Servings Per Container *</label>
+                        <input type="number" class="form-input enhanced-input" step="0.1" name="servings_per_container" placeholder="e.g., 2.5" required>
+                    </div>
+                    <div class="form-group full-width-field">
+                        <label class="form-label">💰 Price ($)</label>
+                        <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99">
+                        <small style="color: var(--medium-text); font-size: 0.85rem;">Optional - for value analysis</small>
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn primary">Submit Entry</button>
-                    <button type="button" class="btn" onclick="hideManualInput()">Cancel</button>
+                    <button type="submit" class="btn primary">✓ Submit Entry</button>
+                    <button type="button" class="btn" onclick="hideManualInput()">✕ Cancel</button>
                 </div>
             </form>
         </div>
@@ -569,8 +564,17 @@ async function submitManualEntry(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
     const nutritionData = {};
+    let price = null;
+    let itemName = 'Manual Entry';
+
     for (const [key, value] of formData.entries()) {
-        if (value) nutritionData[key] = isNaN(value) ? value : parseFloat(value);
+        if (key === 'price') {
+            price = value ? parseFloat(value) : null;
+        } else if (key === 'item_name') {
+            itemName = value || 'Manual Entry';
+        } else if (value) {
+            nutritionData[key] = isNaN(value) ? value : parseFloat(value);
+        }
     }
 
     showLoading();
@@ -587,8 +591,18 @@ async function submitManualEntry(event) {
 
         if (result.success) {
             hideManualInput();
-            scannedProduct = { name: 'Manual Entry', nutrition: result.data, price: null };
-            askForPrice(result.data);
+
+            // Create product with price and item name included
+            scannedProduct = {
+                barcode: 'MANUAL_ENTRY',
+                name: itemName,
+                category: 'Food',
+                price: price,
+                nutrition: result.data
+            };
+
+            // Display product directly - no need for separate price prompt
+            displayProduct(scannedProduct);
         } else {
             showMessageBox(result.error || 'Validation failed', 'error');
         }
@@ -599,7 +613,14 @@ async function submitManualEntry(event) {
 }
 
 function showClarificationForm(originalData, clarificationFields, message) {
-    let fieldsHtml = '';
+    // Add item name field first
+    let fieldsHtml = `
+        <div class="form-group full-width-field">
+            <label class="form-label">🏷️ Item Name</label>
+            <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt" >
+        </div>
+    `;
+
     for (const [fieldName, fieldInfo] of Object.entries(clarificationFields)) {
         const displayName = fieldInfo.display_name;
         const currentValue = fieldInfo.value || '';
@@ -611,11 +632,20 @@ function showClarificationForm(originalData, clarificationFields, message) {
         fieldsHtml += `
             <div class="form-group">
                 <label class="form-label">${displayName} ${statusBadge}</label>
-                <input type="text" class="form-input" name="${fieldName}"
+                <input type="text" class="form-input enhanced-input" name="${fieldName}"
                        value="${currentValue}" placeholder="Enter value">
             </div>
         `;
     }
+
+    // Add price field
+    fieldsHtml += `
+        <div class="form-group full-width-field">
+            <label class="form-label">💰 Price ($)</label>
+            <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99">
+            <small style="color: var(--medium-text); font-size: 0.85rem;">Optional - for value analysis</small>
+        </div>
+    `;
 
     const html = `
         <div class="manual-input-container" style="max-width: 600px;">
@@ -624,8 +654,8 @@ function showClarificationForm(originalData, clarificationFields, message) {
             <form id="clarificationForm" onsubmit="submitClarification(event)">
                 <div class="form-grid">${fieldsHtml}</div>
                 <div class="form-actions">
-                    <button type="submit" class="btn primary">Confirm</button>
-                    <button type="button" class="btn" onclick="showManualInput()">Manual Entry Instead</button>
+                    <button type="submit" class="btn primary">✓ Confirm & Analyze</button>
+                    <button type="button" class="btn" onclick="showManualInput()">✕ Manual Entry Instead</button>
                 </div>
             </form>
         </div>
@@ -640,8 +670,17 @@ async function submitClarification(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
     const corrections = {};
+    let price = null;
+    let itemName = 'Scanned Product';
+
     for (const [key, value] of formData.entries()) {
-        if (value) corrections[key] = value;
+        if (key === 'price') {
+            price = value ? parseFloat(value) : null;
+        } else if (key === 'item_name') {
+            itemName = value || 'Scanned Product';
+        } else if (value) {
+            corrections[key] = value;
+        }
     }
 
     showLoading();
@@ -661,8 +700,18 @@ async function submitClarification(event) {
 
         if (result.success) {
             document.getElementById('results').style.display = 'none';
-            scannedProduct = { name: 'Scanned Product', nutrition: result.data, price: null };
-            askForPrice(result.data);
+
+            // Create product with price and item name included
+            scannedProduct = {
+                barcode: 'MANUAL_ENTRY',
+                name: itemName,
+                category: 'Food',
+                price: price,
+                nutrition: result.data
+            };
+
+            // Display product directly - no need for separate price prompt
+            displayProduct(scannedProduct);
         } else {
             showMessageBox(result.error || 'Validation failed', 'error');
         }
@@ -672,53 +721,12 @@ async function submitClarification(event) {
     }
 }
 
-function askForPrice(nutritionData) {
-    const html = `
-        <div class="manual-input-container" style="max-width: 500px; text-align: center;">
-            <h3 style="color: var(--primary-green); margin-bottom: 15px;">Add Price (Optional)</h3>
-            <p style="color: var(--medium-text); margin-bottom: 25px;">
-                Enter the product price to get a value-for-money analysis
-            </p>
-            <form id="priceForm" onsubmit="submitPrice(event)">
-                <div class="form-group">
-                    <label class="form-label">Price ($)</label>
-                    <input type="number" step="0.01" name="price" class="form-input"
-                           placeholder="0.00" style="font-size: 1.2rem; text-align: center;">
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn primary">Continue</button>
-                    <button type="button" class="btn" onclick="submitPrice(null)">Skip</button>
-                </div>
-            </form>
-        </div>
-    `;
-
-    window.pendingNutritionData = nutritionData;
-    document.getElementById('results').innerHTML = html;
-    document.getElementById('results').style.display = 'block';
-}
-
-async function submitPrice(event) {
-    let price = null;
-    if (event && event.preventDefault) {
-        event.preventDefault();
-        const formData = new FormData(event.target);
-        price = formData.get('price');
-        price = price ? parseFloat(price) : null;
+async function analyzeProduct() {
+    if (!scannedProduct) {
+        showMessageBox('Please scan a product first', 'error');
+        return;
     }
 
-    const productData = {
-        name: scannedProduct.name,
-        brand: 'N/A',
-        category: 'Food',
-        price: price,
-        ...window.pendingNutritionData
-    };
-
-    await evaluateProduct(productData);
-}
-
-async function evaluateProduct(productData) {
     showLoading();
 
     try {
@@ -731,42 +739,79 @@ async function evaluateProduct(productData) {
         const result = await response.json();
         hideLoading();
 
-        if (result.success) {
-            displayEvaluation(result.evaluation, productData);
-            showMessageBox('Analysis complete!', 'success');
+        if (response.ok && result.evaluation) {
+            displayAIResults(result.evaluation);
+            sendEvaluationToChat(result.evaluation);
         } else {
-            showMessageBox(result.error || 'Evaluation failed', 'error');
+            showMessageBox(result.error || 'Analysis failed', 'error');
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Network error! Please try again.', 'error');
+        showMessageBox('Network error during analysis', 'error');
     }
 }
 
-function displayEvaluation(evaluation, product) {
-    const html = `
-        <div class="manual-input-container">
-            <h2 style="color: var(--primary-green); margin-bottom: 25px; text-align: center;">Nutrition Analysis</h2>
-            <div style="background: var(--mint); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
-                <h3 style="color: var(--primary-green); margin-bottom: 10px;">${product.name || 'Product'}</h3>
-                ${product.price ? `<p style="color: var(--medium-text);">Price: $${product.price.toFixed(2)}</p>` : ''}
-            </div>
-            <div style="white-space: pre-wrap; line-height: 1.8; color: var(--dark-text);">
-                ${evaluation.summary || evaluation}
-            </div>
-            <button class="btn primary" onclick="resetScanner()" style="margin-top: 25px; width: 100%;">
-                Scan Another Product
-            </button>
-        </div>
-    `;
+function displayAIResults(evaluation) {
+    // Safely extract overall score and recommendation
+    const overallScore = evaluation?.overall?.score || 0;
+    const overallRec = evaluation?.overall?.recommendation || 'No recommendation available';
+    const recEmoji = evaluation?.overall?.recommendation_emoji || '';
 
-    document.getElementById('results').innerHTML = html;
-    document.getElementById('results').style.display = 'block';
+    document.getElementById('overallScore').textContent = overallScore + '/100';
+    document.getElementById('overallRecommendation').textContent = recEmoji + ' ' + overallRec;
+
+    // Health analysis
+    const healthScore = evaluation?.health_analysis?.score || 0;
+    const healthSummary = evaluation?.health_analysis?.summary || 'No health analysis available';
+
+    document.getElementById('healthScore').textContent = healthScore;
+    document.getElementById('healthSummary').textContent = healthSummary;
+
+    if (evaluation?.health_analysis?.pros && evaluation.health_analysis.pros.length) {
+        document.getElementById('healthPros').innerHTML =
+            '<strong style="color: var(--primary-green);">Benefits:</strong><ul style="margin-left: 20px; margin-top: 10px;">' +
+            evaluation.health_analysis.pros.map(p => `<li style="margin: 5px 0;">${p}</li>`).join('') +
+            '</ul>';
+    } else {
+        document.getElementById('healthPros').innerHTML = '';
+    }
+
+    if (evaluation?.health_analysis?.cons && evaluation.health_analysis.cons.length) {
+        document.getElementById('healthCons').innerHTML =
+            '<strong style="color: #d32f2f;">Considerations:</strong><ul style="margin-left: 20px; margin-top: 10px;">' +
+            evaluation.health_analysis.cons.map(c => `<li style="margin: 5px 0;">${c}</li>`).join('') +
+            '</ul>';
+    } else {
+        document.getElementById('healthCons').innerHTML = '';
+    }
+
+    // Fitness analysis
+    const fitnessScore = evaluation?.fitness_analysis?.score || 0;
+    const fitnessSummary = evaluation?.fitness_analysis?.summary || 'No fitness analysis available';
+    const fitnessBestFor = evaluation?.fitness_analysis?.best_for || '-';
+    const fitnessRec = evaluation?.fitness_analysis?.recommendation || '-';
+
+    document.getElementById('fitnessScore').textContent = fitnessScore;
+    document.getElementById('fitnessSummary').textContent = fitnessSummary;
+    document.getElementById('fitnessBestFor').textContent = fitnessBestFor;
+    document.getElementById('fitnessRec').textContent = fitnessRec;
+
+    // Price analysis
+    const priceRating = evaluation?.price_analysis?.rating || '-';
+    const priceSummary = evaluation?.price_analysis?.summary || 'No price analysis available';
+
+    document.getElementById('priceRating').textContent = priceRating;
+    document.getElementById('priceSummary').textContent = priceSummary;
+
+    document.getElementById('aiResults').style.display = 'block';
+    showMessageBox('Analysis complete!', 'success');
 }
 
 function resetScanner() {
     document.getElementById('results').style.display = 'none';
     document.getElementById('results').innerHTML = '';
+    document.getElementById('resultsPanel').classList.remove('show');
+    document.getElementById('aiResults').style.display = 'none';
     document.getElementById('imageInput').value = '';
     scannedProduct = null;
     window.ocrOriginalData = null;
@@ -803,14 +848,17 @@ function addChatMessage(message, isUser = false) {
 
     const typingIndicator = document.getElementById('typingIndicator');
     chatMessages.insertBefore(messageDiv, typingIndicator);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Scroll to the message for user messages only
+    if (isUser) {
+        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
 
     chatHistory.push({ message, isUser, timestamp: new Date() });
 }
 
 function showTypingIndicator() {
     document.getElementById('typingIndicator').style.display = 'flex';
-    document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
 }
 
 function hideTypingIndicator() {
@@ -875,8 +923,6 @@ function sendEvaluationToChat(evaluation) {
         message += `Recommendation: ${overall.recommendation || 'See details for more info'}`;
         addChatMessage(message, false);
     }
-
-    document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
 }
 
 // Initialization

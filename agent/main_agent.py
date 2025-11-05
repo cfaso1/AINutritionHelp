@@ -1,14 +1,14 @@
 """
 Main Nutrition AI Agent
 A conversational AI companion for personalized nutrition evaluation.
-
-This is the central orchestrator that coordinates all evaluators and provides
-a unified interface for the Nutrition AI application.
 """
 
 import os
 import sys
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path to allow imports when running directly
 if __name__ == "__main__":
@@ -125,7 +125,7 @@ class NutritionAgent:
             )
 
         except Exception as e:
-            print(f"Error evaluating product: {e}")
+            logger.error(f"Error evaluating product: {e}")
             return format_error_response(
                 "I encountered an error while evaluating this product. Please try again!"
             )
@@ -160,7 +160,7 @@ Respond in a warm, conversational, and supportive way. Provide helpful, actionab
             )
             return response.text.strip()
         except Exception as e:
-            print(f"Error in chat: {e}")
+            logger.error(f"Error in chat: {e}")
             return "I'm having trouble responding right now. Could you try asking again?"
 
     async def _generate_companion_message(
@@ -205,13 +205,13 @@ Price Summary: {price_analysis.get('summary', '')}
 Overall Score: {overall_score}/100
 
 Write a friendly, conversational message (3-4 paragraphs) that:
-1. Warmly acknowledges what they scanned
+1. Warmly acknowledges what they scanned with a varied greeting (e.g., "Nice choice!", "Interesting pick!", "Let's check this out!", "Ooh, I see you grabbed...", "Great selection!", etc. - DO NOT always use "Hey There!")
 2. Explains how it aligns with THEIR SPECIFIC goals
 3. Provides actionable recommendations (timing, portions, pairings)
 4. Includes pricing insights
 5. Ends with encouragement
 
-Be personal and supportive - like a knowledgeable friend, not a clinical report!"""
+Be personal and supportive - like a knowledgeable friend, not a clinical report! Vary your opening greeting each time."""
 
         try:
             response = self.client.models.generate_content(
@@ -220,7 +220,7 @@ Be personal and supportive - like a knowledgeable friend, not a clinical report!
             )
             return response.text.strip()
         except Exception as e:
-            print(f"Error generating companion message: {e}")
+            logger.error(f"Error generating companion message: {e}")
             return self._generate_fallback_message(product, overall_score, health_analysis, fitness_analysis)
 
     def _generate_fallback_message(
@@ -231,9 +231,31 @@ Be personal and supportive - like a knowledgeable friend, not a clinical report!
         fitness_analysis: Dict
     ) -> str:
         """Generate basic companion message when AI fails."""
-        tone = "Great choice!" if overall_score >= 70 else "This could work with considerations." if overall_score >= 50 else "Let's explore better options."
+        import random
 
-        return f"""Hey! I see you scanned {product.name} by {product.brand}. {tone}
+        # Varied greetings
+        greetings = [
+            "Nice choice!",
+            "Interesting pick!",
+            "Let's check this out!",
+            "Great selection!",
+            "Ooh, I see you grabbed",
+            "Looking at",
+            "You've got",
+            "Checking out"
+        ]
+
+        greeting = random.choice(greetings)
+
+        # Add product name appropriately
+        if greeting in ["Ooh, I see you grabbed", "Looking at", "You've got", "Checking out"]:
+            intro = f"{greeting} {product.name}."
+        else:
+            intro = f"{greeting} I see you scanned {product.name}."
+
+        tone = "This is a solid option!" if overall_score >= 70 else "This could work with some considerations." if overall_score >= 50 else "Let's explore what this offers."
+
+        return f"""{intro} {tone}
 
 {health_analysis.get('summary', 'Unable to analyze health benefits.')}
 

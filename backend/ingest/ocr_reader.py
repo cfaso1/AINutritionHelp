@@ -30,6 +30,12 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     else:
         gray = image
 
+    # Resize if image is too small (improves OCR)
+    height, width = gray.shape
+    if height < 300 or width < 300:
+        scale = max(300 / height, 300 / width)
+        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+
     # Apply denoising
     denoised = cv2.fastNlMeansDenoising(gray)
 
@@ -43,9 +49,15 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
         2
     )
 
-    # Optional: dilation and erosion to connect broken characters
-    kernel = np.ones((1, 1), np.uint8)
+    # Optional: dilation and erosion to clean up text
+    kernel = np.ones((2, 2), np.uint8)
     processed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+    # Sharpen the image
+    kernel_sharpen = np.array([[-1,-1,-1],
+                               [-1, 9,-1],
+                               [-1,-1,-1]])
+    processed = cv2.filter2D(processed, -1, kernel_sharpen)
 
     return processed
 
@@ -82,22 +94,33 @@ def extract_text_from_image(image_input: Union[bytes, str, Path]) -> str:
         # Preprocess image
         processed = preprocess_image(img_array)
 
-        # Configure Tesseract for nutrition labels
-        # PSM 6: Assume a single uniform block of text
-        # PSM 11: Sparse text. Find as much text as possible in no particular order
-        custom_config = r'--oem 3 --psm 6'
+        # Try multiple OCR configurations for best results
+        # PSM modes: 3=fully automatic, 4=single column, 6=uniform block, 11=sparse text
+        configs = [
+            r'--oem 3 --psm 6',   # Single uniform block (best for labels)
+            r'--oem 3 --psm 4',   # Single column of text
+            r'--oem 3 --psm 3',   # Fully automatic page segmentation
+            r'--oem 3 --psm 11',  # Sparse text (last resort)
+        ]
 
-        # Extract text
-        text = pytesseract.image_to_string(processed, config=custom_config)
+        text = None
+        best_text = ""
 
-        if not text or not text.strip():
-            # Try alternative PSM mode if first attempt fails
-            logger.info("First OCR attempt returned empty, trying alternative mode")
-            custom_config = r'--oem 3 --psm 11'
-            text = pytesseract.image_to_string(processed, config=custom_config)
+        for config in configs:
+            try:
+                extracted = pytesseract.image_to_string(processed, config=config)
+                if extracted and len(extracted.strip()) > len(best_text):
+                    best_text = extracted.strip()
+                    if len(best_text) > 50:  # Good enough
+                        break
+            except Exception as e:
+                logger.debug(f"OCR config {config} failed: {e}")
+                continue
+
+        text = best_text
 
         logger.info(f"OCR extracted {len(text)} characters")
-        logger.debug(f"OCR text: {text[:200]}...")  # Log first 200 chars
+        logger.info(f"OCR text preview: {text[:300] if len(text) <= 300 else text[:300] + '...'}")
 
         return text.strip()
 

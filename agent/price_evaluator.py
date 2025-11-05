@@ -47,11 +47,22 @@ class PriceEvaluator:
         Returns:
             Price analysis with rating, value assessment, and summary
         """
+        # Check if price is available
+        if not product.price:
+            return {
+                "is_good_deal": None,
+                "rating": "No Price Data",
+                "unit_price": None,
+                "category_average": None,
+                "summary": "Price information not available for this product. Add a price to get value analysis!",
+                "comparison_percent": None
+            }
+
         # Get category benchmark
         category_key = product.category.lower() if product.category else "default"
         benchmark = self.CATEGORY_BENCHMARKS.get(category_key, self.CATEGORY_BENCHMARKS["default"])
 
-        # Calculate unit price
+        # Use unit_price (per serving) if available, otherwise use total price
         unit_price = product.unit_price if product.unit_price else product.price
 
         # Determine rating
@@ -92,23 +103,24 @@ class PriceEvaluator:
         rating: str
     ) -> str:
         """Generate AI-powered price summary."""
+        servings = product.nutrition.get('servings_per_container') if product.nutrition else None
+
         prompt = f"""You are a price analysis expert and helpful AI companion. Analyze the pricing for this product in a friendly, conversational way:
 
 Product: {product.name}
-Brand: {product.brand}
 Category: {product.category}
-Price: ${product.price:.2f}
-{f'Size: {product.size}' if product.size else ''}
-{f'Unit Price: ${unit_price:.2f}' if unit_price else ''}
+Total Package Price: ${product.price:.2f}
+{f'Servings Per Container: {servings}' if servings else ''}
+Price Per Serving: ${unit_price:.2f}
 
-Based on the category average (${benchmark['avg']:.2f} per unit), this product is rated as: {rating}
+Based on the category average (${benchmark['avg']:.2f} per serving), this product is rated as: {rating}
 
-Provide a brief 2-3 sentence friendly summary explaining whether this is a good value. Consider:
-- Price compared to category average
-- Brand positioning (premium vs budget)
-- Value for money
+Provide a brief 2-3 sentence friendly summary explaining whether this is a good value PER SERVING. Consider:
+- Per-serving price compared to category average
+- Total value for the package
+- Overall value for money
 
-Be conversational and helpful!"""
+Be conversational and helpful! Focus on the per-serving value."""
 
         try:
             response = self.client.models.generate_content(
@@ -130,12 +142,13 @@ Be conversational and helpful!"""
     ) -> str:
         """Generate simple summary without AI."""
         comparison_percent = ((unit_price - benchmark["avg"]) / benchmark["avg"]) * 100
+        servings = product.nutrition.get('servings_per_container') if product.nutrition else None
 
         if rating == "Excellent Deal":
-            return f"Great news! This {product.name} is an excellent deal, priced {abs(comparison_percent):.0f}% below average. This is fantastic value for money!"
+            return f"Great news! At ${unit_price:.2f} per serving, this {product.name} is an excellent deal - {abs(comparison_percent):.0f}% below average. Fantastic value for money!"
         elif rating == "Good Price":
-            return f"The {product.name} is reasonably priced at ${product.price:.2f}, offering good value for your money. A solid choice for budget-conscious shoppers!"
+            return f"At ${unit_price:.2f} per serving (${product.price:.2f} total{f' for {servings} servings' if servings else ''}), this {product.name} offers good value for your money!"
         elif rating == "Fair Price":
-            return f"This product is priced at ${product.price:.2f}, which is {abs(comparison_percent):.0f}% {'above' if comparison_percent > 0 else 'below'} average. Fair price, though you might find better deals."
+            return f"This product costs ${unit_price:.2f} per serving, which is {abs(comparison_percent):.0f}% {'above' if comparison_percent > 0 else 'below'} average. Fair price, though you might find better deals."
         else:
-            return f"At ${product.price:.2f}, this {product.name} is priced {comparison_percent:.0f}% above average. Consider if the brand premium justifies the higher cost."
+            return f"At ${unit_price:.2f} per serving, this {product.name} is priced {comparison_percent:.0f}% above average. Total cost: ${product.price:.2f}. Consider if it justifies the premium."

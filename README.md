@@ -16,7 +16,7 @@ nano .env  # Add: GOOGLE_API_KEY=your_key_here
 
 # 3. Start the backend
 cd ..
-python backend/api_simple.py
+python backend/api.py
 
 # 4. Open the frontend
 # Open: frontend/index.html in your browser
@@ -50,7 +50,7 @@ python backend/api_simple.py
 ```
 AINutritionHelp/
 ├── backend/
-│   ├── api_simple.py              # REST API (includes chat endpoint)
+│   ├── api.py                     # REST API (includes chat endpoint)
 │   ├── database.py                # SQLite database
 │   ├── nutrition_agent_service.py # Agent integration wrapper
 │   ├── barcode_detector.py        # Image barcode extraction
@@ -298,7 +298,7 @@ cat .env
 
 # 4. Restart the backend
 cd ..
-python backend/api_simple.py
+python backend/api.py
 ```
 
 ### Chat Shows "Sorry, I encountered an error"
@@ -319,7 +319,7 @@ python -c "from main_agent import get_agent; print(get_agent())"
 # Go to: https://aistudio.google.com/apikey
 
 # Check backend logs
-# Look for errors when starting api_simple.py
+# Look for errors when starting api.py
 ```
 
 ### Frontend Can't Connect to API
@@ -395,7 +395,7 @@ Contributions welcome! Areas for improvement:
 **Check the logs:**
 ```bash
 # Backend logs
-python backend/api_simple.py
+python backend/api.py
 # Look for errors on startup
 
 # Check API health

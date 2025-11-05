@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
 Nutrition Agent Service - Integration Layer
-Connects the NEW agent system with the existing backend API.
-Updated to use the new integrated agent in the 'agent' directory.
+Connects the agent system with the backend API.
 """
 
 import sys
 import os
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 import asyncio
+
+logger = logging.getLogger(__name__)
 
 # Add the new agent directory to path
 agent_path = Path(__file__).parent.parent / "agent"
@@ -53,10 +55,9 @@ class NutritionAgentService:
             Dictionary with comprehensive evaluation from all agents
         """
         try:
-            # Delegate to the new agent service
             return await self._new_service.evaluate_product(product_data, user_profile_data)
         except Exception as e:
-            print(f"Error evaluating product: {e}")
+            logger.error(f"Error evaluating product: {e}")
             return self._error_evaluation_response()
 
     async def chat(self, message: str, context: Optional[Dict] = None) -> str:
@@ -71,10 +72,9 @@ class NutritionAgentService:
             AI response string
         """
         try:
-            # Delegate to the new agent service
             return await self._new_service.chat(message, context)
         except Exception as e:
-            print(f"Error in chat: {e}")
+            logger.error(f"Error in chat: {e}")
             return "Sorry, I encountered an error. Please try again!"
 
     def _error_evaluation_response(self) -> Dict:

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-SIMPLIFIED REST API for AI Nutrition Help - Hackathon Demo Version
+REST API for AI Nutrition Help - Hackathon Demo Version
 NO AUTHENTICATION - For demo purposes only!
 
 USAGE:
-    python api_simple.py
+    python api.py
 
-Then open demo.html in your browser!
+Then open frontend/index.html in your browser!
 """
 
 import logging
@@ -22,6 +22,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Reduce werkzeug logging noise
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
 
 # Import backend modules
 from backend.database import (
@@ -59,13 +62,6 @@ except ImportError as e:
     logger.warning(f"OCR pipeline not available: {e}")
     USE_OCR = False
 
-# Optional: Import custom AI model (will use demo mode if not available)
-try:
-    from backend.ai_model import analyze_nutrition as ai_analyze
-    USE_AI_MODEL = True
-except ImportError:
-    USE_AI_MODEL = False
-
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Allow all origins for demo
@@ -101,9 +97,9 @@ try:
             'daily_carbs_target_g': 250,
             'daily_fat_target_g': 65
         })
-        print(f"✓ Demo user created (ID: {DEMO_USER_ID})")
+        logger.info(f"Demo user created (ID: {DEMO_USER_ID})")
 except:
-    print(f"✓ Using existing demo user (ID: {DEMO_USER_ID})")
+    logger.info(f"Using existing demo user (ID: {DEMO_USER_ID})")
 
 
 
@@ -476,6 +472,74 @@ def nutrition_clarify():
 # NUTRITION EVALUATION
 # ============================================================================
 
+def clean_nutrition_data(nutrition_dict):
+    """
+    Clean nutrition data to ensure all values are floats (not strings).
+    Handles serving_size which may contain units like "100g".
+    """
+    if not nutrition_dict:
+        return nutrition_dict
+
+    cleaned = {}
+    import re
+
+    for key, value in nutrition_dict.items():
+        if value is None:
+            continue
+
+        # Handle serving_size specially - extract just the number
+        if key == 'serving_size':
+            if isinstance(value, str):
+                # Extract first number from string like "100g" or "100.0g"
+                match = re.search(r'(\d+(?:\.\d+)?)', str(value))
+                if match:
+                    cleaned[key] = float(match.group(1))
+                else:
+                    logger.warning(f"Could not parse serving_size: {value}")
+                    cleaned[key] = 100.0  # Default fallback
+            else:
+                cleaned[key] = float(value)
+        else:
+            # All other values should be floats
+            try:
+                cleaned[key] = float(value)
+            except (ValueError, TypeError):
+                logger.warning(f"Could not convert {key}={value} to float, skipping")
+                continue
+
+    return cleaned
+
+
+def calculate_unit_price(product_data):
+    """
+    Calculate unit price (price per serving) from total price and servings per container.
+
+    Args:
+        product_data: Product dictionary with price and nutrition data
+
+    Returns:
+        Updated product_data with unit_price field
+    """
+    if 'price' not in product_data or not product_data['price']:
+        return product_data
+
+    if 'nutrition' not in product_data or not product_data['nutrition']:
+        return product_data
+
+    servings = product_data['nutrition'].get('servings_per_container')
+
+    if servings and servings > 0:
+        unit_price = product_data['price'] / servings
+        product_data['unit_price'] = round(unit_price, 2)
+        logger.debug(f"Calculated unit_price: ${unit_price:.2f} (${product_data['price']:.2f} / {servings} servings)")
+    else:
+        # If no servings data, assume 1 serving (unit_price = total price)
+        product_data['unit_price'] = product_data['price']
+        logger.debug(f"No servings data, unit_price = total price: ${product_data['price']:.2f}")
+
+    return product_data
+
+
 @app.route('/api/agent/evaluate', methods=['POST'])
 def evaluate_with_agent():
     """
@@ -490,7 +554,15 @@ def evaluate_with_agent():
     if not data or 'product' not in data:
         return jsonify({'error': 'Missing product data'}), 400
 
-    product_data = data['product']
+    product_data = data['product'].copy()
+
+    # Clean nutrition data to ensure all values are floats
+    if 'nutrition' in product_data and product_data['nutrition']:
+        product_data['nutrition'] = clean_nutrition_data(product_data['nutrition'])
+        logger.debug(f"Cleaned nutrition data: {product_data['nutrition']}")
+
+    # Calculate unit price (price per serving)
+    product_data = calculate_unit_price(product_data)
 
     # Get user profile for personalized evaluation
     profile = get_user_profile(DEMO_USER_ID)
@@ -502,8 +574,10 @@ def evaluate_with_agent():
         # Get nutrition agent service
         agent_service = get_nutrition_agent_service()
 
+        logger.info("Starting product evaluation with agent")
         # Run comprehensive evaluation
         evaluation = run_async(agent_service.evaluate_product(product_data, profile))
+        logger.info("Product evaluation completed successfully")
 
         return jsonify({
             'success': True,
@@ -511,6 +585,7 @@ def evaluate_with_agent():
         }), 200
 
     except Exception as e:
+        logger.error(f"Evaluation error: {e}", exc_info=True)
         return jsonify({'error': f'Evaluation failed: {str(e)}'}), 500
 
 
@@ -650,7 +725,7 @@ def index():
 def initial_profile_setup():
     """Initial profile setup - for first-time user onboarding."""
     data = request.get_json() or {}
-    print("[DEBUG] Initial profile setup called with:", data)
+    logger.debug(f"Initial profile setup called with: {data}")
 
     import re
 
@@ -676,7 +751,7 @@ def initial_profile_setup():
         data.pop('height')
         
     except Exception as e:
-        print("[DEBUG] Height parse error:", e)
+        logger.error(f"Height parse error: {e}")
         return jsonify({'error': 'Invalid height format'}), 400
 
     # Validate and parse weight
@@ -707,7 +782,7 @@ def initial_profile_setup():
     data['height_cm'] = round(height_cm, 1)
     data['current_weight_kg'] = round(current_weight_kg, 1)
 
-    print(f"[DEBUG] Saving initial profile: {data}")
+    logger.debug(f"Saving initial profile: {data}")
 
     # Save to database
     success = update_user_profile(DEMO_USER_ID, data)
@@ -725,22 +800,12 @@ def initial_profile_setup():
 
 
 if __name__ == '__main__':
-    print("\n" + "="*70)
-    print("AI Nutrition Help API - HACKATHON DEMO MODE")
-    print("="*70)
-    print("\n⚠️  NO AUTHENTICATION - For demo purposes only!\n")
-    print("API Endpoints (all use demo user):")
-    print("  Profile:")
-    print("    GET    http://localhost:5000/api/profile")
-    print("    PUT    http://localhost:5000/api/profile")
-    print("\n  Nutrition & AI:")
-    print("    POST   http://localhost:5000/api/agent/evaluate")
-    print("    POST   http://localhost:5000/api/agent/chat")
-    print("\n  Weight Tracking:")
-    print("    POST   http://localhost:5000/api/weight")
-    print("    GET    http://localhost:5000/api/weight/history")
-    print("\n" + "="*70)
-    print("\n🚀 Open demo.html in your browser to test!")
-    print("="*70 + "\n")
-
+    # Only show banner once (not in reloader child process)
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        print("\n🍎 AI Nutrition Help API")
+        print("=" * 50)
+        print("Server: http://localhost:5000")
+        print("Frontend: Open frontend/index.html in browser")
+        print("Demo Login: demo_user / demo123")
+        print("=" * 50 + "\n")
     app.run(debug=True, host='0.0.0.0', port=5000)
