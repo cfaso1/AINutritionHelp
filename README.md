@@ -16,7 +16,7 @@ nano .env  # Add: GOOGLE_API_KEY=your_key_here
 
 # 3. Start the backend
 cd ..
-python backend/api.py
+python run.py
 
 # 4. Open the frontend
 # Open: frontend/index.html in your browser
@@ -53,8 +53,7 @@ AINutritionHelp/
 │   ├── api.py                     # REST API (includes chat endpoint)
 │   ├── database.py                # SQLite database
 │   ├── nutrition_agent_service.py # Agent integration wrapper
-│   ├── ingest/                    # OCR and nutrition data extraction
-│   └── uploads/                   # Uploaded images
+│   └── ingest/                    # OCR and nutrition data extraction
 │
 ├── frontend/
 │   ├── index.html                 # Main app with AI chat interface
@@ -106,7 +105,7 @@ Navigate to Settings and configure:
 
 ## 🔌 API Endpoints
 
-**Base URL:** `http://localhost:5000/api`
+**Base URL:** `http://localhost:5000`
 
 ### Authentication
 - `POST /auth/register` - Register new user
