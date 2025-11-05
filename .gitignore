@@ -2,20 +2,16 @@
 __pycache__/
 *.pyc
 venv/
-.venv/
 
 # Database
 *.db
 backend/*.db
 
-# Uploads
-uploads/
-backend/uploads/
-
 # Environment
 .env
 
 # AI Models
+CLAUDE.md
 .claude/
 *.pkl
 *.h5
@@ -24,6 +20,4 @@ backend/models/
 
 # IDE
 .vscode/
-.idea/
-.DS_Store
 
