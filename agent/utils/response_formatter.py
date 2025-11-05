@@ -90,7 +90,6 @@ def _error_analysis(analysis_type: str) -> Dict:
 
 
 def format_product_dict(
-    barcode: str,
     name: str,
     brand: str,
     category: str,
@@ -104,7 +103,6 @@ def format_product_dict(
     Format product information into a standardized dictionary.
 
     Args:
-        barcode: Product barcode
         name: Product name
         brand: Product brand
         category: Product category
@@ -118,7 +116,6 @@ def format_product_dict(
         Formatted product dictionary
     """
     return {
-        'barcode': barcode,
         'name': name,
         'brand': brand,
         'category': category,

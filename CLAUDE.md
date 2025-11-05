@@ -48,22 +48,20 @@ python agent/demo.py
 
 **2. Backend API** (`backend/`)
 - Flask REST API (`api.py`) - main entry point
-- Routes handle: auth, profiles, barcode scanning, AI chat
+- Routes handle: auth, profiles, nutrition data input, AI chat
 - SQLite database integration (`database.py`)
-- Image OCR pipeline (`ingest/`) for manual nutrition data extraction
+- Image OCR pipeline (`ingest/`) for nutrition label data extraction
 
 **3. AI Agent System** (`agent/`)
 - Multi-evaluator architecture using Google Gemini 2.0-flash
-- Coordinate operations: barcode scanning, health/fitness/price analysis, chat
+- Coordinate operations: health/fitness/price analysis, chat
 - Async processing with parallel evaluator execution
 
 ### Data Flow for Product Evaluation
 ```
-User scans item
+User uploads nutrition label or enters data manually
     ↓
-Backend receives barcode
-    ↓
-Agent: scan_barcode() → fetch product data
+Backend processes nutrition facts (OCR or manual entry)
     ↓
 Agent: evaluate_product() → run 3 evaluators in parallel
     ├─ HealthEvaluator (nutritional alignment)
@@ -176,22 +174,13 @@ GET  /api/health                     # Health check
 
 - **Parallel Evaluations**: Health, fitness, and price evaluators run concurrently via `asyncio.gather()`
 - **Gemini API**: Uses 2.0-flash model (fast, cheaper than pro variants)
-- **Barcode Lookup**: Attempts multiple APIs; fails gracefully with mock data
+- **OCR Processing**: Uses Tesseract with multiple configurations for best accuracy
 - **Frontend**: No build process needed; single HTML file loads instantly
-- **Caching**: No explicit caching currently; consider for barcode lookups
+- **Caching**: No explicit caching currently
 
 ---
 
 ## 🧪 Testing
-
-### Test Barcodes (Mock Products)
-```
-722252601025  - Quest Protein Bar (high protein, low sugar)
-012000161551  - Coca-Cola (high sugar)
-016000275683  - Cheerios (moderate nutrition)
-078000113464  - Gatorade (sports drink)
-028400047685  - Cheez-It (snack)
-```
 
 ### Manual Testing Flow
 1. Run `python run.py`
@@ -204,20 +193,8 @@ GET  /api/health                     # Health check
 
 ### Agent Testing
 ```bash
-python -c "
-import asyncio
-from agent import get_agent
-from agent.models import UserProfile
-
-async def test():
-    agent = get_agent()
-    product = await agent.scan_barcode('722252601025')
-    profile = UserProfile(health_goals='muscle building')
-    result = await agent.evaluate_product(product, profile)
-    print(result)
-
-asyncio.run(test())
-"
+# Run the demo script with sample products
+python agent/demo.py
 ```
 
 ---

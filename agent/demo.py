@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent import get_agent
-from agent.models import UserProfile
+from agent.models import UserProfile, Product
 
 
 async def main():
@@ -47,32 +47,68 @@ async def main():
     print(f"   Daily Protein Target: {user_profile.daily_protein_target_g}g")
     print("\n" + "-"*70 + "\n")
 
-    # Test barcodes
-    test_barcodes = [
-        ("722252601025", "Quest Protein Bar (High Protein)"),
-        ("012000161551", "Coca-Cola (High Sugar)"),
-        ("016000275683", "Cheerios (Breakfast Cereal)"),
+    # Test products with nutrition data
+    test_products = [
+        Product(
+            name="Quest Protein Bar",
+            brand="Quest",
+            category="Protein Bar",
+            price=2.49,
+            nutrition={
+                "calories": 200,
+                "protein": 21,
+                "carbs_total": 22,
+                "sugar_total": 1,
+                "fat_total": 8,
+                "sodium": 270,
+                "serving_size": "60g",
+                "servings_per_container": 1
+            }
+        ),
+        Product(
+            name="Coca-Cola",
+            brand="Coca-Cola",
+            category="Beverage",
+            price=1.99,
+            nutrition={
+                "calories": 140,
+                "protein": 0,
+                "carbs_total": 39,
+                "sugar_total": 39,
+                "fat_total": 0,
+                "sodium": 45,
+                "serving_size": "355ml",
+                "servings_per_container": 1
+            }
+        ),
+        Product(
+            name="Cheerios",
+            brand="General Mills",
+            category="Cereal",
+            price=4.99,
+            nutrition={
+                "calories": 110,
+                "protein": 3,
+                "carbs_total": 22,
+                "sugar_total": 2,
+                "fat_total": 2,
+                "sodium": 190,
+                "dietary_fiber": 3,
+                "serving_size": "28g",
+                "servings_per_container": 14
+            }
+        ),
     ]
 
-    for barcode, description in test_barcodes:
-        print(f"📱 Scanning: {description}")
-        print(f"   Barcode: {barcode}\n")
-
-        # Scan barcode
-        product = await agent.scan_barcode(barcode)
-
-        if not product:
-            print("   ❌ Product not found!\n")
-            continue
-
-        print(f"   ✓ Found: {product.name}")
+    for product in test_products:
+        print(f"📱 Analyzing: {product.name}")
         print(f"   Brand: {product.brand}")
         print(f"   Price: ${product.price}")
 
         if product.nutrition:
             print(f"   Calories: {product.nutrition.get('calories', 0)}")
             print(f"   Protein: {product.nutrition.get('protein', 0)}g")
-            print(f"   Sugar: {product.nutrition.get('sugar', 0)}g")
+            print(f"   Sugar: {product.nutrition.get('sugar_total', 0)}g")
 
         print("\n   🤖 Evaluating with AI Agent...\n")
 

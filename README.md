@@ -53,7 +53,7 @@ AINutritionHelp/
 │   ├── api.py                     # REST API (includes chat endpoint)
 │   ├── database.py                # SQLite database
 │   ├── nutrition_agent_service.py # Agent integration wrapper
-│   ├── barcode_detector.py        # Image barcode extraction
+│   ├── ingest/                    # OCR and nutrition data extraction
 │   └── uploads/                   # Uploaded images
 │
 ├── frontend/
@@ -61,15 +61,14 @@ AINutritionHelp/
 │   ├── app.js                     # Frontend JavaScript logic
 │   └── styles.css                 # Application styles
 │
-├── agent/                          # AI Agent System (NEW)
+├── agent/                          # AI Agent System
 │   ├── main_agent.py              # Main orchestrator
 │   ├── service.py                 # Backend integration layer
 │   ├── models.py                  # Product & UserProfile models
-│   ├── barcode_service.py         # Barcode API integration
 │   ├── health_evaluator.py        # Health analysis agent
 │   ├── fitness_evaluator.py       # Fitness evaluation agent
 │   ├── price_evaluator.py         # Price analysis agent
-│   ├── agent.py                   # Google ADK integration
+│   ├── adk_agent.py               # Google ADK integration
 │   └── utils/                     # Helper utilities
 │       ├── data_parser.py
 │       └── response_formatter.py
@@ -263,7 +262,7 @@ GOOGLE_API_KEY=your_google_api_key_here
 - Flask 3.0.0 (REST API)
 - SQLite3
 - Google Generative AI SDK (Gemini 2.0-flash)
-- OpenCV + pyzbar (barcode detection)
+- Tesseract OCR + OpenCV (nutrition label extraction)
 
 **Frontend:**
 - Vanilla HTML5/CSS3/JavaScript
@@ -365,7 +364,6 @@ This is useful for testing the agent outside the web interface.
 - [ ] Add message timestamps
 - [ ] Export chat conversations
 - [ ] Voice input for chat
-- [ ] Real-time camera barcode scanning
 - [ ] Meal planning suggestions
 - [ ] Recipe recommendations
 - [ ] Social features (meal sharing)

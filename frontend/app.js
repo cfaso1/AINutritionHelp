@@ -594,7 +594,6 @@ async function submitManualEntry(event) {
 
             // Create product with price and item name included
             scannedProduct = {
-                barcode: 'MANUAL_ENTRY',
                 name: itemName,
                 category: 'Food',
                 price: price,
@@ -703,7 +702,6 @@ async function submitClarification(event) {
 
             // Create product with price and item name included
             scannedProduct = {
-                barcode: 'MANUAL_ENTRY',
                 name: itemName,
                 category: 'Food',
                 price: price,

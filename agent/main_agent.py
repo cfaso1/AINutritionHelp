@@ -36,7 +36,6 @@ class NutritionAgent:
     Main Nutrition AI Agent that coordinates all evaluation components.
 
     Features:
-    - Barcode scanning and product lookup
     - Health evaluation (nutritional analysis)
     - Fitness evaluation (workout and activity recommendations)
     - Price evaluation (value for money analysis)
@@ -107,7 +106,6 @@ class NutritionAgent:
 
             # Format and return complete response
             product_dict = {
-                'barcode': product.barcode,
                 'name': product.name,
                 'brand': product.brand,
                 'category': product.category,

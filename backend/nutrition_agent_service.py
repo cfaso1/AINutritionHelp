@@ -24,7 +24,7 @@ from agent.service import get_nutrition_agent_service as get_new_service, run_as
 class NutritionAgentService:
     """
     Service class to integrate the NEW nutrition agent with the Flask backend.
-    Provides a clean interface for barcode scanning and AI-powered evaluation.
+    Provides a clean interface for AI-powered evaluation.
 
     This is a wrapper around the new agent system for backward compatibility.
     """
@@ -48,7 +48,7 @@ class NutritionAgentService:
         Evaluate a product using health, price, and fitness agents.
 
         Args:
-            product_data: Product information (from barcode scan or manual input)
+            product_data: Product information (from nutrition facts input)
             user_profile_data: User's goals and preferences from database
 
         Returns:

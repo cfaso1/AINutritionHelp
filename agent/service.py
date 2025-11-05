@@ -19,38 +19,6 @@ class NutritionAgentService:
         """Initialize the service with the main agent."""
         self.agent = get_agent()
 
-    async def scan_barcode(self, barcode: str) -> Optional[Dict]:
-        """
-        Scan a barcode and return product information.
-
-        Args:
-            barcode: Barcode number to scan
-
-        Returns:
-            Product dictionary or None if not found
-        """
-        try:
-            product = await self.agent.scan_barcode(barcode)
-
-            if not product:
-                return None
-
-            return {
-                "barcode": product.barcode,
-                "name": product.name,
-                "brand": product.brand,
-                "category": product.category,
-                "price": product.price,
-                "size": product.size,
-                "unit_price": product.unit_price,
-                "nutrition": product.nutrition or {},
-                "ingredients": product.ingredients
-            }
-
-        except Exception as e:
-            print(f"Error scanning barcode: {e}")
-            return None
-
     async def evaluate_product(
         self,
         product_data: Dict,
@@ -94,7 +62,6 @@ class NutritionAgentService:
     def _dict_to_product(self, data: Dict) -> Product:
         """Convert dictionary to Product model."""
         return Product(
-            barcode=data.get("barcode", ""),
             name=data.get("name", "Unknown Product"),
             brand=data.get("brand", "Unknown Brand"),
             category=data.get("category", "Uncategorized"),

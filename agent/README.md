@@ -4,7 +4,7 @@ A comprehensive, production-ready AI companion for personalized nutrition evalua
 
 ## 🎯 Overview
 
-The Nutrition AI Agent is a modular, scalable system that combines barcode scanning, AI-powered nutrition analysis, and conversational companion behavior to help users make informed food choices aligned with their health and fitness goals.
+The Nutrition AI Agent is a modular, scalable system that combines AI-powered nutrition analysis and conversational companion behavior to help users make informed food choices aligned with their health and fitness goals.
 
 ## 🏗️ Architecture
 
@@ -14,7 +14,6 @@ agent/
 ├── health_evaluator.py     # Health & wellness analysis
 ├── fitness_evaluator.py    # Fitness & workout recommendations
 ├── price_evaluator.py      # Pricing & value analysis
-├── barcode_service.py      # Product lookup service
 ├── models.py               # Data models (Product, UserProfile)
 ├── service.py              # Backend integration layer
 ├── utils/
@@ -28,11 +27,10 @@ agent/
 
 ### Core Capabilities
 
-1. **Barcode Scanning** - Retrieve detailed product information
-2. **Health Evaluation** - Analyze nutritional alignment with health goals
-3. **Fitness Evaluation** - Assess products for workout and activity needs
-4. **Price Evaluation** - Determine value for money and suggest alternatives
-5. **Conversational AI** - Friendly, personalized companion messages
+1. **Health Evaluation** - Analyze nutritional alignment with health goals
+2. **Fitness Evaluation** - Assess products for workout and activity needs
+3. **Price Evaluation** - Determine value for money and suggest alternatives
+4. **Conversational AI** - Friendly, personalized companion messages
 
 ### AI Model
 
@@ -67,7 +65,6 @@ Create `agent/.env`:
 
 ```env
 GOOGLE_API_KEY=your_google_api_key_here
-BARCODE_LOOKUP_API_KEY=your_barcode_api_key_here  # Optional
 ```
 
 ## 🚀 Usage
@@ -77,14 +74,27 @@ BARCODE_LOOKUP_API_KEY=your_barcode_api_key_here  # Optional
 ```python
 import asyncio
 from agent import get_agent
-from agent.models import UserProfile
+from agent.models import UserProfile, Product
 
 async def main():
     # Initialize agent
     agent = get_agent()
 
-    # Scan product
-    product = await agent.scan_barcode("722252601025")
+    # Create product from nutrition data
+    product = Product(
+        name="Greek Yogurt",
+        brand="Chobani",
+        category="Dairy",
+        price=1.99,
+        nutrition={
+            "calories": 100,
+            "protein": 17,
+            "carbs_total": 6,
+            "sugar_total": 4,
+            "fat_total": 0,
+            "sodium": 60
+        }
+    )
 
     # Create user profile
     profile = UserProfile(
@@ -117,9 +127,8 @@ from agent import get_nutrition_agent_service, run_async
 # Get service
 service = get_nutrition_agent_service()
 
-# Use in Flask routes
-product = run_async(service.scan_barcode("722252601025"))
-evaluation = run_async(service.evaluate_product(product, user_profile))
+# Use in Flask routes with nutrition data from OCR or manual entry
+evaluation = run_async(service.evaluate_product(product_data, user_profile_data))
 ```
 
 ## 📚 API Reference
@@ -129,9 +138,6 @@ evaluation = run_async(service.evaluate_product(product, user_profile))
 Main agent class coordinating all evaluations.
 
 #### Methods
-
-**`scan_barcode(barcode: str) -> Optional[Product]`**
-- Scans barcode and retrieves product information
 
 **`evaluate_product(product: Product, user_profile: UserProfile) -> Dict`**
 - Comprehensive evaluation with all three evaluators
@@ -202,25 +208,16 @@ response = format_evaluation_response(
 )
 ```
 
-## 🧪 Test Barcodes
-
-For testing, use these mock product barcodes:
-
-- `722252601025` - Quest Protein Bar (high protein, recommended)
-- `012000161551` - Coca-Cola (high sugar, not recommended)
-- `016000275683` - Cheerios (moderate, acceptable with caution)
-- `078000113464` - Gatorade (sports drink)
-- `028400047685` - Cheez-It (snack)
-
 ## 🔌 Backend Integration
 
 The agent integrates seamlessly with the existing Flask backend:
 
 ### Endpoints
 
-- **`/api/barcode/scan`** - Scan barcodes
-- **`/api/agent/evaluate`** - Comprehensive evaluation
-- **`/api/barcode/image`** - Upload barcode image
+- **`/api/agent/evaluate`** - Comprehensive product evaluation
+- **`/api/agent/chat`** - Chat with AI companion
+- **`/api/nutrition/ocr`** - Upload nutrition label image
+- **`/api/nutrition/manual`** - Manual nutrition data entry
 
 ### Integration Layer
 
@@ -307,7 +304,7 @@ class NutritionAgent:
 ### Naming Conventions
 
 - **Classes**: PascalCase (e.g., `NutritionAgent`, `HealthEvaluator`)
-- **Functions**: snake_case (e.g., `scan_barcode`, `evaluate_product`)
+- **Functions**: snake_case (e.g., `evaluate_product`, `chat`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `CATEGORY_BENCHMARKS`)
 - **Private methods**: `_leading_underscore` (e.g., `_parse_response`)
 

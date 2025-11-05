@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 class Product(BaseModel):
     """Product data model representing scanned items."""
-    barcode: Optional[str] = "MANUAL"
     name: str
     brand: Optional[str] = None
     category: str
