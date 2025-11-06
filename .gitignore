@@ -11,7 +11,6 @@ backend/*.db
 .env
 
 # AI Models
-CLAUDE.md
 .claude/
 *.pkl
 *.h5

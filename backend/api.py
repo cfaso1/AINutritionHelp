@@ -36,8 +36,7 @@ from backend.database import (
     add_weight_entry,
     get_weight_history,
     calculate_bmi,
-    migrate_database,
-    migrate_to_imperial
+    migrate_database
 )
 # Nutrition Agent Service
 try:
@@ -74,10 +73,9 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
-# Initialize database and create a demo user
+# Initialize database and run migrations
 init_database()
-migrate_database()  # Run migrations for price column
-migrate_to_imperial()  # Run imperial unit migration
+migrate_database()  # Run all schema migrations
 
 # Create a single demo user for the hackathon (user_id will always be 1)
 DEMO_USER_ID = 1

@@ -32,47 +32,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def migrate_to_imperial():
-    """
-    Add imperial unit columns to support feet/inches and pounds.
-    """
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    try:
-        # Check existing columns
-        cursor.execute("PRAGMA table_info(user_profiles)")
-        columns = [column[1] for column in cursor.fetchall()]
-
-        # Add imperial height columns
-        if 'height_feet' not in columns:
-            logger.debug("Adding 'height_feet' column")
-            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_feet INTEGER")
-
-        if 'height_inches' not in columns:
-            logger.debug("Adding 'height_inches' column")
-            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_inches INTEGER")
-
-        if 'height_display' not in columns:
-            logger.debug("Adding 'height_display' column")
-            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_display TEXT")
-
-        # Add imperial weight column
-        if 'weight_lbs' not in columns:
-            logger.debug("Adding 'weight_lbs' column")
-            cursor.execute("ALTER TABLE user_profiles ADD COLUMN weight_lbs REAL")
-
-        # Add age category column
-        if 'age_category' not in columns:
-            logger.debug("Adding 'age_category' column")
-            cursor.execute("ALTER TABLE user_profiles ADD COLUMN age_category TEXT")
-
-        conn.commit()
-
-    except Exception as e:
-        logger.error(f"Migration error: {e}")
-    finally:
-        conn.close()
 
 def hash_password(password: str, salt: str = None) -> tuple:
     """
@@ -564,14 +523,39 @@ def migrate_database():
     cursor = conn.cursor()
 
     try:
-        # Check if price column exists in nutrition_logs
-        cursor.execute("PRAGMA table_info(nutrition_logs)")
-        columns = [column[1] for column in cursor.fetchall()]
+        # Migrate user_profiles table - add imperial units and age category
+        cursor.execute("PRAGMA table_info(user_profiles)")
+        profile_columns = [column[1] for column in cursor.fetchall()]
 
-        if 'price' not in columns:
-            logger.debug("Adding 'price' column to nutrition_logs table")
+        if 'height_feet' not in profile_columns:
+            logger.debug("Adding 'height_feet' column to user_profiles")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_feet INTEGER")
+
+        if 'height_inches' not in profile_columns:
+            logger.debug("Adding 'height_inches' column to user_profiles")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_inches INTEGER")
+
+        if 'height_display' not in profile_columns:
+            logger.debug("Adding 'height_display' column to user_profiles")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN height_display TEXT")
+
+        if 'weight_lbs' not in profile_columns:
+            logger.debug("Adding 'weight_lbs' column to user_profiles")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN weight_lbs REAL")
+
+        if 'age_category' not in profile_columns:
+            logger.debug("Adding 'age_category' column to user_profiles")
+            cursor.execute("ALTER TABLE user_profiles ADD COLUMN age_category TEXT")
+
+        # Migrate nutrition_logs table - add price column
+        cursor.execute("PRAGMA table_info(nutrition_logs)")
+        nutrition_columns = [column[1] for column in cursor.fetchall()]
+
+        if 'price' not in nutrition_columns:
+            logger.debug("Adding 'price' column to nutrition_logs")
             cursor.execute("ALTER TABLE nutrition_logs ADD COLUMN price REAL")
-            conn.commit()
+
+        conn.commit()
 
     except Exception as e:
         logger.error(f"Migration error: {e}")

@@ -595,7 +595,7 @@ async function submitManualEntry(event) {
             // Create product with price and item name included
             scannedProduct = {
                 name: itemName,
-                category: 'Food',
+                category: 'Price',
                 price: price,
                 nutrition: result.data
             };
@@ -703,7 +703,7 @@ async function submitClarification(event) {
             // Create product with price and item name included
             scannedProduct = {
                 name: itemName,
-                category: 'Food',
+                category: 'Price',
                 price: price,
                 nutrition: result.data
             };
