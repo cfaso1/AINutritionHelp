@@ -1,6 +1,8 @@
-# 🍎 AI Nutrition Help
+# 🍎 BalanceBot AI
 
 Scan products, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from a multi-agent AI system.
+
+Note: This Full-stack AI powered web app was vibe coded during the KnightHacksVIII 36 hour hackathon and later polished for production
 
 ---
 

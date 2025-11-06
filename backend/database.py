@@ -68,7 +68,6 @@ def migrate_to_imperial():
             cursor.execute("ALTER TABLE user_profiles ADD COLUMN age_category TEXT")
 
         conn.commit()
-        logger.debug("Database migrated to support imperial units and age category")
 
     except Exception as e:
         logger.error(f"Migration error: {e}")
@@ -573,7 +572,6 @@ def migrate_database():
             logger.debug("Adding 'price' column to nutrition_logs table")
             cursor.execute("ALTER TABLE nutrition_logs ADD COLUMN price REAL")
             conn.commit()
-            logger.debug("Migration completed successfully")
 
     except Exception as e:
         logger.error(f"Migration error: {e}")
