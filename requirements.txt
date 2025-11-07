@@ -22,4 +22,8 @@ pytesseract==0.3.10
 # Environment Configuration
 python-dotenv==1.0.0
 
+# Authentication & Security
+PyJWT==2.8.0
+Flask-Limiter==3.5.0
+
 # Database: Using built-in sqlite3 (no additional package needed)

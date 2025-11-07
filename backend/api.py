@@ -1,30 +1,40 @@
 #!/usr/bin/env python3
 """
-REST API for AI Nutrition Help - Hackathon Demo Version
-NO AUTHENTICATION - For demo purposes only!
-
-USAGE:
-    python api.py
-
-Then open frontend/index.html in your browser!
+REST API for AI Nutrition Help - Production Version
+With proper authentication, security, and error handling
 """
 
 import logging
-from flask import Flask, request, jsonify
+import sys
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 from datetime import datetime
 from pathlib import Path
+import traceback
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Import configuration
+from config import active_config as Config
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=getattr(logging, Config.LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(Config.LOG_FILE),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
 
-# Reduce werkzeug logging noise
-logging.getLogger('werkzeug').setLevel(logging.WARNING)
+# Reduce werkzeug logging noise in production
+if not Config.FLASK_DEBUG:
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
 
 # Import backend modules
 from backend.database import (
@@ -38,6 +48,10 @@ from backend.database import (
     calculate_bmi,
     migrate_database
 )
+
+# Import authentication
+from backend.auth import AuthManager, get_current_user_id
+
 # Nutrition Agent Service
 try:
     from backend.nutrition_agent_service import get_nutrition_agent_service, run_async
@@ -61,65 +75,137 @@ except ImportError as e:
     logger.warning(f"OCR pipeline not available: {e}")
     USE_OCR = False
 
+# Validate configuration
+try:
+    Config.validate()
+    logger.info(f"Configuration validated successfully (env: {Config.FLASK_ENV})")
+except ValueError as e:
+    logger.error(f"Configuration validation failed: {e}")
+    sys.exit(1)
+
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Allow all origins for demo
+app.config.from_object(Config)
+
+# CORS - Use whitelist from config
+CORS(app,
+     origins=Config.ALLOWED_ORIGINS,
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization'])
+
+# Rate Limiting
+if Config.RATE_LIMIT_ENABLED:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=[f"{Config.RATE_LIMIT_PER_MINUTE}/minute"],
+        storage_uri="memory://"
+    )
+    logger.info("Rate limiting enabled")
+else:
+    # Dummy limiter that does nothing
+    class DummyLimiter:
+        def limit(self, *args, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
+    limiter = DummyLimiter()
 
 # Configuration
-UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
-UPLOAD_FOLDER.mkdir(exist_ok=True)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+UPLOAD_FOLDER = Path(Config.UPLOAD_FOLDER)
+UPLOAD_FOLDER.mkdir(exist_ok=True, parents=True)
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+# Initialize Authentication Manager
+auth_manager = AuthManager(Config.SECRET_KEY)
 
 # Initialize database and run migrations
 init_database()
-migrate_database()  # Run all schema migrations
-
-# Create a single demo user for the hackathon (user_id will always be 1)
-DEMO_USER_ID = 1
-try:
-    # Try to create demo user, ignore if already exists
-    user_id = create_user("demo_user", "demo@hackathon.com", "demo123")
-    if user_id:
-        # Set up a basic profile
-        update_user_profile(DEMO_USER_ID, {
-            'height_cm': 175,
-            'current_weight_kg': 75,
-            'goal_type': 'general_health',
-            'activity_level': 'moderately_active',
-            'diet_type': 'standard',
-            'daily_calorie_target': 2000,
-            'daily_protein_target_g': 100,
-            'daily_carbs_target_g': 250,
-            'daily_fat_target_g': 65
-        })
-        logger.info(f"Demo user created (ID: {DEMO_USER_ID})")
-except:
-    logger.info(f"Using existing demo user (ID: {DEMO_USER_ID})")
-
-
+migrate_database()
+logger.info("Database initialized and migrations completed")
 
 
 # ============================================================================
-# AUTHENTICATION ENDPOINTS (DEMO)
+# SECURITY MIDDLEWARE
+# ============================================================================
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to all responses"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+    if Config.FLASK_ENV == 'production':
+        response.headers['Content-Security-Policy'] = "default-src 'self'"
+
+    return response
+
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors"""
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    logger.error(f"Internal server error: {error}", exc_info=True)
+
+    if Config.FLASK_DEBUG:
+        return jsonify({'error': 'Internal server error', 'details': str(error)}), 500
+    else:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle unexpected exceptions"""
+    logger.error(f"Unhandled exception: {error}", exc_info=True)
+
+    if Config.FLASK_DEBUG:
+        return jsonify({
+            'error': 'Unexpected error occurred',
+            'details': str(error),
+            'traceback': traceback.format_exc()
+        }), 500
+    else:
+        return jsonify({'error': 'Unexpected error occurred'}), 500
+
+
+# ============================================================================
+# AUTHENTICATION ENDPOINTS
 # ============================================================================
 
 @app.route('/api/auth/register', methods=['POST'])
+@limiter.limit("5/hour")  # Stricter limit for registration
 def register():
-    """Register a new user (demo authentication)."""
+    """Register a new user"""
     data = request.get_json()
 
     if not data or 'username' not in data or 'email' not in data or 'password' not in data:
         return jsonify({'error': 'Missing required fields: username, email, password'}), 400
 
-    user_id = create_user(data['username'], data['email'], data['password'])
+    # Validate password strength
+    password = data['password']
+    if len(password) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+
+    user_id = create_user(data['username'], data['email'], password)
 
     if user_id:
+        # Generate JWT token
+        token = auth_manager.generate_token(user_id, data['username'], data['email'])
+
+        logger.info(f"New user registered: {data['username']} (ID: {user_id})")
+
         return jsonify({
             'success': True,
             'user_id': user_id,
+            'username': data['username'],
+            'email': data['email'],
+            'token': token,
             'message': 'User registered successfully'
         }), 201
     else:
@@ -127,8 +213,9 @@ def register():
 
 
 @app.route('/api/auth/login', methods=['POST'])
+@limiter.limit("10/hour")  # Limit login attempts
 def login():
-    """Login a user (demo authentication)."""
+    """Login a user and return JWT token"""
     data = request.get_json()
 
     if not data or 'username' not in data or 'password' not in data:
@@ -137,74 +224,81 @@ def login():
     user = authenticate_user(data['username'], data['password'])
 
     if user:
+        # Generate JWT token
+        token = auth_manager.generate_token(
+            user['user_id'],
+            user['username'],
+            user['email']
+        )
+
+        logger.info(f"User logged in: {user['username']} (ID: {user['user_id']})")
+
         return jsonify({
             'success': True,
             'user': user,
+            'token': token,
             'message': 'Login successful'
         }), 200
     else:
+        logger.warning(f"Failed login attempt for username: {data['username']}")
         return jsonify({'error': 'Invalid username or password'}), 401
 
 
 # ============================================================================
-# SIMPLIFIED ENDPOINTS - NO AUTH REQUIRED
+# PROFILE ENDPOINTS (AUTHENTICATED)
 # ============================================================================
 
 @app.route('/api/profile', methods=['GET'])
+@auth_manager.require_auth
 def get_profile():
-    """Get demo user's profile."""
-    profile = get_user_profile(DEMO_USER_ID)
-    
+    """Get authenticated user's profile"""
+    user_id = get_current_user_id()
+    profile = get_user_profile(user_id)
+
     if not profile:
         return jsonify({'error': 'Profile not found'}), 404
-    
+
     return jsonify({
         'success': True,
         'profile': profile
     }), 200
 
+
 @app.route('/api/profile', methods=['PUT', 'POST'])
+@auth_manager.require_auth
 def update_profile():
-    """Update demo user profile - stores in imperial units."""
+    """Update authenticated user's profile - stores in imperial units"""
+    user_id = get_current_user_id()
     data = request.get_json() or {}
-    logger.debug(f"/api/profile called with payload: {data}")
+    logger.debug(f"Profile update for user {user_id}: {data}")
 
     import re
 
     # Validate and parse height in feet'inches format
     if 'height' in data:
         height_str = str(data['height']).strip()
-        
-        # Must be in format like 5'8 (only apostrophe allowed)
+
         if not re.match(r"^\d+'\d+\"?$", height_str):
             return jsonify({
                 'error': "Height must be in format feet'inches (e.g., 5'8). Use only an apostrophe (')."
             }), 400
-        
+
         try:
-            # Remove trailing quote if present
             height_str = height_str.rstrip('"')
             feet, inches = height_str.split("'")
             feet = int(feet)
             inches = int(inches)
-            
-            # Validate ranges
+
             if not (3 <= feet <= 8):
                 return jsonify({'error': 'Height feet must be between 3 and 8'}), 400
             if not (0 <= inches <= 11):
                 return jsonify({'error': 'Height inches must be between 0 and 11'}), 400
-            
-            # Store as separate fields
+
             data['height_feet'] = feet
             data['height_inches'] = inches
-            # Also store the formatted string for display
             data['height_display'] = f"{feet}'{inches}\""
-            
-            # Remove the original 'height' key
             data.pop('height')
-            
-            logger.debug(f"Parsed height: {feet}'{inches}\"")
-            
+
         except Exception as e:
             logger.error(f"Height parse failed: {e}")
             return jsonify({
@@ -214,25 +308,19 @@ def update_profile():
     # Handle weight in pounds
     if 'weight' in data or 'weight_lbs' in data or 'current_weight_lbs' in data:
         weight_lbs = data.get('weight') or data.get('weight_lbs') or data.get('current_weight_lbs')
-        
+
         try:
             weight_lbs = float(weight_lbs)
-            
-            # Validate range (66-660 lbs is reasonable)
+
             if not (66 <= weight_lbs <= 660):
                 return jsonify({
                     'error': 'Weight must be between 66 and 660 pounds'
                 }), 400
-            
-            # Store as weight_lbs
+
             data['weight_lbs'] = round(weight_lbs, 1)
-            
-            # Remove other weight keys
             data.pop('weight', None)
             data.pop('current_weight_lbs', None)
-            
-            logger.debug(f"Parsed weight: {weight_lbs} lbs")
-            
+
         except (ValueError, TypeError) as e:
             logger.error(f"Weight parse failed: {e}")
             return jsonify({
@@ -240,26 +328,21 @@ def update_profile():
             }), 400
 
     # Calculate BMI if we have both height and weight
-    # Use existing values if new ones weren't provided
-    profile = get_user_profile(DEMO_USER_ID)
-
+    profile = get_user_profile(user_id)
     height_feet = data.get('height_feet') or (profile.get('height_feet') if profile else None)
     height_inches = data.get('height_inches') or (profile.get('height_inches') if profile else None)
     weight_lbs = data.get('weight_lbs') or (profile.get('weight_lbs') if profile else None)
 
     if height_feet and height_inches is not None and weight_lbs:
-        # BMI formula: (weight_lbs / (height_inches^2)) * 703
         total_height_inches = (height_feet * 12) + height_inches
         bmi = (weight_lbs / (total_height_inches ** 2)) * 703
         data['bmi'] = round(bmi, 1)
-        logger.debug(f"Calculated BMI: {bmi:.1f}")
 
         # Convert to metric for AI usage
         height_cm = total_height_inches * 2.54
         current_weight_kg = weight_lbs * 0.453592
         data['height_cm'] = round(height_cm, 1)
         data['current_weight_kg'] = round(current_weight_kg, 1)
-        logger.debug(f"Converted to metric - height_cm: {height_cm:.1f}, weight_kg: {current_weight_kg:.1f}")
 
     # Ensure numeric fields are proper types
     numeric_fields = [
@@ -267,7 +350,7 @@ def update_profile():
         'daily_calorie_target', 'daily_protein_target_g',
         'daily_carbs_target_g', 'daily_fat_target_g'
     ]
-    
+
     for field in numeric_fields:
         if field in data:
             try:
@@ -278,43 +361,112 @@ def update_profile():
                     'error': f'{field} must be a valid number'
                 }), 400
 
-    # Debug output
-    logger.debug(f'Data to save: {[(k, type(v).__name__, v) for k, v in data.items()]}')
-
     # Save profile to database
-    success = update_user_profile(DEMO_USER_ID, data)
-    logger.debug(f"update_user_profile returned: {success}")
-    
+    success = update_user_profile(user_id, data)
+
     if success:
-        # Retrieve updated profile
-        profile = get_user_profile(DEMO_USER_ID)
-        logger.debug(f"Retrieved profile after save: {profile}")
-        
+        profile = get_user_profile(user_id)
+
         return jsonify({
             'success': True,
             'message': 'Profile updated successfully',
             'profile': profile
         }), 200
     else:
-        logger.error("Failed to update profile in database")
+        logger.error(f"Failed to update profile for user {user_id}")
         return jsonify({
             'error': 'Failed to update profile in database'
         }), 400
 
+
+@app.route('/api/profile/setup', methods=['POST'])
+@auth_manager.require_auth
+def initial_profile_setup():
+    """Initial profile setup - for first-time user onboarding"""
+    user_id = get_current_user_id()
+    data = request.get_json() or {}
+
+    import re
+
+    # Validate and parse height
+    if 'height' not in data:
+        return jsonify({'error': 'Height is required'}), 400
+
+    height_str = str(data['height']).strip()
+    if not re.match(r"^\d+'\d+\"?$", height_str):
+        return jsonify({'error': "Height must be in format feet'inches (e.g., 5'8)"}), 400
+
+    try:
+        height_str = height_str.rstrip('"')
+        feet, inches = height_str.split("'")
+        feet, inches = int(feet), int(inches)
+
+        if not (3 <= feet <= 8) or not (0 <= inches <= 11):
+            return jsonify({'error': 'Invalid height range'}), 400
+
+        data['height_feet'] = feet
+        data['height_inches'] = inches
+        data['height_display'] = f"{feet}'{inches}\""
+        data.pop('height')
+
+    except Exception as e:
+        logger.error(f"Height parse error: {e}")
+        return jsonify({'error': 'Invalid height format'}), 400
+
+    # Validate and parse weight
+    weight_key = 'current_weight_lbs' if 'current_weight_lbs' in data else 'weight'
+    if weight_key not in data:
+        return jsonify({'error': 'Weight is required'}), 400
+
+    try:
+        weight_lbs = float(data[weight_key])
+        if not (66 <= weight_lbs <= 660):
+            return jsonify({'error': 'Weight must be between 66 and 660 pounds'}), 400
+
+        data['weight_lbs'] = round(weight_lbs, 1)
+        data.pop(weight_key, None)
+        data.pop('weight', None)
+
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Weight must be a valid number'}), 400
+
+    # Calculate BMI
+    total_height_inches = (data['height_feet'] * 12) + data['height_inches']
+    bmi = (data['weight_lbs'] / (total_height_inches ** 2)) * 703
+    data['bmi'] = round(bmi, 1)
+
+    # Convert to metric for AI usage
+    height_cm = total_height_inches * 2.54
+    current_weight_kg = data['weight_lbs'] * 0.453592
+    data['height_cm'] = round(height_cm, 1)
+    data['current_weight_kg'] = round(current_weight_kg, 1)
+
+    # Save to database
+    success = update_user_profile(user_id, data)
+
+    if success:
+        profile = get_user_profile(user_id)
+        logger.info(f"Initial profile setup completed for user {user_id}")
+        return jsonify({
+            'success': True,
+            'message': 'Profile created successfully',
+            'profile': profile
+        }), 201
+    else:
+        return jsonify({'error': 'Failed to save profile'}), 500
+
+
 # ============================================================================
-# NUTRITION INGESTION - OCR & MANUAL ENTRY
+# NUTRITION INGESTION - OCR & MANUAL ENTRY (AUTHENTICATED)
 # ============================================================================
 
 @app.route('/api/nutrition/ocr', methods=['POST'])
+@auth_manager.require_auth
 def nutrition_ocr():
-    """
-    Extract nutrition facts from uploaded image using OCR.
-    Returns parsed data with confidence scores and clarification needs.
-    """
+    """Extract nutrition facts from uploaded image using OCR"""
     if not USE_OCR:
         return jsonify({'error': 'OCR service not available. Install required dependencies.'}), 503
 
-    # Check if image was uploaded
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 
@@ -323,12 +475,22 @@ def nutrition_ocr():
     if file.filename == '':
         return jsonify({'error': 'Empty filename'}), 400
 
+    # Validate file extension
+    file_ext = Path(file.filename).suffix.lower().lstrip('.')
+    if file_ext not in Config.ALLOWED_EXTENSIONS:
+        return jsonify({
+            'error': f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'
+        }), 400
+
     try:
-        # Read image bytes
         image_bytes = file.read()
 
-        # Step 1: Extract text using OCR
-        logger.info("Extracting text from nutrition label image")
+        # Validate file size
+        if len(image_bytes) > Config.MAX_CONTENT_LENGTH:
+            return jsonify({'error': f'File too large. Max size: {Config.MAX_UPLOAD_SIZE_MB}MB'}), 400
+
+        # Extract text using OCR
+        logger.info(f"Extracting text from nutrition label for user {get_current_user_id()}")
         ocr_text = extract_text_from_image(image_bytes)
 
         if not ocr_text or len(ocr_text.strip()) < 10:
@@ -338,27 +500,23 @@ def nutrition_ocr():
                 'needs_manual_entry': True
             }), 200
 
-        # Step 2: Parse nutrition data from text
-        logger.info("Parsing nutrition data from OCR text")
+        # Parse nutrition data from text
         parse_result = parse_nutrition_text(ocr_text)
         nutrition_data = parse_result['data']
         confidences = parse_result['confidences']
 
-        # Step 3: Check if clarification needed
+        # Check if clarification needed
         clarification_info = needs_clarification(nutrition_data, confidences)
 
         if clarification_info['needs_clarification']:
-            # If ALL priority fields are missing, OCR failed completely - suggest manual entry
             missing_count = len(clarification_info['missing_fields'])
-            if missing_count >= 7:  # Most/all fields missing
+            if missing_count >= 7:
                 return jsonify({
                     'success': False,
                     'error': 'Could not extract nutrition data from image. Please use manual entry.',
-                    'needs_manual_entry': True,
-                    'ocr_text_length': len(ocr_text)
+                    'needs_manual_entry': True
                 }), 200
 
-            # Return data with clarification form
             form_data = get_clarification_form_data(nutrition_data, confidences)
 
             return jsonify({
@@ -370,7 +528,6 @@ def nutrition_ocr():
                 'message': clarification_info['prompt_message']
             }), 200
         else:
-            # Data is complete and confident
             return jsonify({
                 'success': True,
                 'needs_clarification': False,
@@ -380,27 +537,24 @@ def nutrition_ocr():
             }), 200
 
     except Exception as e:
-        logger.error(f"OCR processing failed: {e}")
+        logger.error(f"OCR processing failed: {e}", exc_info=True)
         return jsonify({
             'success': False,
-            'error': f'OCR processing failed: {str(e)}',
+            'error': 'OCR processing failed',
             'needs_manual_entry': True
         }), 200
 
 
 @app.route('/api/nutrition/manual', methods=['POST'])
+@auth_manager.require_auth
 def nutrition_manual():
-    """
-    Accept manually entered nutrition facts.
-    Validates data and returns structured nutrition object.
-    """
+    """Accept manually entered nutrition facts"""
     data = request.get_json()
 
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        # Validate the nutrition data
         validation_result = validate_nutrition_data(data)
 
         if not validation_result['valid']:
@@ -410,7 +564,6 @@ def nutrition_manual():
                 'validation_errors': validation_result['errors']
             }), 400
 
-        # Data is valid
         return jsonify({
             'success': True,
             'data': data,
@@ -421,15 +574,14 @@ def nutrition_manual():
         logger.error(f"Manual entry validation failed: {e}")
         return jsonify({
             'success': False,
-            'error': f'Validation failed: {str(e)}'
+            'error': 'Validation failed'
         }), 500
 
 
 @app.route('/api/nutrition/clarify', methods=['POST'])
+@auth_manager.require_auth
 def nutrition_clarify():
-    """
-    Accept user corrections/clarifications and merge with original data.
-    """
+    """Accept user corrections/clarifications and merge with original data"""
     data = request.get_json()
 
     if not data or 'original_data' not in data or 'corrections' not in data:
@@ -439,10 +591,7 @@ def nutrition_clarify():
         original_data = data['original_data']
         corrections = data['corrections']
 
-        # Merge corrections with original data
         merged_data = merge_user_corrections(original_data, corrections)
-
-        # Validate merged data
         validation_result = validate_nutrition_data(merged_data)
 
         if not validation_result['valid']:
@@ -462,19 +611,16 @@ def nutrition_clarify():
         logger.error(f"Clarification merge failed: {e}")
         return jsonify({
             'success': False,
-            'error': f'Failed to apply corrections: {str(e)}'
+            'error': 'Failed to apply corrections'
         }), 500
 
 
 # ============================================================================
-# NUTRITION EVALUATION
+# NUTRITION EVALUATION (AUTHENTICATED)
 # ============================================================================
 
 def clean_nutrition_data(nutrition_dict):
-    """
-    Clean nutrition data to ensure all values are floats (not strings).
-    Handles serving_size which may contain units like "100g".
-    """
+    """Clean nutrition data to ensure all values are floats"""
     if not nutrition_dict:
         return nutrition_dict
 
@@ -485,20 +631,16 @@ def clean_nutrition_data(nutrition_dict):
         if value is None:
             continue
 
-        # Handle serving_size specially - extract just the number
         if key == 'serving_size':
             if isinstance(value, str):
-                # Extract first number from string like "100g" or "100.0g"
                 match = re.search(r'(\d+(?:\.\d+)?)', str(value))
                 if match:
                     cleaned[key] = float(match.group(1))
                 else:
-                    logger.warning(f"Could not parse serving_size: {value}")
-                    cleaned[key] = 100.0  # Default fallback
+                    cleaned[key] = 100.0
             else:
                 cleaned[key] = float(value)
         else:
-            # All other values should be floats
             try:
                 cleaned[key] = float(value)
             except (ValueError, TypeError):
@@ -509,15 +651,7 @@ def clean_nutrition_data(nutrition_dict):
 
 
 def calculate_unit_price(product_data):
-    """
-    Calculate unit price (price per serving) from total price and servings per container.
-
-    Args:
-        product_data: Product dictionary with price and nutrition data
-
-    Returns:
-        Updated product_data with unit_price field
-    """
+    """Calculate unit price (price per serving)"""
     if 'price' not in product_data or not product_data['price']:
         return product_data
 
@@ -529,53 +663,46 @@ def calculate_unit_price(product_data):
     if servings and servings > 0:
         unit_price = product_data['price'] / servings
         product_data['unit_price'] = round(unit_price, 2)
-        logger.debug(f"Calculated unit_price: ${unit_price:.2f} (${product_data['price']:.2f} / {servings} servings)")
     else:
-        # If no servings data, assume 1 serving (unit_price = total price)
         product_data['unit_price'] = product_data['price']
-        logger.debug(f"No servings data, unit_price = total price: ${product_data['price']:.2f}")
 
     return product_data
 
 
 @app.route('/api/agent/evaluate', methods=['POST'])
+@auth_manager.require_auth
 def evaluate_with_agent():
-    """
-    NEW: Comprehensive evaluation using nutrition agent.
-    Evaluates product using health, price, and fitness agents.
-    """
+    """Comprehensive evaluation using nutrition agent"""
     if not USE_NUTRITION_AGENT:
         return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
 
     data = request.get_json()
+    user_id = get_current_user_id()
 
     if not data or 'product' not in data:
         return jsonify({'error': 'Missing product data'}), 400
 
     product_data = data['product'].copy()
 
-    # Clean nutrition data to ensure all values are floats
+    # Clean nutrition data
     if 'nutrition' in product_data and product_data['nutrition']:
         product_data['nutrition'] = clean_nutrition_data(product_data['nutrition'])
-        logger.debug(f"Cleaned nutrition data: {product_data['nutrition']}")
 
-    # Calculate unit price (price per serving)
+    # Calculate unit price
     product_data = calculate_unit_price(product_data)
 
     # Get user profile for personalized evaluation
-    profile = get_user_profile(DEMO_USER_ID)
+    profile = get_user_profile(user_id)
 
     if not profile:
-        return jsonify({'error': 'User profile not found'}), 404
+        return jsonify({'error': 'User profile not found. Please complete your profile first.'}), 404
 
     try:
-        # Get nutrition agent service
         agent_service = get_nutrition_agent_service()
+        logger.info(f"Starting product evaluation for user {user_id}")
 
-        logger.info("Starting product evaluation with agent")
-        # Run comprehensive evaluation
         evaluation = run_async(agent_service.evaluate_product(product_data, profile))
-        logger.info("Product evaluation completed successfully")
+        logger.info(f"Product evaluation completed for user {user_id}")
 
         return jsonify({
             'success': True,
@@ -583,22 +710,72 @@ def evaluate_with_agent():
         }), 200
 
     except Exception as e:
-        logger.error(f"Evaluation error: {e}", exc_info=True)
-        return jsonify({'error': f'Evaluation failed: {str(e)}'}), 500
+        logger.error(f"Evaluation error for user {user_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Evaluation failed'}), 500
 
 
+@app.route('/api/agent/chat', methods=['POST'])
+@auth_manager.require_auth
+def chat_with_agent():
+    """Chat with the AI nutrition companion"""
+    if not USE_NUTRITION_AGENT:
+        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
 
+    data = request.get_json()
+    user_id = get_current_user_id()
+
+    if not data or 'message' not in data:
+        return jsonify({'error': 'Missing message field'}), 400
+
+    message = data['message'].strip()
+
+    if not message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+
+    # Get user profile for context
+    profile = get_user_profile(user_id)
+
+    try:
+        context = {}
+
+        if profile:
+            context['user_profile'] = profile
+
+        if 'product' in data:
+            context['recent_product'] = data['product']
+
+        if 'context' in data:
+            context.update(data['context'])
+
+        agent_service = get_nutrition_agent_service()
+        response = run_async(agent_service.chat(message, context if context else None))
+
+        return jsonify({
+            'success': True,
+            'message': response
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Chat error for user {user_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Chat failed'}), 500
+
+
+# ============================================================================
+# WEIGHT TRACKING (AUTHENTICATED)
+# ============================================================================
 
 @app.route('/api/weight', methods=['POST'])
+@auth_manager.require_auth
 def add_weight():
-    """Add a weight tracking entry for demo user."""
+    """Add a weight tracking entry"""
     data = request.get_json()
+    user_id = get_current_user_id()
 
     if not data or 'weight_kg' not in data:
         return jsonify({'error': 'Missing weight_kg'}), 400
 
     weight_id = add_weight_entry(
-        user_id=DEMO_USER_ID,
+        user_id=user_id,
         weight_kg=data['weight_kg'],
         notes=data.get('notes')
     )
@@ -614,10 +791,12 @@ def add_weight():
 
 
 @app.route('/api/weight/history', methods=['GET'])
+@auth_manager.require_auth
 def get_weight():
-    """Get weight history for demo user."""
+    """Get weight history for authenticated user"""
+    user_id = get_current_user_id()
     limit = request.args.get('limit', 30, type=int)
-    history = get_weight_history(DEMO_USER_ID, limit)
+    history = get_weight_history(user_id, limit)
 
     # Calculate trend
     trend = "stable"
@@ -639,171 +818,60 @@ def get_weight():
     }), 200
 
 
-@app.route('/api/agent/chat', methods=['POST'])
-def chat_with_agent():
-    """
-    Chat with the AI nutrition companion.
-    Send a message and optionally include context (recent product, user goals).
-    """
-    if not USE_NUTRITION_AGENT:
-        return jsonify({'error': 'Nutrition agent not available. Check API keys.'}), 503
-
-    data = request.get_json()
-
-    if not data or 'message' not in data:
-        return jsonify({'error': 'Missing message field'}), 400
-
-    message = data['message'].strip()
-
-    if not message:
-        return jsonify({'error': 'Message cannot be empty'}), 400
-
-    # Get user profile for context
-    profile = get_user_profile(DEMO_USER_ID)
-
-    try:
-        # Build context from request
-        context = {}
-
-        # Add user profile to context
-        if profile:
-            context['user_profile'] = profile
-
-        # Add recent product if provided
-        if 'product' in data:
-            context['recent_product'] = data['product']
-
-        # Add any custom context
-        if 'context' in data:
-            context.update(data['context'])
-
-        # Get nutrition agent service
-        agent_service = get_nutrition_agent_service()
-
-        # Chat with agent
-        response = run_async(agent_service.chat(message, context if context else None))
-
-        return jsonify({
-            'success': True,
-            'message': response
-        }), 200
-
-    except Exception as e:
-        return jsonify({'error': f'Chat failed: {str(e)}'}), 500
-
+# ============================================================================
+# HEALTH CHECK & INFO
+# ============================================================================
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """API health check endpoint."""
+    """API health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'AI Nutrition Help API (Demo Mode)',
-        'version': '1.0.0-hackathon',
-        'demo_user_id': DEMO_USER_ID,
+        'service': 'AI Nutrition Help API',
+        'version': '2.0.0',
+        'environment': Config.FLASK_ENV,
         'timestamp': datetime.now().isoformat()
     }), 200
 
 
 @app.route('/', methods=['GET'])
 def index():
-    """API documentation endpoint."""
+    """API documentation endpoint"""
     return jsonify({
-        'message': 'AI Nutrition Help API - Hackathon Demo (No Auth Required)',
-        'version': '1.0.0-demo',
-        'note': 'All endpoints use demo user - no authentication needed',
+        'message': 'AI Nutrition Help API - Production Version',
+        'version': '2.0.0',
+        'environment': Config.FLASK_ENV,
+        'authentication': 'JWT Bearer Token Required',
         'endpoints': {
-            'profile': ['GET /api/profile', 'PUT /api/profile'],
-            'nutrition': ['POST /api/agent/evaluate', 'POST /api/agent/chat'],
-            'weight': ['POST /api/weight', 'GET /api/weight/history']
+            'auth': ['POST /api/auth/register', 'POST /api/auth/login'],
+            'profile': ['GET /api/profile', 'PUT /api/profile', 'POST /api/profile/setup'],
+            'nutrition': [
+                'POST /api/nutrition/ocr',
+                'POST /api/nutrition/manual',
+                'POST /api/nutrition/clarify'
+            ],
+            'evaluation': ['POST /api/agent/evaluate', 'POST /api/agent/chat'],
+            'weight': ['POST /api/weight', 'GET /api/weight/history'],
+            'health': ['GET /api/health']
         },
-        'demo': 'Open demo.html in your browser to test!'
+        'docs': 'See README.md for complete API documentation'
     }), 200
-
-@app.route('/api/profile/setup', methods=['POST'])
-def initial_profile_setup():
-    """Initial profile setup - for first-time user onboarding."""
-    data = request.get_json() or {}
-    logger.debug(f"Initial profile setup called with: {data}")
-
-    import re
-
-    # Validate and parse height
-    if 'height' not in data:
-        return jsonify({'error': 'Height is required'}), 400
-    
-    height_str = str(data['height']).strip()
-    if not re.match(r"^\d+'\d+\"?$", height_str):
-        return jsonify({'error': "Height must be in format feet'inches (e.g., 5'8)"}), 400
-    
-    try:
-        height_str = height_str.rstrip('"')
-        feet, inches = height_str.split("'")
-        feet, inches = int(feet), int(inches)
-        
-        if not (3 <= feet <= 8) or not (0 <= inches <= 11):
-            return jsonify({'error': 'Invalid height range'}), 400
-        
-        data['height_feet'] = feet
-        data['height_inches'] = inches
-        data['height_display'] = f"{feet}'{inches}\""
-        data.pop('height')
-        
-    except Exception as e:
-        logger.error(f"Height parse error: {e}")
-        return jsonify({'error': 'Invalid height format'}), 400
-
-    # Validate and parse weight
-    weight_key = 'current_weight_lbs' if 'current_weight_lbs' in data else 'weight'
-    if weight_key not in data:
-        return jsonify({'error': 'Weight is required'}), 400
-    
-    try:
-        weight_lbs = float(data[weight_key])
-        if not (66 <= weight_lbs <= 660):
-            return jsonify({'error': 'Weight must be between 66 and 660 pounds'}), 400
-        
-        data['weight_lbs'] = round(weight_lbs, 1)
-        data.pop(weight_key, None)
-        data.pop('weight', None)
-        
-    except (ValueError, TypeError):
-        return jsonify({'error': 'Weight must be a valid number'}), 400
-
-    # Calculate BMI
-    total_height_inches = (data['height_feet'] * 12) + data['height_inches']
-    bmi = (data['weight_lbs'] / (total_height_inches ** 2)) * 703
-    data['bmi'] = round(bmi, 1)
-
-    # Convert to metric for AI usage
-    height_cm = total_height_inches * 2.54
-    current_weight_kg = data['weight_lbs'] * 0.453592
-    data['height_cm'] = round(height_cm, 1)
-    data['current_weight_kg'] = round(current_weight_kg, 1)
-
-    logger.debug(f"Saving initial profile: {data}")
-
-    # Save to database
-    success = update_user_profile(DEMO_USER_ID, data)
-    
-    if success:
-        profile = get_user_profile(DEMO_USER_ID)
-        return jsonify({
-            'success': True,
-            'message': 'Profile created successfully',
-            'profile': profile
-        }), 201
-    else:
-        return jsonify({'error': 'Failed to save profile'}), 500
-
 
 
 if __name__ == '__main__':
-    # Only show banner once (not in reloader child process)
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
-        print("\n🍎 AI Nutrition Help API")
-        print("=" * 50)
-        print("Server: http://localhost:5000")
-        print("Frontend: Open frontend/index.html in browser")
-        print("Demo Login: demo_user / demo123")
-        print("=" * 50 + "\n")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        print("\n" + "="*60)
+        print("  🍎 AI Nutrition Help API - Production Ready")
+        print("="*60)
+        print(f"  Environment: {Config.FLASK_ENV}")
+        print(f"  Server: http://{Config.HOST}:{Config.PORT}")
+        print(f"  Debug Mode: {'ON' if Config.FLASK_DEBUG else 'OFF'}")
+        print(f"  Rate Limiting: {'ON' if Config.RATE_LIMIT_ENABLED else 'OFF'}")
+        print(f"  CORS Origins: {', '.join(Config.ALLOWED_ORIGINS)}")
+        print("="*60 + "\n")
+
+    app.run(
+        debug=Config.FLASK_DEBUG,
+        host=Config.HOST,
+        port=Config.PORT
+    )

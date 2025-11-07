@@ -2,29 +2,50 @@
 
 Scan products, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from a multi-agent AI system.
 
-Note: This Full-stack AI powered web app was vibe coded during the KnightHacksVIII 36 hour hackathon and later polished for production
+**Production-Ready** ✅ - Secure authentication, multi-user support, Docker deployment, and enterprise-grade security.
+
+*Note: This Full-stack AI powered web app was created during the KnightHacksVIII 36 hour hackathon and later polished for production*
 
 ---
 
 ## 🚀 Quick Start
 
+### Local Development
+
 ```bash
-# 1. Install dependencies
+# 1. Clone and setup environment
+git clone <your-repo>
+cd AINutritionHelp
+cp .env.example .env
+
+# 2. Generate secret key and configure
+python3 -c "import secrets; print(secrets.token_hex(32))"
+# Add to .env: SECRET_KEY=<generated-key>
+# Add to .env: GOOGLE_API_KEY=<your-google-api-key>
+
+# 3. Install dependencies
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# 2. Configure API keys
-cd agent
-nano .env  # Add: GOOGLE_API_KEY=your_key_here
-
-# 3. Start the backend
-cd ..
+# 4. Run the application
 python run.py
 
-# 4. Open the frontend
+# 5. Open frontend
 # Open: frontend/index.html in your browser
 ```
 
-**Demo Login:** `demo_user` / `demo123`
+### Docker Deployment (Recommended)
+
+```bash
+# Quick start with Docker
+cp .env.example .env
+# Edit .env with your values
+docker-compose up -d --build
+```
+
+📚 **For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)**
+📚 **For production readiness guide, see [PRODUCTION_READY.md](PRODUCTION_READY.md)**
 
 ---
 

@@ -1,28 +1,32 @@
 #!/usr/bin/env python3
 """
 Run the AI Nutrition Help API server.
-Usage: python run.py
+Production-ready with environment-based configuration.
+
+Usage:
+    python run.py                    # Development mode (default)
+    FLASK_ENV=production python run.py  # Production mode
 """
 
 import sys
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
-# Load environment variables from agent/.env file
-agent_env_path = Path(__file__).parent / "agent" / ".env"
-load_dotenv(agent_env_path)
-
-# Check for required Google API key
-GOOGLE_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_KEY:
-    print("\n❌ ERROR: Missing GOOGLE_API_KEY in agent/.env file")
-    print("Get API key: https://aistudio.google.com/apikey")
-    print("Add to agent/.env: GOOGLE_API_KEY=your_key_here\n")
-    sys.exit(1)
-
-# Add backend to path
+# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Import configuration
+from config import active_config as Config
+
+# Validate configuration before starting
+try:
+    Config.validate()
+except ValueError as e:
+    print("\n❌ Configuration Error:")
+    print(str(e))
+    print("\n📝 Please check your .env file and ensure all required variables are set.")
+    print("   Copy .env.example to .env and fill in the values.\n")
+    sys.exit(1)
 
 # Import and run the API
 from backend.api import app
@@ -30,11 +34,19 @@ from backend.api import app
 if __name__ == '__main__':
     # Only show banner once (not in reloader child process)
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
-        print("\nAI Nutrition Help API")
-        print("=" * 50)
-        print("Server: http://localhost:5000")
-        print("Frontend: Open frontend/index.html in browser")
-        print("Demo Login: demo_user / demo123")
-        print("=" * 50 + "\n")
+        print("\n" + "="*60)
+        print("  🍎 AI Nutrition Help API - Production Ready")
+        print("="*60)
+        print(f"  Environment: {Config.FLASK_ENV}")
+        print(f"  Server: http://{Config.HOST}:{Config.PORT}")
+        print(f"  Debug Mode: {'ON' if Config.FLASK_DEBUG else 'OFF'}")
+        print(f"  Rate Limiting: {'ON' if Config.RATE_LIMIT_ENABLED else 'OFF'}")
+        print(f"  CORS Origins: {', '.join(Config.ALLOWED_ORIGINS)}")
+        print("="*60 + "\n")
 
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Start the Flask application
+    app.run(
+        debug=Config.FLASK_DEBUG,
+        host=Config.HOST,
+        port=Config.PORT
+    )

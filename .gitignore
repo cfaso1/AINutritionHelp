@@ -19,4 +19,23 @@ backend/models/
 
 # IDE
 .vscode/
+.idea/
 
+# Uploads & Logs
+backend/uploads/*
+!backend/uploads/.gitkeep
+*.log
+logs/
+
+# SSL Certificates
+nginx/ssl/
+*.pem
+*.key
+*.crt
+
+# Docker
+.dockerignore
+
+# Backups
+backup/
+*.backup

@@ -1,9 +1,75 @@
-// Configuration
-const API_URL = 'http://localhost:5000/api';
+// Configuration (loaded from config.js)
+const API_URL = window.NutriScanConfig?.API_URL || 'http://localhost:5000/api';
+const DEBUG = window.NutriScanConfig?.DEBUG || false;
+
+// Application State
 let currentUser = null;
+let authToken = null;
 let profileData = {};
 let scannedProduct = null;
 let chatHistory = [];
+
+// ============================================================================
+// JWT TOKEN MANAGEMENT
+// ============================================================================
+
+/**
+ * Store authentication token
+ */
+function setAuthToken(token) {
+    authToken = token;
+    localStorage.setItem('nutriscan_token', token);
+    if (DEBUG) console.log('Auth token stored');
+}
+
+/**
+ * Get current authentication token
+ */
+function getAuthToken() {
+    if (!authToken) {
+        authToken = localStorage.getItem('nutriscan_token');
+    }
+    return authToken;
+}
+
+/**
+ * Clear authentication token
+ */
+function clearAuthToken() {
+    authToken = null;
+    localStorage.removeItem('nutriscan_token');
+    if (DEBUG) console.log('Auth token cleared');
+}
+
+/**
+ * Get headers for authenticated requests
+ */
+function getAuthHeaders() {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
+}
+
+/**
+ * Handle authentication errors (token expired, etc.)
+ */
+function handleAuthError() {
+    console.error('Authentication error - token may be expired');
+    clearAuthToken();
+    currentUser = null;
+    localStorage.removeItem('nutriscan_user');
+    showMessage('globalMessage', 'Session expired. Please log in again.', 'error');
+    setTimeout(() => {
+        location.reload();
+    }, 2000);
+}
 
 const Screens = {
     WELCOME: 'welcomeScreen',
@@ -111,14 +177,25 @@ async function handleSignup(e) {
         const result = await response.json();
 
         if (response.ok) {
-            currentUser = { user_id: result.user_id, username, email, profile: null };
+            // Store JWT token
+            setAuthToken(result.token);
+
+            // Store user data
+            currentUser = {
+                user_id: result.user_id,
+                username: result.username,
+                email: result.email,
+                profile: null
+            };
             localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+
             closeModal();
             showProfileSetup();
         } else {
             showMessage('signupMessage', result.error || 'Signup failed', 'error');
         }
     } catch (error) {
+        console.error('Signup error:', error);
         showMessage('signupMessage', 'Network error. Please try again.', 'error');
     }
 }
@@ -138,8 +215,13 @@ async function handleLogin(e) {
         const result = await response.json();
 
         if (response.ok) {
+            // Store JWT token
+            setAuthToken(result.token);
+
+            // Store user data
             currentUser = result.user;
             localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+
             closeModal();
 
             await loadUserProfile();
@@ -149,11 +231,13 @@ async function handleLogin(e) {
             showMessage('loginMessage', result.error || 'Login failed', 'error');
         }
     } catch (error) {
-        showMessage('loginMessage', 'Network error. Try: demo_user / demo123', 'error');
+        console.error('Login error:', error);
+        showMessage('loginMessage', 'Network error. Please try again.', 'error');
     }
 }
 
 function logout() {
+    clearAuthToken();
     currentUser = null;
     localStorage.removeItem('nutriscan_user');
     location.reload();
@@ -161,7 +245,15 @@ function logout() {
 
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_URL}/profile`);
+        const response = await fetch(`${API_URL}/profile`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            handleAuthError();
+            return;
+        }
+
         if (response.ok) {
             const result = await response.json();
             currentUser.profile = result.profile;
@@ -255,9 +347,14 @@ async function submitProfile() {
 
         const response = await fetch(`${API_URL}/profile/setup`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
         });
+
+        if (response.status === 401) {
+            handleAuthError();
+            return;
+        }
 
         if (response.ok) {
             await loadUserProfile();
@@ -332,9 +429,14 @@ async function saveProfile() {
     try {
         const response = await fetch(`${API_URL}/profile`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(updatedProfile)
         });
+
+        if (response.status === 401) {
+            handleAuthError();
+            return;
+        }
 
         if (response.ok) {
             await loadUserProfile();
@@ -366,10 +468,24 @@ async function handleImageUpload(event) {
     formData.append('image', file);
 
     try {
+        // For file uploads, only add Authorization header (Content-Type set automatically)
+        const headers = {};
+        const token = getAuthToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_URL}/nutrition/ocr`, {
             method: 'POST',
+            headers: headers,
             body: formData
         });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
 
         const result = await response.json();
         hideLoading();
@@ -450,9 +566,15 @@ async function analyzeProduct() {
     try {
         const response = await fetch(`${API_URL}/agent/evaluate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ product: scannedProduct })
         });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
 
         const result = await response.json();
         hideLoading();
@@ -582,9 +704,15 @@ async function submitManualEntry(event) {
     try {
         const response = await fetch(`${API_URL}/nutrition/manual`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(nutritionData)
         });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
 
         const result = await response.json();
         hideLoading();
@@ -687,12 +815,18 @@ async function submitClarification(event) {
     try {
         const response = await fetch(`${API_URL}/nutrition/clarify`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 original_data: window.ocrOriginalData,
                 corrections: corrections
             })
         });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
 
         const result = await response.json();
         hideLoading();
@@ -730,9 +864,15 @@ async function analyzeProduct() {
     try {
         const response = await fetch(`${API_URL}/agent/evaluate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ product: scannedProduct })
         });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
 
         const result = await response.json();
         hideLoading();
@@ -881,9 +1021,15 @@ async function sendChatMessage() {
 
         const response = await fetch(`${API_URL}/agent/chat`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(requestData)
         });
+
+        if (response.status === 401) {
+            hideTypingIndicator();
+            handleAuthError();
+            return;
+        }
 
         const result = await response.json();
         hideTypingIndicator();
