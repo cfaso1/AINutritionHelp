@@ -7,7 +7,7 @@
 const getEnvironment = () => {
     const hostname = window.location.hostname;
 
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
         return 'development';
     } else {
         return 'production';
@@ -21,8 +21,9 @@ const config = {
         DEBUG: true
     },
     production: {
-        // This will be set to your actual production API URL
-        API_URL: window.location.origin + '/api',
+        // IMPORTANT: Update this with your Render backend URL after deployment
+        // Example: 'https://your-app-name.onrender.com/api'
+        API_URL: 'https://your-backend-app.onrender.com/api',
         DEBUG: false
     }
 };

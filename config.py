@@ -78,7 +78,7 @@ class DevelopmentConfig(Config):
     """Development-specific configuration"""
     FLASK_ENV = 'development'
     FLASK_DEBUG = True
-    ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:5000']
+    ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:5000', 'http://0.0.0.0:3000', 'http://0.0.0.0:5000']
 
 
 class ProductionConfig(Config):

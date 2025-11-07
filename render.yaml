@@ -1,0 +1,64 @@
+# Render Blueprint Configuration
+# This file automates the deployment process on Render
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service
+  - type: web
+    name: balancebot-api
+    env: python
+    region: oregon  # Choose: oregon, frankfurt, singapore
+    plan: free  # or: starter ($7/mo), standard ($25/mo)
+    branch: main
+
+    # Build and Start Commands
+    buildCommand: |
+      apt-get update && apt-get install -y tesseract-ocr
+      pip install -r requirements.txt
+    startCommand: python run.py
+
+    # Health Check
+    healthCheckPath: /api/health
+
+    # Auto-deploy on git push
+    autoDeploy: true
+
+    # Environment Variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+
+      - key: FLASK_DEBUG
+        value: 0
+
+      - key: HOST
+        value: 0.0.0.0
+
+      - key: PORT
+        value: 10000
+
+      - key: DATABASE_PATH
+        value: backend/nutrition_app.db
+
+      - key: UPLOAD_FOLDER
+        value: backend/uploads
+
+      - key: MAX_UPLOAD_SIZE_MB
+        value: 16
+
+      - key: RATE_LIMIT_ENABLED
+        value: 1
+
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 60
+
+      - key: LOG_LEVEL
+        value: INFO
+
+      - key: LOG_FILE
+        value: app.log
+
+      # IMPORTANT: Add these manually in Render dashboard (they contain secrets)
+      # - GOOGLE_API_KEY (required - from https://aistudio.google.com/apikey)
+      # - SECRET_KEY (required - generate with: python3 -c "import secrets; print(secrets.token_hex(32))")
+      # - ALLOWED_ORIGINS (required - your Netlify URL, e.g., https://your-site.netlify.app)
