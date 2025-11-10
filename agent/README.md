@@ -61,7 +61,7 @@ Or with virtual environment:
 
 ### Configuration
 
-Create `agent/.env`:
+Add to root `.env` (project root directory):
 
 ```env
 GOOGLE_API_KEY=your_google_api_key_here

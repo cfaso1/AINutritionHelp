@@ -33,7 +33,7 @@ class NutritionAgentService:
         """
         Initialize the nutrition agent service.
 
-        Uses Google Gemini API (configured via agent/.env file).
+        Uses Google Gemini API (configured via root .env file).
         """
         # Initialize the new agent service
         self._new_service = get_new_service()

@@ -26,9 +26,9 @@ from agent.health_evaluator import HealthEvaluator
 from agent.price_evaluator import PriceEvaluator
 from agent.utils.response_formatter import format_evaluation_response, format_error_response
 
-# Load .env from agent directory
-_agent_dir = Path(__file__).parent
-load_dotenv(_agent_dir / '.env')
+# Load .env from project root directory
+_project_root = Path(__file__).parent.parent
+load_dotenv(_project_root / '.env')
 
 
 class NutritionAgent:

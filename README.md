@@ -225,9 +225,9 @@ User types question → AI responds with personalized advice
 
 ### Required: Google API Key
 
-The agent system uses **Google Gemini 2.0-flash** 
+The agent system uses **Google Gemini 2.0-flash**
 
-**Create `agent/.env`:**
+**Add to root `.env`:**
 ```env
 GOOGLE_API_KEY=your_google_api_key_here
 ```
@@ -235,7 +235,7 @@ GOOGLE_API_KEY=your_google_api_key_here
 **Get API Key:**
 1. Go to https://aistudio.google.com/apikey
 2. Create a new API key
-3. Add to `agent/.env`
+3. Add to `.env` in the project root
 
 ---
 
