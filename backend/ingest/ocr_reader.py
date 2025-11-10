@@ -5,6 +5,7 @@ OCR reader for extracting text from nutrition fact images using Tesseract.
 import logging
 from typing import Union
 from pathlib import Path
+import os
 import cv2
 import numpy as np
 from PIL import Image
@@ -124,15 +125,19 @@ def extract_text_from_image(image_input: Union[bytes, str, Path]) -> str:
 
         return text.strip()
 
-    except pytesseract.TesseractNotFoundError:
-        logger.error("Tesseract not found. Please install tesseract-ocr")
+    except pytesseract.TesseractNotFoundError as e:
+        logger.error(f"Tesseract not found: {e}")
+        logger.error("TESSDATA_PREFIX: " + os.getenv("TESSDATA_PREFIX", "Not set"))
+        logger.error("PATH: " + os.getenv("PATH", "Not set"))
         raise RuntimeError(
-            "Tesseract OCR is not installed. "
+            "Tesseract OCR is not installed or not in PATH. "
             "Install it with: sudo apt-get install tesseract-ocr (Linux) "
             "or brew install tesseract (Mac)"
         )
     except Exception as e:
-        logger.error(f"OCR failed: {e}")
+        logger.error(f"OCR failed: {e}", exc_info=True)
+        logger.error(f"Image input type: {type(image_input)}")
+        logger.error(f"Image shape: {img_array.shape if 'img_array' in locals() else 'Not loaded'}")
         raise ValueError(f"Failed to extract text from image: {str(e)}")
 
 

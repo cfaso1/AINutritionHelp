@@ -97,20 +97,21 @@ AINutritionHelp/
 │
 ├── config/                         # Configuration files
 │   ├── config.py                  # Application configuration
-│   ├── docker-compose.yml         # Docker orchestration
-│   ├── Dockerfile                 # Docker image definition
-│   ├── .dockerignore              # Docker ignore patterns
+│   ├── docker-compose.yml         # Local Docker orchestration
 │   └── nginx/                     # Nginx web server config
 │       └── nginx.conf
 │
 ├── docs/                           # Documentation
 │   └── DEPLOYMENT.md              # Production deployment guide
 │
-├── netlify.toml                    # Netlify deployment config
-├── render.yaml                     # Render deployment config
+├── Dockerfile                      # Docker image for Render deployment
+├── .dockerignore                   # Docker build ignore patterns
+├── netlify.toml                    # Netlify frontend deployment
+├── render.yaml                     # Render backend deployment
 ├── run.py                          # Application entry point
 ├── requirements.txt                # Python dependencies
 ├── runtime.txt                     # Python version specification
+├── test_ocr.py                     # OCR testing script
 ├── .env.example                    # Environment variables template
 ├── .gitignore                      # Git ignore patterns
 ├── LICENSE                         # MIT License

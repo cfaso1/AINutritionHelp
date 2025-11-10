@@ -10,7 +10,14 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
+
+# Verify Tesseract installation
+RUN tesseract --version
 
 # Copy requirements first (for better caching)
 COPY requirements.txt .
@@ -32,7 +39,8 @@ ENV FLASK_ENV=production \
     FLASK_DEBUG=0 \
     HOST=0.0.0.0 \
     PORT=5000 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
 
 # Run the application
 CMD ["python", "run.py"]

@@ -824,12 +824,29 @@ def get_weight():
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """API health check endpoint"""
+    """API health check endpoint with service status"""
+    # Check Tesseract OCR availability
+    tesseract_available = False
+    tesseract_version = None
+    if USE_OCR:
+        try:
+            import pytesseract
+            tesseract_version = pytesseract.get_tesseract_version()
+            tesseract_available = True
+        except Exception as e:
+            logger.warning(f"Tesseract check failed: {e}")
+
     return jsonify({
         'status': 'healthy',
         'service': 'AI Nutrition Help API',
         'version': '2.0.0',
         'environment': Config.FLASK_ENV,
+        'features': {
+            'ocr_available': USE_OCR,
+            'tesseract_available': tesseract_available,
+            'tesseract_version': str(tesseract_version) if tesseract_version else None,
+            'ai_agent_available': USE_NUTRITION_AGENT
+        },
         'timestamp': datetime.now().isoformat()
     }), 200
 
