@@ -620,9 +620,20 @@ def nutrition_clarify():
 # ============================================================================
 
 def clean_nutrition_data(nutrition_dict):
-    """Clean nutrition data to ensure all values are floats"""
+    """
+    Clean and normalize nutrition data to ensure all values are floats
+    and keys match what the AI agent expects.
+    """
     if not nutrition_dict:
         return nutrition_dict
+
+    # Mapping from OCR parser keys to AI agent keys
+    KEY_MAPPING = {
+        'carbs_total': 'carbohydrates',  # OCR uses carbs_total, AI expects carbohydrates
+        'sugar_total': 'sugar',          # OCR uses sugar_total, AI expects sugar
+        'fat_total': 'fat',              # OCR uses fat_total, AI expects fat
+        'dietary_fiber': 'fiber',        # OCR uses dietary_fiber, AI expects fiber
+    }
 
     cleaned = {}
     import re
@@ -631,18 +642,21 @@ def clean_nutrition_data(nutrition_dict):
         if value is None:
             continue
 
-        if key == 'serving_size':
+        # Map key to AI-expected name
+        normalized_key = KEY_MAPPING.get(key, key)
+
+        if normalized_key == 'serving_size':
             if isinstance(value, str):
                 match = re.search(r'(\d+(?:\.\d+)?)', str(value))
                 if match:
-                    cleaned[key] = float(match.group(1))
+                    cleaned[normalized_key] = float(match.group(1))
                 else:
-                    cleaned[key] = 100.0
+                    cleaned[normalized_key] = 100.0
             else:
-                cleaned[key] = float(value)
+                cleaned[normalized_key] = float(value)
         else:
             try:
-                cleaned[key] = float(value)
+                cleaned[normalized_key] = float(value)
             except (ValueError, TypeError):
                 logger.warning(f"Could not convert {key}={value} to float, skipping")
                 continue
@@ -687,6 +701,8 @@ def evaluate_with_agent():
     # Clean nutrition data
     if 'nutrition' in product_data and product_data['nutrition']:
         product_data['nutrition'] = clean_nutrition_data(product_data['nutrition'])
+        logger.info(f"Cleaned nutrition data keys: {list(product_data['nutrition'].keys())}")
+        logger.info(f"Nutrition values: {product_data['nutrition']}")
 
     # Calculate unit price
     product_data = calculate_unit_price(product_data)

@@ -752,9 +752,15 @@ function showClarificationForm(originalData, clarificationFields, message) {
         const displayName = fieldInfo.display_name;
         const currentValue = fieldInfo.value || '';
         const status = fieldInfo.status;
-        const statusBadge = status === 'missing' ?
-            '<span style="color: red; font-size: 0.8em;">(Missing)</span>' :
-            `<span style="color: orange; font-size: 0.8em;">(Low Confidence: ${(fieldInfo.confidence * 100).toFixed(0)}%)</span>`;
+
+        let statusBadge = '';
+        if (status === 'missing') {
+            statusBadge = '<span style="color: red; font-size: 0.8em;">(Missing - Please add)</span>';
+        } else if (status === 'low_confidence') {
+            statusBadge = `<span style="color: orange; font-size: 0.8em;">(${(fieldInfo.confidence * 100).toFixed(0)}% confidence - Please verify)</span>`;
+        } else if (status === 'ok') {
+            statusBadge = `<span style="color: green; font-size: 0.8em;">✓ (${(fieldInfo.confidence * 100).toFixed(0)}% confidence)</span>`;
+        }
 
         fieldsHtml += `
             <div class="form-group">
@@ -775,14 +781,21 @@ function showClarificationForm(originalData, clarificationFields, message) {
     `;
 
     const html = `
-        <div class="manual-input-container" style="max-width: 600px;">
-            <h3 style="color: var(--primary-green); margin-bottom: 15px; text-align: center;">Verify Nutrition Data</h3>
-            <p style="color: var(--medium-text); margin-bottom: 25px; text-align: center;">${message}</p>
+        <div class="manual-input-container" style="max-width: 700px;">
+            <h3 style="color: var(--primary-green); margin-bottom: 10px; text-align: center;">✏️ Review & Edit Scanned Data</h3>
+            <p style="color: var(--medium-text); margin-bottom: 20px; text-align: center; font-size: 0.9rem;">
+                Please verify all values below. Edit any incorrect data before submitting for AI analysis.
+            </p>
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 20px; border-radius: 4px;">
+                <p style="margin: 0; font-size: 0.85rem; color: #856404;">
+                    <strong>💡 Tip:</strong> Check carbohydrates, protein, sugar, and fat values carefully. All fields will be used for your personalized evaluation.
+                </p>
+            </div>
             <form id="clarificationForm" onsubmit="submitClarification(event)">
                 <div class="form-grid">${fieldsHtml}</div>
                 <div class="form-actions">
-                    <button type="submit" class="btn primary">✓ Confirm & Analyze</button>
-                    <button type="button" class="btn" onclick="showManualInput()">✕ Manual Entry Instead</button>
+                    <button type="submit" class="btn primary">✓ Confirm & Get AI Analysis</button>
+                    <button type="button" class="btn" onclick="showManualInput()">✕ Start Over (Manual Entry)</button>
                 </div>
             </form>
         </div>

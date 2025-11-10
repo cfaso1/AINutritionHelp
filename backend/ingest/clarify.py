@@ -96,14 +96,14 @@ def needs_clarification(data: Dict[str, Any], confidences: Dict[str, float]) -> 
 
 def get_clarification_form_data(data: Dict[str, Any], confidences: Dict[str, float]) -> Dict[str, Any]:
     """
-    Generate form data for clarification UI.
+    Generate form data for clarification UI - shows ALL fields for editing.
 
     Args:
         data: Parsed nutrition data
         confidences: Per-field confidence scores
 
     Returns:
-        Dictionary with fields that need clarification and their current values
+        Dictionary with all nutrition fields and their current values
     """
     clarification_info = needs_clarification(data, confidences)
 
@@ -112,23 +112,29 @@ def get_clarification_form_data(data: Dict[str, Any], confidences: Dict[str, flo
 
     form_fields = {}
 
-    # Include missing fields with empty values
-    for field in clarification_info['missing_fields']:
-        form_fields[field] = {
-            'value': None,
-            'display_name': FIELD_DISPLAY_NAMES.get(field, field),
-            'confidence': 0.0,
-            'status': 'missing'
-        }
+    # Show ALL extracted fields so users can edit any mistakes
+    all_fields = list(PRIORITY_FIELDS) + ['calories', 'saturated_fat', 'trans_fat', 'dietary_fiber']
 
-    # Include low confidence fields with extracted values
-    for field in clarification_info['low_confidence_fields']:
-        form_fields[field] = {
-            'value': data.get(field),
-            'display_name': FIELD_DISPLAY_NAMES.get(field, field),
-            'confidence': confidences.get(field, 0.0),
-            'status': 'low_confidence'
-        }
+    for field in all_fields:
+        if field in data and data[field] is not None:
+            # Field has a value - show it as editable
+            confidence = confidences.get(field, 1.0)
+            status = 'low_confidence' if confidence < CONFIDENCE_THRESHOLD else 'ok'
+
+            form_fields[field] = {
+                'value': data.get(field),
+                'display_name': FIELD_DISPLAY_NAMES.get(field, field),
+                'confidence': confidence,
+                'status': status
+            }
+        elif field in clarification_info['missing_fields']:
+            # Field is missing - show as empty
+            form_fields[field] = {
+                'value': None,
+                'display_name': FIELD_DISPLAY_NAMES.get(field, field),
+                'confidence': 0.0,
+                'status': 'missing'
+            }
 
     return form_fields
 
