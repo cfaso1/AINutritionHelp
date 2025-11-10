@@ -12,6 +12,9 @@
   # Skip Python installation (frontend only)
   NODE_VERSION = "20"
 
+  # Disable secrets scanning for non-sensitive config values
+  SECRETS_SCAN_OMIT_KEYS = "UPLOAD_FOLDER,LOG_FILE,PORT,FRONTEND_URL,LOG_LEVEL,HOST,DATABASE_PATH,ALLOWED_ORIGINS,FLASK_ENV"
+
 # Redirect rules
 [[redirects]]
   # SPA fallback (if you add routing later)
