@@ -41,11 +41,12 @@ python run.py
 # Quick start with Docker
 cp .env.example .env
 # Edit .env with your values
+cd config
 docker-compose up -d --build
 ```
 
-📚 **For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)**
-📚 **For production readiness guide, see [PRODUCTION_READY.md](PRODUCTION_READY.md)**
+📚 **For detailed deployment instructions, see [docs/NETLIFY_RENDER_DEPLOYMENT.md](docs/NETLIFY_RENDER_DEPLOYMENT.md)**
+📚 **For deployment checklist, see [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md)**
 
 ---
 
@@ -95,7 +96,27 @@ AINutritionHelp/
 │       ├── data_parser.py
 │       └── response_formatter.py
 │
-└── requirements.txt                # Python dependencies
+├── config/                         # Configuration files
+│   ├── config.py                  # Application configuration
+│   ├── docker-compose.yml         # Docker orchestration
+│   ├── Dockerfile                 # Docker image definition
+│   ├── .dockerignore              # Docker ignore patterns
+│   └── nginx/                     # Nginx web server config
+│       └── nginx.conf
+│
+├── deployment/                     # Deployment configurations
+│   ├── netlify.toml               # Netlify deployment config
+│   ├── render.yaml                # Render deployment config
+│   └── .renderignore              # Render ignore patterns
+│
+├── docs/                           # Documentation
+│   ├── DEPLOYMENT_CHECKLIST.md    # Production deployment guide
+│   └── NETLIFY_RENDER_DEPLOYMENT.md # Cloud deployment guide
+│
+├── run.py                          # Application entry point
+├── requirements.txt                # Python dependencies
+├── .env.example                    # Environment variables template
+└── README.md                       # This file
 ```
 
 ---

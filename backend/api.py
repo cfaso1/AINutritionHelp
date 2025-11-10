@@ -19,7 +19,7 @@ import traceback
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import configuration
-from config import active_config as Config
+from config.config import active_config as Config
 
 # Configure logging
 logging.basicConfig(

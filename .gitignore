@@ -28,7 +28,7 @@ backend/uploads/*
 logs/
 
 # SSL Certificates
-nginx/ssl/
+config/nginx/ssl/
 *.pem
 *.key
 *.crt

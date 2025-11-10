@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Import configuration
-from config import active_config as Config
+from config.config import active_config as Config
 
 # Validate configuration before starting
 try:
