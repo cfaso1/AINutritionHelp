@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def preprocess_image(image: np.ndarray) -> np.ndarray:
     """
-    Preprocess image to improve OCR accuracy.
+    Preprocess image to improve OCR accuracy for nutrition labels.
 
     Args:
         image: Input image as numpy array
@@ -31,34 +31,31 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     else:
         gray = image
 
-    # Resize if image is too small (improves OCR)
+    # Resize if image is too small - nutrition labels need higher resolution
     height, width = gray.shape
-    if height < 300 or width < 300:
-        scale = max(300 / height, 300 / width)
+    if height < 800 or width < 600:
+        scale = max(800 / height, 600 / width)
         gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
 
-    # Apply denoising
-    denoised = cv2.fastNlMeansDenoising(gray)
+    # For very large images, resize down to avoid excessive processing
+    elif height > 3000 or width > 3000:
+        scale = min(3000 / height, 3000 / width)
+        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
 
-    # Apply adaptive thresholding for better contrast
-    thresh = cv2.adaptiveThreshold(
-        denoised,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY,
-        11,
-        2
-    )
+    # Apply bilateral filter to reduce noise while preserving edges
+    filtered = cv2.bilateralFilter(gray, 9, 75, 75)
 
-    # Optional: dilation and erosion to clean up text
-    kernel = np.ones((2, 2), np.uint8)
-    processed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    # Increase contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    contrast = clahe.apply(filtered)
 
-    # Sharpen the image
-    kernel_sharpen = np.array([[-1,-1,-1],
-                               [-1, 9,-1],
-                               [-1,-1,-1]])
-    processed = cv2.filter2D(processed, -1, kernel_sharpen)
+    # Apply Otsu's thresholding for better binarization
+    _, binary = cv2.threshold(contrast, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Remove noise with morphological operations
+    kernel = np.ones((1, 1), np.uint8)
+    processed = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=1)
+    processed = cv2.morphologyEx(processed, cv2.MORPH_OPEN, kernel, iterations=1)
 
     return processed
 
@@ -96,24 +93,41 @@ def extract_text_from_image(image_input: Union[bytes, str, Path]) -> str:
         processed = preprocess_image(img_array)
 
         # Try multiple OCR configurations for best results
-        # PSM modes: 3=fully automatic, 4=single column, 6=uniform block, 11=sparse text
+        # PSM modes:
+        # 3=fully automatic, 4=single column, 6=uniform block, 11=sparse text, 12=sparse text + OSD
+        # Added custom whitelist for nutrition labels
         configs = [
+            r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%.,()/:- ',
+            r'--oem 3 --psm 4 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%.,()/:- ',
             r'--oem 3 --psm 6',   # Single uniform block (best for labels)
-            r'--oem 3 --psm 4',   # Single column of text
             r'--oem 3 --psm 3',   # Fully automatic page segmentation
-            r'--oem 3 --psm 11',  # Sparse text (last resort)
         ]
 
         text = None
         best_text = ""
+        best_length = 0
 
         for config in configs:
             try:
+                # Try on preprocessed image
                 extracted = pytesseract.image_to_string(processed, config=config)
-                if extracted and len(extracted.strip()) > len(best_text):
+                if extracted and len(extracted.strip()) > best_length:
                     best_text = extracted.strip()
-                    if len(best_text) > 50:  # Good enough
-                        break
+                    best_length = len(best_text)
+                    logger.debug(f"Config '{config}' extracted {best_length} chars")
+
+                # If we get a good amount of text, also try on original grayscale
+                if best_length < 100:
+                    if len(img_array.shape) == 3:
+                        gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
+                    else:
+                        gray = img_array
+                    extracted_gray = pytesseract.image_to_string(gray, config=config)
+                    if len(extracted_gray.strip()) > best_length:
+                        best_text = extracted_gray.strip()
+                        best_length = len(best_text)
+                        logger.debug(f"Config '{config}' on grayscale extracted {best_length} chars")
+
             except Exception as e:
                 logger.debug(f"OCR config {config} failed: {e}")
                 continue
