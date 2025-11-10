@@ -91,7 +91,6 @@ AINutritionHelp/
 │   ├── health_evaluator.py        # Health analysis agent
 │   ├── fitness_evaluator.py       # Fitness evaluation agent
 │   ├── price_evaluator.py         # Price analysis agent
-│   ├── adk_agent.py               # Google ADK integration
 │   └── utils/                     # Helper utilities
 │       ├── data_parser.py
 │       └── response_formatter.py
@@ -104,18 +103,17 @@ AINutritionHelp/
 │   └── nginx/                     # Nginx web server config
 │       └── nginx.conf
 │
-├── deployment/                     # Deployment configurations
-│   ├── netlify.toml               # Netlify deployment config
-│   ├── render.yaml                # Render deployment config
-│   └── .renderignore              # Render ignore patterns
-│
 ├── docs/                           # Documentation
-│   ├── DEPLOYMENT_CHECKLIST.md    # Production deployment guide
-│   └── NETLIFY_RENDER_DEPLOYMENT.md # Cloud deployment guide
+│   └── DEPLOYMENT.md              # Production deployment guide
 │
+├── netlify.toml                    # Netlify deployment config
+├── render.yaml                     # Render deployment config
 ├── run.py                          # Application entry point
 ├── requirements.txt                # Python dependencies
+├── runtime.txt                     # Python version specification
 ├── .env.example                    # Environment variables template
+├── .gitignore                      # Git ignore patterns
+├── LICENSE                         # MIT License
 └── README.md                       # This file
 ```
 
@@ -376,20 +374,6 @@ curl http://localhost:5000/api/health
 
 # 3. Check browser console (F12) for CORS errors
 ```
-
----
-
-## 🚀 Running with Google ADK
-
-The agent also supports Google Agent Development Kit:
-
-```bash
-# Start ADK agent
-./venv/bin/adk run agent
-
-```
-
-This is useful for testing the agent outside the web interface.
 
 ---
 

@@ -1,16 +1,24 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 venv/
+*.egg-info/
+dist/
+build/
 
 # Database
 *.db
-backend/*.db
+*.sqlite
+*.sqlite3
 
 # Environment
 .env
+.env.local
+.env.*.local
 
-# AI Models
+# AI Models & Claude
 .claude/
 frontend/.claude/
 *.pkl
@@ -18,15 +26,20 @@ frontend/.claude/
 *.pth
 backend/models/
 
-# IDE
+# IDE & Editors
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
 # Uploads & Logs
 backend/uploads/*
 !backend/uploads/.gitkeep
 *.log
 logs/
+app.log
 
 # SSL Certificates
 config/nginx/ssl/
@@ -34,9 +47,20 @@ config/nginx/ssl/
 *.key
 *.crt
 
-# Docker
-.dockerignore
+# Docker (don't ignore - needed for deployment)
+# .dockerignore
 
 # Backups
 backup/
 *.backup
+
+# Temporary files
+*.tmp
+*.temp
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS files
+Thumbs.db
+desktop.ini

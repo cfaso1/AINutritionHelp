@@ -19,7 +19,6 @@ agent/
 ├── utils/
 │   ├── data_parser.py      # Nutrition data parsing & normalization
 │   └── response_formatter.py # Response formatting utilities
-├── demo.py                 # Demonstration script
 └── __init__.py             # Package exports
 ```
 
@@ -113,11 +112,11 @@ async def main():
 asyncio.run(main())
 ```
 
-### Run Demo
+### Test via API
 
-```bash
-./venv/bin/python agent/demo.py
-```
+The agent is integrated into the Flask backend. Test it by:
+1. Starting the backend: `python run.py`
+2. Using the frontend or making API calls to `/api/agent/evaluate` or `/api/agent/chat`
 
 ### Backend Integration
 
@@ -328,7 +327,7 @@ The agent includes comprehensive error handling:
 - ✅ Singleton pattern for efficiency
 - ✅ Clean code with documentation
 - ✅ Backward compatible with existing API
-- ✅ Production-tested with demo script
+- ✅ Production-tested and deployed
 
 ### Performance
 
