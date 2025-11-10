@@ -34,7 +34,10 @@ class PriceEvaluator:
 
     def __init__(self, model_name: str = "gemini-2.0-flash-exp"):
         """Initialize Price Evaluator with AI model."""
-        self.client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY environment variable is not set")
+        self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
 
     async def evaluate(self, product: Product) -> Dict:

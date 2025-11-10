@@ -50,7 +50,16 @@ class NutritionAgent:
             model_name: Google Gemini model to use
         """
         self.model_name = model_name
-        self.client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+
+        # Validate API key is set
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            error_msg = "GOOGLE_API_KEY environment variable is not set. Please set it in your .env file or environment."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        self.client = genai.Client(api_key=api_key)
+        logger.info(f"NutritionAgent initialized with model: {model_name}")
 
         # Initialize evaluators
         self.health_evaluator = HealthEvaluator(self.model_name)

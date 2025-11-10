@@ -35,8 +35,17 @@ class NutritionAgentService:
 
         Uses Google Gemini API (configured via root .env file).
         """
-        # Initialize the new agent service
-        self._new_service = get_new_service()
+        try:
+            # Initialize the new agent service
+            self._new_service = get_new_service()
+            logger.info("Nutrition agent service initialized successfully")
+        except ValueError as e:
+            logger.error(f"Failed to initialize nutrition agent: {e}")
+            logger.error("Please ensure GOOGLE_API_KEY is set in environment variables")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error initializing nutrition agent: {e}", exc_info=True)
+            raise
 
 
     async def evaluate_product(
@@ -55,9 +64,10 @@ class NutritionAgentService:
             Dictionary with comprehensive evaluation from all agents
         """
         try:
+            logger.info(f"Evaluating product: {product_data.get('name', 'Unknown')}")
             return await self._new_service.evaluate_product(product_data, user_profile_data)
         except Exception as e:
-            logger.error(f"Error evaluating product: {e}")
+            logger.error(f"Error evaluating product: {e}", exc_info=True)
             return self._error_evaluation_response()
 
     async def chat(self, message: str, context: Optional[Dict] = None) -> str:
@@ -72,9 +82,10 @@ class NutritionAgentService:
             AI response string
         """
         try:
+            logger.info(f"Chat request: {message[:50]}...")
             return await self._new_service.chat(message, context)
         except Exception as e:
-            logger.error(f"Error in chat: {e}")
+            logger.error(f"Error in chat: {e}", exc_info=True)
             return "Sorry, I encountered an error. Please try again!"
 
     def _error_evaluation_response(self) -> Dict:
