@@ -33,8 +33,8 @@ agent/
 
 ### AI Model
 
-- **Model**: Google Gemini 2.0-flash-exp
-- **Benefits**: Fast, accurate, conversational responses
+- **Model**: Google Gemini 2.0-flash
+- **Benefits**: Latest stable model with fast, accurate, conversational responses and reliable free tier access
 - **Capabilities**: Natural language understanding, personalized recommendations
 
 ## 📦 Installation

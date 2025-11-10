@@ -32,7 +32,7 @@ class PriceEvaluator:
         "default": {"low": 0.10, "avg": 0.25, "high": 0.45},
     }
 
-    def __init__(self, model_name: str = "gemini-2.0-flash-exp"):
+    def __init__(self, model_name: str = "gemini-2.0-flash"):
         """Initialize Price Evaluator with AI model."""
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
