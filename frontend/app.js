@@ -1,6 +1,6 @@
 // Configuration (loaded from config.js)
-const API_URL = window.NutriScanConfig?.API_URL || 'http://localhost:5000/api';
-const DEBUG = window.NutriScanConfig?.DEBUG || false;
+const API_URL = window.BalanceBotConfig?.API_URL || 'http://localhost:5000/api';
+const DEBUG = window.BalanceBotConfig?.DEBUG || false;
 
 // Application State
 let currentUser = null;
@@ -18,7 +18,7 @@ let chatHistory = [];
  */
 function setAuthToken(token) {
     authToken = token;
-    localStorage.setItem('nutriscan_token', token);
+    localStorage.setItem('balancebot_token', token);
     if (DEBUG) console.log('Auth token stored');
 }
 
@@ -27,7 +27,7 @@ function setAuthToken(token) {
  */
 function getAuthToken() {
     if (!authToken) {
-        authToken = localStorage.getItem('nutriscan_token');
+        authToken = localStorage.getItem('balancebot_token');
     }
     return authToken;
 }
@@ -37,7 +37,7 @@ function getAuthToken() {
  */
 function clearAuthToken() {
     authToken = null;
-    localStorage.removeItem('nutriscan_token');
+    localStorage.removeItem('balancebot_token');
     if (DEBUG) console.log('Auth token cleared');
 }
 
@@ -64,7 +64,7 @@ function handleAuthError() {
     console.error('Authentication error - token may be expired');
     clearAuthToken();
     currentUser = null;
-    localStorage.removeItem('nutriscan_user');
+    localStorage.removeItem('balancebot_user');
     showMessage('globalMessage', 'Session expired. Please log in again.', 'error');
     setTimeout(() => {
         location.reload();
@@ -187,7 +187,7 @@ async function handleSignup(e) {
                 email: result.email,
                 profile: null
             };
-            localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+            localStorage.setItem('balancebot_user', JSON.stringify(currentUser));
 
             closeModal();
             showProfileSetup();
@@ -220,7 +220,7 @@ async function handleLogin(e) {
 
             // Store user data
             currentUser = result.user;
-            localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+            localStorage.setItem('balancebot_user', JSON.stringify(currentUser));
 
             closeModal();
 
@@ -239,7 +239,7 @@ async function handleLogin(e) {
 function logout() {
     clearAuthToken();
     currentUser = null;
-    localStorage.removeItem('nutriscan_user');
+    localStorage.removeItem('balancebot_user');
     location.reload();
 }
 
@@ -257,7 +257,7 @@ async function loadUserProfile() {
         if (response.ok) {
             const result = await response.json();
             currentUser.profile = result.profile;
-            localStorage.setItem('nutriscan_user', JSON.stringify(currentUser));
+            localStorage.setItem('balancebot_user', JSON.stringify(currentUser));
         }
     } catch (error) {
         console.error('Failed to load profile:', error);
@@ -1080,7 +1080,7 @@ function hasProfile(p) {
 }
 
 function init() {
-    const savedUser = localStorage.getItem('nutriscan_user');
+    const savedUser = localStorage.getItem('balancebot_user');
 
     if (savedUser) {
         try {
@@ -1088,7 +1088,7 @@ function init() {
             const complete = hasProfile(currentUser.profile);
             complete ? showDashboard() : showProfileSetup();
         } catch (error) {
-            localStorage.removeItem('nutriscan_user');
+            localStorage.removeItem('balancebot_user');
             showWelcomeScreen();
         }
     } else {

@@ -4,7 +4,7 @@ services:
   # Backend API
   api:
     build: .
-    container_name: nutriscan-api
+    container_name: balancebot-api
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -27,12 +27,12 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - nutriscan-network
+      - balancebot-network
 
   # Nginx reverse proxy (optional, for production)
   nginx:
     image: nginx:alpine
-    container_name: nutriscan-nginx
+    container_name: balancebot-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -44,13 +44,13 @@ services:
     depends_on:
       - api
     networks:
-      - nutriscan-network
+      - balancebot-network
     # Only start nginx in production
     profiles:
       - production
 
 networks:
-  nutriscan-network:
+  balancebot-network:
     driver: bridge
 
 volumes:

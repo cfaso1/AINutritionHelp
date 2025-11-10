@@ -34,17 +34,17 @@ const Config = config[ENV];
 // Add console logging helper
 Config.log = function(...args) {
     if (this.DEBUG) {
-        console.log('[NutriScan]', ...args);
+        console.log('[BalanceBot]', ...args);
     }
 };
 
 Config.error = function(...args) {
-    console.error('[NutriScan]', ...args);
+    console.error('[BalanceBot]', ...args);
 };
 
 // Export to global scope
-window.NutriScanConfig = Config;
-window.NutriScanEnv = ENV;
+window.BalanceBotConfig = Config;
+window.BalanceBotEnv = ENV;
 
-console.log(`🍎 NutriScan initialized in ${ENV} mode`);
+console.log(`🍎 BalanceBot initialized in ${ENV} mode`);
 console.log(`API URL: ${Config.API_URL}`);

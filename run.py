@@ -39,7 +39,7 @@ if __name__ == '__main__':
         status_text = "PRODUCTION" if Config.FLASK_ENV == 'production' else "DEVELOPMENT"
 
         print("\n" + "="*60)
-        print(f"  {status_emoji} AI Nutrition Help API - {status_text}")
+        print(f"  {status_emoji} BalanceBot API - {status_text}")
         print("="*60)
         print(f"  Environment: {Config.FLASK_ENV}")
         print(f"  Server: http://{Config.HOST}:{Config.PORT}")
