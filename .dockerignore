@@ -1,0 +1,73 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+README.md
+
+# Environment files (use Render dashboard for secrets)
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+app.log
+
+# Database (don't copy local DB)
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (will be created in container)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Deployment configs (not needed in container)
+netlify.toml
+render.yaml
+.renderignore
+
+# Backups
+backup/
+*.backup
+
+# Temp files
+*.tmp
+*.temp
+
+# OS
+Thumbs.db
+desktop.ini

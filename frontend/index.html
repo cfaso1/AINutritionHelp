@@ -140,7 +140,7 @@
 
             <!-- Question 1 -->
             <div class="question-card active" id="q1">
-                <h3 class="question-title">Your Physical Profile</h3>
+                <h3 class="question-title">📏 Your Physical Profile</h3>
                 <p class="question-subtitle">Help us personalize your experience</p>
                 <div class="input-row">
                     <div class="form-group">
@@ -184,7 +184,7 @@
 
             <!-- Question 2 -->
             <div class="question-card" id="q2">
-                <h3 class="question-title">Your Primary Goal</h3>
+                <h3 class="question-title">🎯 Your Primary Goal</h3>
                 <p class="question-subtitle">What would you like to achieve?</p>
                 <div class="button-grid">
                     <button class="btn" onclick="setProfileData('goal', 'weight_loss'); nextQuestion(3)">
@@ -204,7 +204,7 @@
 
             <!-- Question 3 -->
             <div class="question-card" id="q3">
-                <h3 class="question-title">Activity Level</h3>
+                <h3 class="question-title">🏃 Activity Level</h3>
                 <p class="question-subtitle">How active is your lifestyle?</p>
                 <div class="button-grid">
                     <button class="btn" onclick="setProfileData('activity', 'sedentary'); nextQuestion(4)">
@@ -224,7 +224,7 @@
 
             <!-- Question 4 -->
             <div class="question-card" id="q4">
-                <h3 class="question-title">Dietary Preferences</h3>
+                <h3 class="question-title">🥗 Dietary Preferences</h3>
                 <p class="question-subtitle">What's your preferred diet type?</p>
                 <div class="button-grid">
                     <button class="btn" onclick="setProfileData('diet', 'standard'); nextQuestion(5)">Standard</button>
@@ -238,7 +238,7 @@
 
             <!-- Question 5 -->
             <div class="question-card" id="q5">
-                <h3 class="question-title">Dietary Restrictions</h3>
+                <h3 class="question-title">⚠️ Dietary Restrictions</h3>
                 <p class="question-subtitle">Select any that apply</p>
                 <div class="form-group">
                     <label class="checkbox-label">
@@ -276,12 +276,12 @@
     <!-- Settings Page -->
     <section class="settings-page" id="settingsPage">
         <div class="settings-container">
-            <h1 class="page-title">Profile Settings</h1>
+            <h1 class="page-title">⚙️ Profile Settings</h1>
 
             <div class="message" id="settingsMessage"></div>
 
             <div class="settings-card">
-                <h2>Physical Profile</h2>
+                <h2>📏 Physical Profile</h2>
                 <div class="input-row">
                     <div class="form-group">
                         <label class="form-label">Height (ft'in)</label>
@@ -316,7 +316,7 @@
             </div>
 
             <div class="settings-card">
-                <h2>Health Goals</h2>
+                <h2>🎯 Health Goals</h2>
                 <div class="form-group">
                     <label class="form-label">Primary Goal</label>
                     <select class="form-select" id="editGoal">
@@ -368,8 +368,8 @@
             <aside class="sidebar">
                 <div class="chat-container">
                     <header class="chat-header">
-                        <h3>AI Nutrition Companion</h3>
-                        <p>Your personal health assistant</p>
+                        <h3>🤖 AI Nutrition Companion</h3>
+                        <p>💬 Your personal health assistant</p>
                     </header>
 
                     <div class="chat-messages" id="chatMessages">
@@ -433,30 +433,30 @@
                     <!-- AI Results -->
                     <div id="aiResults">
                         <div class="overall-rating">
-                            <h4>Overall Rating</h4>
+                            <h4>🎯 Overall Rating</h4>
                             <div class="score-display" id="overallScore">-</div>
                             <p id="overallRecommendation">-</p>
                         </div>
 
                         <div class="ai-analysis">
-                            <h4 class="analysis-title">Health Alignment</h4>
-                            <p><strong>Score:</strong> <span id="healthScore">-</span>/100</p>
+                            <h4 class="analysis-title">❤️ Health Alignment</h4>
+                            <p><strong>📊 Score:</strong> <span id="healthScore">-</span>/100</p>
                             <p id="healthSummary">-</p>
                             <div id="healthPros"></div>
                             <div id="healthCons"></div>
                         </div>
 
                         <div class="ai-analysis">
-                            <h4 class="analysis-title">Fitness Alignment</h4>
-                            <p><strong>Score:</strong> <span id="fitnessScore">-</span>/100</p>
+                            <h4 class="analysis-title">💪 Fitness Alignment</h4>
+                            <p><strong>📊 Score:</strong> <span id="fitnessScore">-</span>/100</p>
                             <p id="fitnessSummary">-</p>
-                            <p><strong>Best for:</strong> <span id="fitnessBestFor">-</span></p>
+                            <p><strong>⏰ Best for:</strong> <span id="fitnessBestFor">-</span></p>
                             <p id="fitnessRec">-</p>
                         </div>
 
                         <div class="ai-analysis">
-                            <h4 class="analysis-title">Price Evaluation</h4>
-                            <p><strong>Rating:</strong> <span id="priceRating">-</span></p>
+                            <h4 class="analysis-title">💰 Price Evaluation</h4>
+                            <p><strong>⭐ Rating:</strong> <span id="priceRating">-</span></p>
                             <p id="priceSummary">-</p>
                         </div>
                     </div>

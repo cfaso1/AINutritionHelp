@@ -6,17 +6,12 @@ services:
   # Backend API Service
   - type: web
     name: balancebot-api
-    env: python
-    runtime: python-3.12.0  # Use Python 3.12 for stability
+    env: docker
     region: oregon  # Choose: oregon, frankfurt, singapore
     plan: free  # or: starter ($7/mo), standard ($25/mo)
     branch: main
-
-    # Build and Start Commands
-    buildCommand: |
-      apt-get update && apt-get install -y tesseract-ocr
-      pip install -r requirements.txt
-    startCommand: python run.py
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
 
     # Health Check
     healthCheckPath: /api/health
