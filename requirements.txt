@@ -14,8 +14,8 @@ aiohttp==3.9.1
 requests==2.32.0
 
 # Image Processing & OCR
-Pillow==10.1.0
-opencv-python==4.8.1.78
+Pillow>=10.4.0
+opencv-python>=4.10.0.84
 numpy<2
 pytesseract==0.3.10
 

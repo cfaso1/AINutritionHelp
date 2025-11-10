@@ -8,6 +8,10 @@
   # No build command needed for static site
   command = ""
 
+[build.environment]
+  # Use Python 3.12 (3.14 is too new for some dependencies)
+  PYTHON_VERSION = "3.12"
+
 # Redirect rules
 [[redirects]]
   # SPA fallback (if you add routing later)
