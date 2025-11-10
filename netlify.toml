@@ -1,8 +1,5 @@
 # Netlify Configuration for BalanceBot Frontend
 # https://docs.netlify.com/configure-builds/file-based-configuration/
-#
-# NOTE: This is a reference copy. The ACTIVE config is at /netlify.toml (root directory)
-# Netlify requires netlify.toml to be in the repository root.
 
 [build]
   # Directory with the frontend files

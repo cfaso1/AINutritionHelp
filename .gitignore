@@ -12,6 +12,7 @@ backend/*.db
 
 # AI Models
 .claude/
+frontend/.claude/
 *.pkl
 *.h5
 *.pth
