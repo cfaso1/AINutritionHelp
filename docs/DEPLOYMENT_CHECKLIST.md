@@ -45,7 +45,7 @@ Use this checklist to ensure a smooth deployment process.
 ## CORS Configuration Update
 
 - [ ] Updated Render environment variable `ALLOWED_ORIGINS` with Netlify URL
-- [ ] Format: `https://your-site.netlify.app` (no trailing slash)
+- [ ] Format: `https://balancebotai.netlify.app` (no trailing slash)
 - [ ] Render service redeployed automatically
 - [ ] Waited for redeploy to complete (~2-3 minutes)
 

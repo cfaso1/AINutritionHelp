@@ -62,4 +62,4 @@ services:
       # IMPORTANT: Add these manually in Render dashboard (they contain secrets)
       # - GOOGLE_API_KEY (required - from https://aistudio.google.com/apikey)
       # - SECRET_KEY (required - generate with: python3 -c "import secrets; print(secrets.token_hex(32))")
-      # - ALLOWED_ORIGINS (required - your Netlify URL, e.g., https://your-site.netlify.app)
+      # - ALLOWED_ORIGINS (set to: https://balancebotai.netlify.app)

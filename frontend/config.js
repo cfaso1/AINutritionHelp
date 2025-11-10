@@ -21,8 +21,7 @@ const config = {
         DEBUG: true
     },
     production: {
-        // IMPORTANT: Update this with your Render backend URL after deployment
-        // Example: 'https://your-app-name.onrender.com/api'
+        // Production API URL for Render backend
         API_URL: 'https://balancebotapi.onrender.com/api',
         DEBUG: false
     }

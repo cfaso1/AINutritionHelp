@@ -29,10 +29,10 @@ class Config:
     PORT = int(os.getenv('PORT', 5000))
 
     # Frontend Configuration
-    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://balancebotai.netlify.app')
 
     # CORS Configuration
-    ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+    ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'https://balancebotai.netlify.app').split(',')
 
     # Database Configuration
     DATABASE_PATH = os.getenv('DATABASE_PATH', 'backend/nutrition_app.db')

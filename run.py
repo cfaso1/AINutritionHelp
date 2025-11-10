@@ -4,8 +4,8 @@ Run the AI Nutrition Help API server.
 Production-ready with environment-based configuration.
 
 Usage:
-    python run.py                    # Development mode (default)
-    FLASK_ENV=production python run.py  # Production mode
+    python run.py                       # Production mode (default)
+    FLASK_ENV=development python run.py # Development mode
 """
 
 import sys
@@ -34,15 +34,26 @@ from backend.api import app
 if __name__ == '__main__':
     # Only show banner once (not in reloader child process)
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        # Determine status emoji based on environment
+        status_emoji = "🚀" if Config.FLASK_ENV == 'production' else "🔧"
+        status_text = "PRODUCTION" if Config.FLASK_ENV == 'production' else "DEVELOPMENT"
+
         print("\n" + "="*60)
-        print("  🍎 AI Nutrition Help API - Production Ready")
+        print(f"  {status_emoji} AI Nutrition Help API - {status_text}")
         print("="*60)
         print(f"  Environment: {Config.FLASK_ENV}")
         print(f"  Server: http://{Config.HOST}:{Config.PORT}")
-        print(f"  Debug Mode: {'ON' if Config.FLASK_DEBUG else 'OFF'}")
-        print(f"  Rate Limiting: {'ON' if Config.RATE_LIMIT_ENABLED else 'OFF'}")
+        print(f"  Debug Mode: {'ON ⚠️' if Config.FLASK_DEBUG else 'OFF ✅'}")
+        print(f"  Rate Limiting: {'ON ✅' if Config.RATE_LIMIT_ENABLED else 'OFF'}")
         print(f"  CORS Origins: {', '.join(Config.ALLOWED_ORIGINS)}")
-        print("="*60 + "\n")
+        print("="*60)
+
+        # Warning for development mode
+        if Config.FLASK_ENV == 'development':
+            print("  ⚠️  WARNING: Running in DEVELOPMENT mode")
+            print("  ⚠️  Set FLASK_ENV=production for production deployment")
+            print("="*60)
+        print()
 
     # Start the Flask application
     app.run(
