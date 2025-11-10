@@ -167,8 +167,16 @@ Respond in a warm, conversational, and supportive way. Provide helpful, actionab
             )
             return response.text.strip()
         except Exception as e:
+            error_str = str(e)
             logger.error(f"Error in chat: {e}")
-            return "I'm having trouble responding right now. Could you try asking again?"
+
+            # Check for specific error types
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+                return "I've reached my daily API usage limit. Please try again later or contact support to increase the quota. The quota resets daily."
+            elif "401" in error_str or "403" in error_str or "API key" in error_str:
+                return "There's an issue with my API configuration. Please contact support."
+            else:
+                return "I'm having trouble responding right now. Could you try asking again?"
 
     async def _generate_companion_message(
         self,

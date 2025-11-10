@@ -83,10 +83,19 @@ class NutritionAgentService:
         """
         try:
             logger.info(f"Chat request: {message[:50]}...")
-            return await self._new_service.chat(message, context)
+            response = await self._new_service.chat(message, context)
+            return response
         except Exception as e:
+            error_str = str(e)
             logger.error(f"Error in chat: {e}", exc_info=True)
-            return "Sorry, I encountered an error. Please try again!"
+
+            # Return user-friendly error messages
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+                return "I've reached my daily API usage limit. Please try again later - the quota resets every 24 hours. 🔄"
+            elif "401" in error_str or "403" in error_str:
+                return "I'm having authentication issues. Please contact support. 🔐"
+            else:
+                return "Sorry, I encountered an error. Please try again! ⚠️"
 
     def _error_evaluation_response(self) -> Dict:
         """Return error response for full evaluation"""
