@@ -57,8 +57,8 @@
                 </div>
             </div>
 
-            <div style="margin-top: 60px;">
-                <button class="btn primary" onclick="showSignup()" style="font-size: 16px; padding: 18px 50px;">
+            <div class="hero-cta">
+                <button class="btn primary" onclick="showSignup()">
                     Get Started
                 </button>
             </div>
@@ -83,7 +83,7 @@
                     <label class="form-label">Password</label>
                     <input type="password" class="form-input" id="loginPassword" required>
                 </div>
-                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">
+                <button type="submit" class="btn primary btn-submit">
                     Sign In
                 </button>
             </form>
@@ -116,7 +116,7 @@
                     <label class="form-label">Password</label>
                     <input type="password" class="form-input" id="signupPassword" required>
                 </div>
-                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">
+                <button type="submit" class="btn primary btn-submit">
                     Create Account
                 </button>
             </form>
@@ -177,7 +177,7 @@
                         </select>
                     </div>
                 </div>
-                <button class="btn primary" onclick="nextQuestion(2)" style="width: 100%; margin-top: 20px;">
+                <button class="btn primary btn-submit" onclick="nextQuestion(2)">
                     Continue
                 </button>
             </div>
@@ -266,7 +266,7 @@
                         <span>None</span>
                     </label>
                 </div>
-                <button class="btn primary" onclick="submitProfile()" style="width: 100%; margin-top: 20px;">
+                <button class="btn primary btn-submit" onclick="submitProfile()">
                     Complete Setup
                 </button>
             </div>
@@ -413,9 +413,10 @@
                     </div>
                 </div>
 
+                <!-- Manual Input / Clarification Container -->
                 <div id="results"></div>
 
-                <!-- Results Panel - Moved here to display under chat -->
+                <!-- Results Panel -->
                 <article class="results-panel" id="resultsPanel">
                     <div class="product-header">
                         <h3 class="product-name" id="productName">-</h3>
@@ -474,8 +475,7 @@
                     </button>
 
                     <div class="scan-area" onclick="document.getElementById('imageInput').click()">
-                        <input type="file" id="imageInput" accept="image/*"
-                               style="display: none;" onchange="handleImageUpload(event)">
+                        <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
                         <div class="scan-icon">📸</div>
                         <p class="scan-title">Upload Nutrition Facts Image</p>
                         <p class="scan-hint">Click to browse or drag & drop</p>
