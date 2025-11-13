@@ -514,7 +514,7 @@ async function handleImageUpload(event) {
 function displayProduct(product) {
     document.getElementById('productName').textContent = product.name || 'Unknown';
     document.getElementById('productCategory').textContent = product.category || 'Uncategorized';
-    document.getElementById('productPrice').textContent = product.price ? product.price.toFixed(2) : '0.00';
+    document.getElementById('productPrice').textContent = (product.price !== undefined && product.price !== null) ? product.price.toFixed(2) : 'N/A';
 
     const grid = document.getElementById('nutritionGrid');
     grid.innerHTML = '';
@@ -634,8 +634,8 @@ function showManualInput() {
             <form id="manualNutritionForm" onsubmit="submitManualEntry(event)">
                 <div class="form-grid">
                     <div class="form-group full-width-field">
-                        <label class="form-label">🏷️ Item Name *</label>
-                        <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt" required>
+                        <label class="form-label">🏷️ Item Name</label>
+                        <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt (optional)">
                     </div>
                     <div class="form-group">
                         <label class="form-label">🔥 Calories *</label>
@@ -687,7 +687,7 @@ function showManualInput() {
                     </div>
                     <div class="form-group full-width-field">
                         <label class="form-label">💰 Price ($)</label>
-                        <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99">
+                        <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99 (optional)")>
                         <small style="color: var(--medium-text); font-size: 0.85rem;">Optional - for value analysis</small>
                     </div>
                 </div>
@@ -715,9 +715,10 @@ async function submitManualEntry(event) {
 
     for (const [key, value] of formData.entries()) {
         if (key === 'price') {
-            price = value ? parseFloat(value) : null;
+            const trimmedPrice = value ? value.trim() : '';
+            price = trimmedPrice ? parseFloat(trimmedPrice) : null;
         } else if (key === 'item_name') {
-            itemName = value || 'Manual Entry';
+            itemName = (value && value.trim()) || 'Manual Entry';
         } else if (value) {
             nutritionData[key] = isNaN(value) ? value : parseFloat(value);
         }
@@ -748,9 +749,13 @@ async function submitManualEntry(event) {
             scannedProduct = {
                 name: itemName,
                 category: 'Price',
-                price: price,
                 nutrition: result.data
             };
+
+            // Only include price if it's a valid number
+            if (price !== null && !isNaN(price)) {
+                scannedProduct.price = price;
+            }
 
             // Display product directly - no need for separate price prompt
             showMessageBox('Nutrition data validated successfully!', 'success');
@@ -769,7 +774,7 @@ function showClarificationForm(originalData, clarificationFields, message) {
     let fieldsHtml = `
         <div class="form-group full-width-field">
             <label class="form-label">🏷️ Item Name</label>
-            <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt" >
+            <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt (optional)" >
         </div>
     `;
 
@@ -800,7 +805,7 @@ function showClarificationForm(originalData, clarificationFields, message) {
     fieldsHtml += `
         <div class="form-group full-width-field">
             <label class="form-label">💰 Price ($)</label>
-            <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99">
+            <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99 (optional)">
             <small style="color: var(--medium-text); font-size: 0.85rem;">Optional - for value analysis</small>
         </div>
     `;
@@ -814,8 +819,8 @@ function showClarificationForm(originalData, clarificationFields, message) {
             <form id="clarificationForm" onsubmit="submitClarification(event)">
                 <div class="form-grid">${fieldsHtml}</div>
                 <div class="form-actions">
-                    <button type="submit" class="btn primary">✓ Confirm & Get AI Analysis</button>
-                    <button type="button" class="btn" onclick="showManualInput()">✕ Start Over (Manual Entry)</button>
+                    <button type="submit" class="btn primary">✓ Confirm </button>
+                    <button type="button" class="btn" onclick="showManualInput()">✕ Start Over </button>
                 </div>
             </form>
         </div>
@@ -835,9 +840,10 @@ async function submitClarification(event) {
 
     for (const [key, value] of formData.entries()) {
         if (key === 'price') {
-            price = value ? parseFloat(value) : null;
+            const trimmedPrice = value ? value.trim() : '';
+            price = trimmedPrice ? parseFloat(trimmedPrice) : null;
         } else if (key === 'item_name') {
-            itemName = value || 'Scanned Product';
+            itemName = (value && value.trim()) || 'Scanned Product';
         } else if (value) {
             corrections[key] = value;
         }
@@ -871,9 +877,13 @@ async function submitClarification(event) {
             scannedProduct = {
                 name: itemName,
                 category: 'Price',
-                price: price,
                 nutrition: result.data
             };
+
+            // Only include price if it's a valid number
+            if (price !== null && !isNaN(price)) {
+                scannedProduct.price = price;
+            }
 
             // Display product directly - no need for separate price prompt
             showMessageBox('Nutrition data validated successfully!', 'success');
