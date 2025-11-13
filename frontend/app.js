@@ -786,11 +786,6 @@ function showClarificationForm(originalData, clarificationFields, message) {
             <p style="color: var(--medium-text); margin-bottom: 20px; text-align: center; font-size: 0.9rem;">
                 Please verify all values below. Edit any incorrect data before submitting for AI analysis.
             </p>
-            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 20px; border-radius: 4px;">
-                <p style="margin: 0; font-size: 0.85rem; color: #856404;">
-                    <strong>💡 Tip:</strong> Check carbohydrates, protein, sugar, and fat values carefully. All fields will be used for your personalized evaluation.
-                </p>
-            </div>
             <form id="clarificationForm" onsubmit="submitClarification(event)">
                 <div class="form-grid">${fieldsHtml}</div>
                 <div class="form-actions">
