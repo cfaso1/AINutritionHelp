@@ -492,9 +492,11 @@ async function handleImageUpload(event) {
 
         if (result.success) {
             if (result.needs_clarification) {
+                showMessageBox('Scan complete! Please review and confirm the data below.', 'success');
                 showClarificationForm(result.data, result.clarification_fields, result.message);
             } else {
                 // OCR was successful - show clarification form to allow price and name input
+                showMessageBox('Scan complete! Please review the data below.', 'success');
                 showClarificationForm(result.data, {}, 'OCR successful! Please add item name and price.');
             }
         } else if (result.needs_manual_entry) {
@@ -519,14 +521,20 @@ function displayProduct(product) {
 
     if (product.nutrition) {
         const nutrients = [
+            { key: 'serving_size', label: 'Serving Size', unit: '' },
+            { key: 'servings_per_container', label: 'Servings', unit: '' },
             { key: 'calories', label: 'Calories', unit: '' },
             { key: 'protein', label: 'Protein', unit: 'g' },
             { key: 'carbohydrates', label: 'Carbs', unit: 'g' },
             { key: 'carbs_total', label: 'Carbs', unit: 'g' },
             { key: 'sugar', label: 'Sugar', unit: 'g' },
             { key: 'sugar_total', label: 'Sugar', unit: 'g' },
+            { key: 'dietary_fiber', label: 'Fiber', unit: 'g' },
             { key: 'fat', label: 'Fat', unit: 'g' },
             { key: 'fat_total', label: 'Fat', unit: 'g' },
+            { key: 'saturated_fat', label: 'Sat. Fat', unit: 'g' },
+            { key: 'trans_fat', label: 'Trans Fat', unit: 'g' },
+            { key: 'cholesterol', label: 'Cholesterol', unit: 'mg' },
             { key: 'sodium', label: 'Sodium', unit: 'mg' }
         ];
 
@@ -537,9 +545,25 @@ function displayProduct(product) {
             const value = product.nutrition[n.key];
             if (value !== undefined && value !== null && !displayedKeys.has(n.label)) {
                 displayedKeys.add(n.label);
+
+                // Format value: show as integer if whole number, otherwise show decimal
+                let displayValue = value;
+                if (typeof value === 'number') {
+                    displayValue = Number.isInteger(value) ? value : parseFloat(value.toFixed(1));
+                } else if (typeof value === 'string') {
+                    // Handle strings like "2.0oz" or "10.0g"
+                    const match = value.match(/^(\d+\.?\d*)(.*)$/);
+                    if (match) {
+                        const numPart = parseFloat(match[1]);
+                        const textPart = match[2];
+                        const formattedNum = Number.isInteger(numPart) ? numPart : parseFloat(numPart.toFixed(1));
+                        displayValue = formattedNum + textPart;
+                    }
+                }
+
                 grid.innerHTML += `
                     <div class="stat-box">
-                        <span class="stat-value">${value}${n.unit}</span>
+                        <span class="stat-value">${displayValue}${n.unit}</span>
                         <span class="stat-label">${n.label}</span>
                     </div>
                 `;
@@ -729,6 +753,7 @@ async function submitManualEntry(event) {
             };
 
             // Display product directly - no need for separate price prompt
+            showMessageBox('Nutrition data validated successfully!', 'success');
             displayProduct(scannedProduct);
         } else {
             showMessageBox(result.error || 'Validation failed', 'error');
@@ -851,6 +876,7 @@ async function submitClarification(event) {
             };
 
             // Display product directly - no need for separate price prompt
+            showMessageBox('Nutrition data validated successfully!', 'success');
             displayProduct(scannedProduct);
         } else {
             showMessageBox(result.error || 'Validation failed', 'error');
