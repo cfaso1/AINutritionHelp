@@ -710,7 +710,6 @@ input[type="checkbox"] {
 .section-subtitle {
     text-align: center;
     color: var(--medium-text);
-    margin-bottom: 20px;
 }
 
 .scan-area {
