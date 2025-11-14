@@ -11,6 +11,28 @@ let chatHistory = [];
 let barcodeScanner = null; // Html5Qrcode instance
 
 // ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Convert markdown formatting to HTML
+ */
+function markdownToHtml(text) {
+    if (!text) return text;
+
+    // Convert **text** to <strong>text</strong>
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert *text* to <em>text</em> (but not if already part of **)
+    text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+    // Convert line breaks
+    text = text.replace(/\n/g, '<br>');
+
+    return text;
+}
+
+// ============================================================================
 // JWT TOKEN MANAGEMENT
 // ============================================================================
 
@@ -1036,7 +1058,7 @@ function displayAIResults(evaluation) {
     const healthSummary = evaluation?.health_analysis?.summary || 'No health analysis available';
 
     document.getElementById('healthScore').textContent = healthScore;
-    document.getElementById('healthSummary').textContent = healthSummary;
+    document.getElementById('healthSummary').innerHTML = markdownToHtml(healthSummary);
 
     if (evaluation?.health_analysis?.pros && evaluation.health_analysis.pros.length) {
         document.getElementById('healthPros').innerHTML =
@@ -1063,16 +1085,16 @@ function displayAIResults(evaluation) {
     const fitnessRec = evaluation?.fitness_analysis?.recommendation || '-';
 
     document.getElementById('fitnessScore').textContent = fitnessScore;
-    document.getElementById('fitnessSummary').textContent = fitnessSummary;
-    document.getElementById('fitnessBestFor').textContent = fitnessBestFor;
-    document.getElementById('fitnessRec').textContent = fitnessRec;
+    document.getElementById('fitnessSummary').innerHTML = markdownToHtml(fitnessSummary);
+    document.getElementById('fitnessBestFor').innerHTML = markdownToHtml(fitnessBestFor);
+    document.getElementById('fitnessRec').innerHTML = markdownToHtml(fitnessRec);
 
     // Price analysis
     const priceRating = evaluation?.price_analysis?.rating || '-';
     const priceSummary = evaluation?.price_analysis?.summary || 'No price analysis available';
 
     document.getElementById('priceRating').textContent = priceRating;
-    document.getElementById('priceSummary').textContent = priceSummary;
+    document.getElementById('priceSummary').innerHTML = markdownToHtml(priceSummary);
 
     document.getElementById('aiResults').style.display = 'block';
     showMessageBox('Analysis complete!', 'success');
