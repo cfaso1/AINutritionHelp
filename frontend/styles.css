@@ -228,7 +228,7 @@ body {
 
 .btn-full {
     width: 100%;
-    margin-top: 15px;
+    margin-top: 5px;
 }
 
 .btn-submit {
@@ -830,7 +830,7 @@ input[type="checkbox"] {
 }
 
 .scanner-header {
-    background: linear-gradient(135deg, #4FA76A, #6BC98A);
+    background: linear-gradient(135deg, var(--primary-green), var(--light-green));
     color: var(--white);
     padding: 25px var(--spacing-md) 20px;
     text-align: center;
