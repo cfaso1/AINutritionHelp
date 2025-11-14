@@ -697,6 +697,7 @@ async function analyzeProduct() {
     }
 
     showLoading();
+    document.getElementById('loadingText').textContent = 'Analyzing product...';
 
     try {
         const response = await fetch(`${API_URL}/agent/evaluate`, {
@@ -1015,6 +1016,7 @@ async function analyzeProduct() {
     }
 
     showLoading();
+    document.getElementById('loadingText').textContent = 'Analyzing product...';
 
     try {
         const response = await fetch(`${API_URL}/agent/evaluate`, {
