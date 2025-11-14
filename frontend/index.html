@@ -468,15 +468,12 @@
             <section class="main-panel">
                 <article class="scanner-section">
                     <h2 class="section-title">Find Your Food</h2>
-                    <p class="section-subtitle">Scan barcode, search, or enter manually</p>
+                    <p class="section-subtitle">Scan barcode or enter manually</p>
 
                     <!-- Input Method Tabs -->
                     <div class="input-tabs">
                         <button class="tab-btn active" data-tab="barcode" onclick="switchInputTab('barcode')">
                             📱 Scan Barcode
-                        </button>
-                        <button class="tab-btn" data-tab="search" onclick="switchInputTab('search')">
-                            🔍 Search Product
                         </button>
                         <button class="tab-btn" data-tab="manual" onclick="switchInputTab('manual')">
                             ✏️ Manual Entry
@@ -503,24 +500,11 @@
                             <div style="display: flex; gap: 10px;">
                                 <input type="text" class="form-input" id="manualBarcodeInput"
                                        placeholder="Enter UPC/EAN barcode number"
-                                       pattern="[0-9]*" inputmode="numeric">
+                                       pattern="[0-9]*" inputmode="numeric"
+                                       onkeypress="if(event.key==='Enter') lookupManualBarcode()">
                                 <button class="btn primary" onclick="lookupManualBarcode()">Lookup</button>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Product Search Tab -->
-                    <div class="input-tab-content" id="searchTab" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">Search for Product</label>
-                            <input type="text" class="form-input" id="productSearchInput"
-                                   placeholder="e.g., Greek Yogurt, Cheerios, Coca Cola"
-                                   onkeypress="if(event.key==='Enter') searchProducts()">
-                            <button class="btn primary btn-full" onclick="searchProducts()" style="margin-top: 10px;">
-                                🔍 Search
-                            </button>
-                        </div>
-                        <div id="searchResults" style="margin-top: 20px;"></div>
                     </div>
 
                     <!-- Manual Entry Tab -->

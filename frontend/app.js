@@ -1163,83 +1163,13 @@ async function lookupBarcode(barcode) {
             showMessageBox(`Found: ${result.product.name}`, 'success');
             displayProductFromDatabase(result.product);
         } else {
-            showMessageBox(result.message || 'Product not found. Try searching by name or manual entry.', 'error');
+            showMessageBox(result.message || 'Product not found. Try manual entry.', 'error');
         }
     } catch (error) {
         hideLoading();
         console.error('Barcode lookup error:', error);
         showMessageBox('Unable to look up barcode. Please try again.', 'error');
     }
-}
-
-async function searchProducts() {
-    const searchInput = document.getElementById('productSearchInput');
-    const query = searchInput.value.trim();
-
-    if (!query || query.length < 2) {
-        showMessageBox('Please enter at least 2 characters to search', 'error');
-        return;
-    }
-
-    showLoading();
-    document.getElementById('loadingText').textContent = 'Searching products...';
-
-    try {
-        const response = await fetch(`${API_URL}/nutrition/search?q=${encodeURIComponent(query)}`, {
-            method: 'GET',
-            headers: getAuthHeaders()
-        });
-
-        if (response.status === 401) {
-            hideLoading();
-            handleAuthError();
-            return;
-        }
-
-        const result = await response.json();
-        hideLoading();
-
-        if (response.ok && result.success) {
-            displaySearchResults(result.results);
-        } else {
-            showMessageBox('Search failed. Please try again.', 'error');
-        }
-    } catch (error) {
-        hideLoading();
-        console.error('Search error:', error);
-        showMessageBox('Unable to search. Please try again.', 'error');
-    }
-}
-
-function displaySearchResults(results) {
-    const searchResultsDiv = document.getElementById('searchResults');
-
-    if (!results || results.length === 0) {
-        searchResultsDiv.innerHTML = '<p style="text-align: center; color: var(--medium-text);">No products found. Try a different search term.</p>';
-        return;
-    }
-
-    searchResultsDiv.innerHTML = '<h4 style="color: var(--primary-green); margin-bottom: 15px;">Search Results:</h4>';
-
-    results.forEach(product => {
-        const nutrition = product.nutrition || {};
-        const resultItem = document.createElement('div');
-        resultItem.className = 'search-result-item';
-        resultItem.onclick = () => displayProductFromDatabase(product);
-
-        resultItem.innerHTML = `
-            <div class="search-result-name">${product.name || 'Unknown Product'}</div>
-            ${product.brands ? `<div class="search-result-brand">${product.brands}</div>` : ''}
-            <div class="search-result-nutrition">
-                ${nutrition.calories ? `<span>📊 ${nutrition.calories} cal</span>` : ''}
-                ${nutrition.protein ? `<span>💪 ${nutrition.protein}g protein</span>` : ''}
-                ${nutrition.carbs_total ? `<span>🌾 ${nutrition.carbs_total}g carbs</span>` : ''}
-                ${nutrition.fat_total ? `<span>🥑 ${nutrition.fat_total}g fat</span>` : ''}
-            </div>
-        `;
-
-        searchResultsDiv.appendChild(resultItem);
-    });
 }
 
 function displayProductFromDatabase(product) {
@@ -1255,12 +1185,6 @@ function displayProductFromDatabase(product) {
 
     // Display the product
     displayProduct(scannedProduct);
-
-    // Clear search results
-    const searchResultsDiv = document.getElementById('searchResults');
-    if (searchResultsDiv) {
-        searchResultsDiv.innerHTML = '';
-    }
 
     // Show success message
     showMessageBox('Product loaded! Click "Get AI Analysis" to evaluate.', 'success');
