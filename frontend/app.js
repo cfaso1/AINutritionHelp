@@ -1218,17 +1218,20 @@ async function handleBarcodeImageUpload(event) {
     document.getElementById('loadingText').textContent = 'Scanning barcode from image...';
 
     try {
-        // Create a new instance for file scanning if needed
-        const html5QrCode = new Html5Qrcode('barcode-reader');
+        // Use static scanFile method with configuration
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        };
 
-        // Scan the file
-        const result = await html5QrCode.scanFileV2(file, true);
+        // Html5Qrcode.scanFile returns a Promise with the decoded text
+        const decodedText = await Html5Qrcode.scanFile(file, true);
 
         hideLoading();
 
-        if (result && result.decodedText) {
-            if (DEBUG) console.log('Barcode detected from image:', result.decodedText);
-            lookupBarcode(result.decodedText);
+        if (decodedText) {
+            if (DEBUG) console.log('Barcode detected from image:', decodedText);
+            lookupBarcode(decodedText);
         } else {
             showMessageBox('Could not detect a barcode in the image. Please try again with a clearer photo.', 'error');
         }
