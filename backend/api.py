@@ -52,6 +52,14 @@ from backend.database import (
 # Import authentication
 from backend.auth import AuthManager, get_current_user_id
 
+# Barcode Service
+try:
+    from backend.barcode_service import lookup_barcode, search_products
+    USE_BARCODE_SERVICE = True
+except ImportError as e:
+    logger.warning(f"Barcode service not available: {e}")
+    USE_BARCODE_SERVICE = False
+
 # Nutrition Agent Service
 try:
     from backend.nutrition_agent_service import get_nutrition_agent_service, run_async
@@ -457,8 +465,79 @@ def initial_profile_setup():
 
 
 # ============================================================================
-# NUTRITION INGESTION - OCR & MANUAL ENTRY (AUTHENTICATED)
+# NUTRITION INGESTION - BARCODE, OCR & MANUAL ENTRY (AUTHENTICATED)
 # ============================================================================
+
+@app.route('/api/nutrition/barcode/<barcode>', methods=['GET'])
+@auth_manager.require_auth
+def nutrition_barcode(barcode):
+    """Look up nutrition facts by barcode using Open Food Facts"""
+    if not USE_BARCODE_SERVICE:
+        return jsonify({'error': 'Barcode service not available'}), 503
+
+    try:
+        logger.info(f"Barcode lookup requested: {barcode} by user {get_current_user_id()}")
+
+        product_data = lookup_barcode(barcode)
+
+        if not product_data:
+            return jsonify({
+                'success': False,
+                'error': 'Product not found in database',
+                'message': 'This barcode was not found. Please try manual entry or search by product name.'
+            }), 404
+
+        logger.info(f"Barcode lookup successful: {product_data.get('name', 'Unknown')}")
+
+        return jsonify({
+            'success': True,
+            'product': product_data,
+            'source': 'Open Food Facts'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Barcode lookup failed: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Barcode lookup failed',
+            'message': 'Unable to look up product. Please try again or use manual entry.'
+        }), 500
+
+
+@app.route('/api/nutrition/search', methods=['GET'])
+@auth_manager.require_auth
+def nutrition_search():
+    """Search for products by name"""
+    if not USE_BARCODE_SERVICE:
+        return jsonify({'error': 'Search service not available'}), 503
+
+    query = request.args.get('q', '').strip()
+
+    if not query or len(query) < 2:
+        return jsonify({'error': 'Search query must be at least 2 characters'}), 400
+
+    try:
+        logger.info(f"Product search requested: '{query}' by user {get_current_user_id()}")
+
+        results = search_products(query, limit=10)
+
+        logger.info(f"Search returned {len(results)} results for '{query}'")
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'count': len(results),
+            'query': query
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Product search failed: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Search failed',
+            'message': 'Unable to search products. Please try again.'
+        }), 500
+
 
 @app.route('/api/nutrition/ocr', methods=['POST'])
 @auth_manager.require_auth

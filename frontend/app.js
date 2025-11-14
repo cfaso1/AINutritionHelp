@@ -8,6 +8,7 @@ let authToken = null;
 let profileData = {};
 let scannedProduct = null;
 let chatHistory = [];
+let barcodeScanner = null; // Html5Qrcode instance
 
 // ============================================================================
 // JWT TOKEN MANAGEMENT
@@ -994,10 +995,247 @@ function resetScanner() {
     document.getElementById('results').innerHTML = '';
     document.getElementById('resultsPanel').classList.remove('show');
     document.getElementById('aiResults').style.display = 'none';
-    document.getElementById('imageInput').value = '';
     scannedProduct = null;
     window.ocrOriginalData = null;
     window.pendingNutritionData = null;
+
+    // Also stop barcode scanner if running
+    if (barcodeScanner) {
+        stopBarcodeScanner();
+    }
+}
+
+// ============================================================================
+// BARCODE SCANNING & PRODUCT SEARCH
+// ============================================================================
+
+function switchInputTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+    // Update tab content
+    document.querySelectorAll('.input-tab-content').forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('active');
+    });
+
+    const targetTab = document.getElementById(`${tabName}Tab`);
+    targetTab.style.display = 'block';
+    targetTab.classList.add('active');
+
+    // Stop scanner when switching away from barcode tab
+    if (tabName !== 'barcode' && barcodeScanner) {
+        stopBarcodeScanner();
+    }
+}
+
+async function startBarcodeScanner() {
+    const readerElement = document.getElementById('barcode-reader');
+    const startBtn = document.getElementById('startScanBtn');
+    const stopBtn = document.getElementById('stopScanBtn');
+
+    try {
+        if (!barcodeScanner) {
+            barcodeScanner = new Html5Qrcode('barcode-reader');
+        }
+
+        readerElement.style.display = 'block';
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'block';
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39
+            ]
+        };
+
+        await barcodeScanner.start(
+            { facingMode: 'environment' },
+            config,
+            (decodedText) => {
+                // Barcode detected!
+                if (DEBUG) console.log('Barcode detected:', decodedText);
+                lookupBarcode(decodedText);
+                stopBarcodeScanner();
+            },
+            (error) => {
+                // Scan error (usually just "no barcode found"), ignore
+            }
+        );
+
+    } catch (error) {
+        console.error('Error starting barcode scanner:', error);
+        showMessageBox('Unable to start camera. Please check permissions or use manual barcode entry.', 'error');
+        readerElement.style.display = 'none';
+        startBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+    }
+}
+
+function stopBarcodeScanner() {
+    const readerElement = document.getElementById('barcode-reader');
+    const startBtn = document.getElementById('startScanBtn');
+    const stopBtn = document.getElementById('stopScanBtn');
+
+    if (barcodeScanner) {
+        barcodeScanner.stop().then(() => {
+            readerElement.style.display = 'none';
+            startBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+        }).catch((error) => {
+            console.error('Error stopping scanner:', error);
+        });
+    }
+}
+
+function lookupManualBarcode() {
+    const barcodeInput = document.getElementById('manualBarcodeInput');
+    const barcode = barcodeInput.value.trim();
+
+    if (!barcode || barcode.length < 8) {
+        showMessageBox('Please enter a valid barcode (at least 8 digits)', 'error');
+        return;
+    }
+
+    lookupBarcode(barcode);
+}
+
+async function lookupBarcode(barcode) {
+    if (DEBUG) console.log('Looking up barcode:', barcode);
+
+    showLoading();
+    document.getElementById('loadingText').textContent = 'Looking up product...';
+
+    try {
+        const response = await fetch(`${API_URL}/nutrition/barcode/${barcode}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
+
+        const result = await response.json();
+        hideLoading();
+
+        if (response.ok && result.success) {
+            showMessageBox(`Found: ${result.product.name}`, 'success');
+            displayProductFromDatabase(result.product);
+        } else {
+            showMessageBox(result.message || 'Product not found. Try searching by name or manual entry.', 'error');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Barcode lookup error:', error);
+        showMessageBox('Unable to look up barcode. Please try again.', 'error');
+    }
+}
+
+async function searchProducts() {
+    const searchInput = document.getElementById('productSearchInput');
+    const query = searchInput.value.trim();
+
+    if (!query || query.length < 2) {
+        showMessageBox('Please enter at least 2 characters to search', 'error');
+        return;
+    }
+
+    showLoading();
+    document.getElementById('loadingText').textContent = 'Searching products...';
+
+    try {
+        const response = await fetch(`${API_URL}/nutrition/search?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            hideLoading();
+            handleAuthError();
+            return;
+        }
+
+        const result = await response.json();
+        hideLoading();
+
+        if (response.ok && result.success) {
+            displaySearchResults(result.results);
+        } else {
+            showMessageBox('Search failed. Please try again.', 'error');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Search error:', error);
+        showMessageBox('Unable to search. Please try again.', 'error');
+    }
+}
+
+function displaySearchResults(results) {
+    const searchResultsDiv = document.getElementById('searchResults');
+
+    if (!results || results.length === 0) {
+        searchResultsDiv.innerHTML = '<p style="text-align: center; color: var(--medium-text);">No products found. Try a different search term.</p>';
+        return;
+    }
+
+    searchResultsDiv.innerHTML = '<h4 style="color: var(--primary-green); margin-bottom: 15px;">Search Results:</h4>';
+
+    results.forEach(product => {
+        const nutrition = product.nutrition || {};
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.onclick = () => displayProductFromDatabase(product);
+
+        resultItem.innerHTML = `
+            <div class="search-result-name">${product.name || 'Unknown Product'}</div>
+            ${product.brands ? `<div class="search-result-brand">${product.brands}</div>` : ''}
+            <div class="search-result-nutrition">
+                ${nutrition.calories ? `<span>📊 ${nutrition.calories} cal</span>` : ''}
+                ${nutrition.protein ? `<span>💪 ${nutrition.protein}g protein</span>` : ''}
+                ${nutrition.carbs_total ? `<span>🌾 ${nutrition.carbs_total}g carbs</span>` : ''}
+                ${nutrition.fat_total ? `<span>🥑 ${nutrition.fat_total}g fat</span>` : ''}
+            </div>
+        `;
+
+        searchResultsDiv.appendChild(resultItem);
+    });
+}
+
+function displayProductFromDatabase(product) {
+    // Convert database product format to our display format
+    scannedProduct = {
+        name: product.name || 'Unknown Product',
+        category: product.category || 'Food',
+        nutrition: product.nutrition || {}
+    };
+
+    // Add price if available (set to null for database products)
+    scannedProduct.price = null;
+
+    // Display the product
+    displayProduct(scannedProduct);
+
+    // Clear search results
+    const searchResultsDiv = document.getElementById('searchResults');
+    if (searchResultsDiv) {
+        searchResultsDiv.innerHTML = '';
+    }
+
+    // Show success message
+    showMessageBox('Product loaded! Click "Get AI Analysis" to evaluate.', 'success');
 }
 
 // Chat Functions
