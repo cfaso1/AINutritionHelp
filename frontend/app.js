@@ -1218,26 +1218,20 @@ async function handleBarcodeImageUpload(event) {
     document.getElementById('loadingText').textContent = 'Scanning barcode from image...';
 
     try {
-        if (!barcodeScanner) {
-            barcodeScanner = new Html5Qrcode('barcode-reader');
-        }
+        // Create a new instance for file scanning if needed
+        const html5QrCode = new Html5Qrcode('barcode-reader');
 
-        const config = {
-            formatsToSupport: [
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39
-            ]
-        };
+        // Scan the file
+        const result = await html5QrCode.scanFileV2(file, true);
 
-        const result = await barcodeScanner.scanFile(file, false);
         hideLoading();
 
-        if (DEBUG) console.log('Barcode detected from image:', result);
-        lookupBarcode(result);
+        if (result && result.decodedText) {
+            if (DEBUG) console.log('Barcode detected from image:', result.decodedText);
+            lookupBarcode(result.decodedText);
+        } else {
+            showMessageBox('Could not detect a barcode in the image. Please try again with a clearer photo.', 'error');
+        }
 
         // Clear the file input for next upload
         event.target.value = '';
