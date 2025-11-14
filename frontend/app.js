@@ -464,7 +464,7 @@ async function saveProfile() {
         if (response.ok) {
             await loadUserProfile();
             showMessage('settingsMessage', 'Profile updated successfully!', 'success');
-            setTimeout(() => showDashboard(), 2000);
+            setTimeout(() => showDashboard(), 800);
         } else {
             const resJson = await response.json().catch(() => ({}));
             showMessage('settingsMessage', resJson.error || 'Unable to update profile. Please check your information and try again.', 'error');
