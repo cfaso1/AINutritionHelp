@@ -15,42 +15,16 @@ let barcodeScanner = null; // Html5Qrcode instance
 // ============================================================================
 
 /**
- * Fetch with timeout and cold start detection
- * Handles Render.com free tier cold starts (takes ~1 minute to spin up)
- */
-async function fetchWithTimeout(url, options = {}, timeout = 30000) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    try {
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        return response;
-    } catch (error) {
-        clearTimeout(timeoutId);
-
-        // Check if it's a timeout or network error (likely cold start)
-        if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
-            throw new Error('COLD_START');
-        }
-
-        throw error;
-    }
-}
-
-/**
  * Get user-friendly error message for API errors
+ * Detects network errors (API not reachable) and provides helpful message
  */
 function getErrorMessage(error, defaultMessage = 'An error occurred') {
-    if (error.message === 'COLD_START') {
-        return '⏳ Service is starting up (this takes about 1 minute on the free tier). Please try again in 1 minute.';
-    }
-
-    if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
-        return 'Connection error. The service may be starting up. Please try again in 1 minute.';
+    // Check if it's a network/connection error (API not reachable)
+    if (error.message && (error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('Network request failed') ||
+        error.name === 'TypeError')) {
+        return '⏳ Cannot reach server. The service may be starting up. Please try again in 1 minute.';
     }
 
     return defaultMessage;
@@ -233,7 +207,7 @@ async function handleSignup(e) {
     const password = document.getElementById('signupPassword').value;
 
     try {
-        const response = await fetchWithTimeout(`${API_URL}/auth/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password })
@@ -271,7 +245,7 @@ async function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetchWithTimeout(`${API_URL}/auth/login`, {
+        const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -310,7 +284,7 @@ function logout() {
 
 async function loadUserProfile() {
     try {
-        const response = await fetchWithTimeout(`${API_URL}/profile`, {
+        const response = await fetch(`${API_URL}/profile`, {
             headers: getAuthHeaders()
         });
 
@@ -411,7 +385,7 @@ async function submitProfile() {
             dietary_restrictions: dietaryRestrictions.join(', ')
         };
 
-        const response = await fetchWithTimeout(`${API_URL}/profile/setup`, {
+        const response = await fetch(`${API_URL}/profile/setup`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(payload)
@@ -493,7 +467,7 @@ async function saveProfile() {
     };
 
     try {
-        const response = await fetchWithTimeout(`${API_URL}/profile`, {
+        const response = await fetch(`${API_URL}/profile`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(updatedProfile)
@@ -822,7 +796,7 @@ async function submitManualEntry(event) {
     showLoading();
 
     try {
-        const response = await fetchWithTimeout(`${API_URL}/nutrition/manual`, {
+        const response = await fetch(`${API_URL}/nutrition/manual`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(nutritionData)
@@ -874,11 +848,11 @@ async function analyzeProduct() {
     document.getElementById('loadingText').textContent = 'Analyzing product...';
 
     try {
-        const response = await fetchWithTimeout(`${API_URL}/agent/evaluate`, {
+        const response = await fetch(`${API_URL}/agent/evaluate`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ product: scannedProduct })
-        }, 45000); // Longer timeout for AI analysis
+        });
 
         if (response.status === 401) {
             hideLoading();
@@ -1126,7 +1100,7 @@ async function lookupBarcode(barcode) {
     document.getElementById('loadingText').textContent = 'Looking up product...';
 
     try {
-        const response = await fetchWithTimeout(`${API_URL}/nutrition/barcode/${barcode}`, {
+        const response = await fetch(`${API_URL}/nutrition/barcode/${barcode}`, {
             method: 'GET',
             headers: getAuthHeaders()
         });
@@ -1234,11 +1208,11 @@ async function sendChatMessage() {
         const requestData = { message: message };
         if (scannedProduct) requestData.product = scannedProduct;
 
-        const response = await fetchWithTimeout(`${API_URL}/agent/chat`, {
+        const response = await fetch(`${API_URL}/agent/chat`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(requestData)
-        }, 45000); // Longer timeout for AI chat
+        });
 
         if (response.status === 401) {
             hideTypingIndicator();
