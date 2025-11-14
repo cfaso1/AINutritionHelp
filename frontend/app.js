@@ -65,7 +65,7 @@ function handleAuthError() {
     clearAuthToken();
     currentUser = null;
     localStorage.removeItem('balancebot_user');
-    showMessage('globalMessage', 'Session expired. Please log in again.', 'error');
+    showMessage('globalMessage', 'Your session has expired for security. Please log in again to continue.', 'error');
     setTimeout(() => {
         location.reload();
     }, 2000);
@@ -192,11 +192,11 @@ async function handleSignup(e) {
             closeModal();
             showProfileSetup();
         } else {
-            showMessage('signupMessage', result.error || 'Signup failed', 'error');
+            showMessage('signupMessage', result.error || 'Unable to create account. Please check your information and try again.', 'error');
         }
     } catch (error) {
         console.error('Signup error:', error);
-        showMessage('signupMessage', 'Network error. Please try again.', 'error');
+        showMessage('signupMessage', 'Connection error. Please try again in 1 minute.', 'error');
     }
 }
 
@@ -228,11 +228,11 @@ async function handleLogin(e) {
             const complete = hasProfile(currentUser.profile);
             complete ? showDashboard() : showProfileSetup();
         } else {
-            showMessage('loginMessage', result.error || 'Login failed', 'error');
+            showMessage('loginMessage', result.error || 'Login failed. Please check your username and password.', 'error');
         }
     } catch (error) {
         console.error('Login error:', error);
-        showMessage('loginMessage', 'Network error. Please try again.', 'error');
+        showMessage('loginMessage', 'Connection error. Please try again in 1 minute.', 'error');
     }
 }
 
@@ -361,10 +361,10 @@ async function submitProfile() {
             showDashboard();
         } else {
             const error = await response.json();
-            alert(error.error || 'Failed to save profile');
+            alert(error.error || 'Unable to save profile. Please check your information and try again.');
         }
     } catch (error) {
-        alert('Failed to save profile. Please try again.');
+        alert('Connection error. Unable to save profile. Please try again in 1 minute.');
     }
 }
 
@@ -444,10 +444,10 @@ async function saveProfile() {
             setTimeout(() => showDashboard(), 2000);
         } else {
             const resJson = await response.json().catch(() => ({}));
-            showMessage('settingsMessage', resJson.error || 'Failed to update profile', 'error');
+            showMessage('settingsMessage', resJson.error || 'Unable to update profile. Please check your information and try again.', 'error');
         }
     } catch (error) {
-        showMessage('settingsMessage', 'Network error', 'error');
+        showMessage('settingsMessage', 'Connection error. Please try again in 1 minute.', 'error');
     }
 }
 
@@ -500,14 +500,14 @@ async function handleImageUpload(event) {
                 showClarificationForm(result.data, {}, 'OCR successful! Please add item name and price.');
             }
         } else if (result.needs_manual_entry) {
-            showMessageBox(result.error || 'OCR failed. Please enter nutrition facts manually.', 'error');
+            showMessageBox(result.error || 'Unable to read nutrition label. Please use manual entry instead.', 'error');
             setTimeout(() => showManualInput(), 1500);
         } else {
-            showMessageBox(result.error || 'Failed to process image', 'error');
+            showMessageBox(result.error || 'Unable to process image. Please try a clearer photo or use manual entry.', 'error');
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Network error! Please try again.', 'error');
+        showMessageBox('Connection error. Please try again in 1 minute.', 'error');
     }
 }
 
@@ -761,11 +761,11 @@ async function submitManualEntry(event) {
             showMessageBox('Nutrition data validated successfully!', 'success');
             displayProduct(scannedProduct);
         } else {
-            showMessageBox(result.error || 'Validation failed', 'error');
+            showMessageBox(result.error || 'Invalid nutrition data. Please check your entries and try again.', 'error');
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Network error! Please try again.', 'error');
+        showMessageBox('Connection error. Please try again in 1 minute.', 'error');
     }
 }
 
@@ -889,17 +889,17 @@ async function submitClarification(event) {
             showMessageBox('Nutrition data validated successfully!', 'success');
             displayProduct(scannedProduct);
         } else {
-            showMessageBox(result.error || 'Validation failed', 'error');
+            showMessageBox(result.error || 'Invalid nutrition data. Please check your entries and try again.', 'error');
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Network error! Please try again.', 'error');
+        showMessageBox('Connection error. Please try again in 1 minute.', 'error');
     }
 }
 
 async function analyzeProduct() {
     if (!scannedProduct) {
-        showMessageBox('Please scan a product first', 'error');
+        showMessageBox('Please scan or enter a product first before requesting analysis.', 'error');
         return;
     }
 
@@ -925,11 +925,11 @@ async function analyzeProduct() {
             displayAIResults(result.evaluation);
             sendEvaluationToChat(result.evaluation);
         } else {
-            showMessageBox(result.error || 'Analysis failed', 'error');
+            showMessageBox(result.error || 'Unable to analyze product. The AI service may be busy. Please try again in 1 minute.', 'error');
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Network error during analysis', 'error');
+        showMessageBox('Connection error. Unable to reach AI service. Please try again in 1 minute.', 'error');
     }
 }
 
@@ -1081,11 +1081,11 @@ async function sendChatMessage() {
         if (response.ok) {
             addChatMessage(result.message, false);
         } else {
-            addChatMessage('Sorry, I encountered an error. Please try again!', false);
+            addChatMessage('Sorry, I encountered an error processing your request. The AI service may be busy. Please try again in 1 minute.', false);
         }
     } catch (error) {
         hideTypingIndicator();
-        addChatMessage('Sorry, I\'m having trouble connecting. Please check your internet connection!', false);
+        addChatMessage('Connection error. I\'m unable to reach the server right now. Please try again in 1 minute.', false);
     } finally {
         chatSendBtn.disabled = false;
         chatInput.focus();

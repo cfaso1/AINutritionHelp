@@ -1,10 +1,9 @@
-# 🍎 BalanceBot AI
+# 🍎 BalanceBot - AI Nutrition Assistant
 
-Scan products, get AI-powered nutrition analysis, and reach your health goals with personalized recommendations from a multi-agent AI system.
+An AI-powered nutrition analysis web application that scans product labels, provides personalized health insights, and offers interactive nutrition guidance through an intelligent chatbot.
 
-**Production-Ready** ✅ - Secure authentication, multi-user support, Docker deployment, and enterprise-grade security.
-
-*Note: This Full-stack AI powered web app was created during the KnightHacksVIII 36 hour hackathon and later polished for production*
+> **⚠️ Educational Project Disclaimer**
+> This is a computer science educational project for demonstration purposes only. Not intended for medical, nutritional, or dietary use. AI-generated information may contain errors—always verify facts independently. Consult qualified healthcare professionals for actual health decisions. The database is periodically reset, and user data may be deleted without notice.
 
 ---
 
@@ -13,15 +12,19 @@ Scan products, get AI-powered nutrition analysis, and reach your health goals wi
 ### Local Development
 
 ```bash
-# 1. Clone and setup environment
+# 1. Clone the repository
 git clone <your-repo>
 cd AINutritionHelp
+
+# 2. Set up environment variables
 cp .env.example .env
 
-# 2. Generate secret key and configure
+# Generate a secret key
 python3 -c "import secrets; print(secrets.token_hex(32))"
-# Add to .env: SECRET_KEY=<generated-key>
-# Add to .env: GOOGLE_API_KEY=<your-google-api-key>
+
+# Add to .env:
+# SECRET_KEY=<generated-key>
+# GOOGLE_API_KEY=<your-google-api-key>
 
 # 3. Install dependencies
 python3 -m venv venv
@@ -31,41 +34,82 @@ pip install -r requirements.txt
 # 4. Run the application
 python run.py
 
-# 5. Open frontend
-# Open: frontend/index.html in your browser
+# 5. Open the frontend
+# Navigate to: http://localhost:5000
+# Or open: frontend/index.html in your browser
 ```
 
-### Docker Deployment (Recommended)
-
-```bash
-# Quick start with Docker
-cp .env.example .env
-# Edit .env with your values
-cd config
-docker-compose up -d --build
-```
-
-📚 **For detailed deployment instructions, see [docs/NETLIFY_RENDER_DEPLOYMENT.md](docs/NETLIFY_RENDER_DEPLOYMENT.md)**
-📚 **For deployment checklist, see [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md)**
+### Get Google API Key
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
+2. Create a new API key
+3. Add to `.env`: `GOOGLE_API_KEY=your_key_here`
 
 ---
 
 ## ✨ Features
 
 ### Core Capabilities
-- 🔍 **Item Scanner** - Scan nutrition facts or upload images
-- 🤖 **AI Chat Companion** - Conversational nutrition assistant powered by Gemini 2.0
-- ❤️ **Health Evaluator** - Analyzes nutrition alignment with health goals
-- 💪 **Fitness Evaluator** - Evaluates products for fitness objectives
-- 💰 **Price Evaluator** - Assesses value for money
-- 💬 **Live Chat Interface** - Real-time AI conversations about nutrition
-- 🎯 **Personalized Recommendations** - Based on your profile and goals
+- 📸 **Smart Scanner** - Upload nutrition label images with OCR extraction
+- ✍️ **Manual Entry** - Input nutrition facts manually
+- 🤖 **AI Chat Companion** - Conversational nutrition assistant powered by Google Gemini
+- ❤️ **Health Analysis** - Evaluates nutritional alignment with your health goals
+- 💪 **Fitness Evaluation** - Analyzes products for workout and fitness objectives
+- 💰 **Price Analysis** - Assesses value for money and cost-effectiveness
+- 🎯 **Personalized Recommendations** - Tailored advice based on your profile
+- 📊 **Comprehensive Nutrition Facts** - Displays calories, macros, vitamins, and more
 
 ### AI Multi-Agent System
-- **Health Agent** - Nutritional analysis with pros/cons
-- **Fitness Agent** - Workout timing and recommendations
-- **Price Agent** - Value assessment and alternatives
-- **Chat Agent** - Natural language Q&A about nutrition
+The application uses a sophisticated multi-agent architecture:
+
+- **Health Agent** - Nutritional analysis with pros/cons based on your health profile
+- **Fitness Agent** - Workout timing recommendations and fitness alignment
+- **Price Agent** - Value assessment and cost analysis
+- **Chat Agent** - Natural language Q&A about nutrition and health
+
+---
+
+## 🎯 How to Use
+
+### 1. Create an Account
+- Click "Sign Up" to create a new account
+- Or use demo credentials if provided
+
+### 2. Complete Your Profile
+After signup, complete the 5-step profile setup:
+- **Step 1:** Physical profile (height, weight, age, gender)
+- **Step 2:** Primary goal (weight loss, muscle gain, maintain, general health)
+- **Step 3:** Activity level (sedentary to very active)
+- **Step 4:** Diet type (standard, vegetarian, vegan, keto, etc.)
+- **Step 5:** Dietary restrictions and allergies
+
+### 3. Scan Products
+**Option A: Upload Image**
+- Click the scan area or drag and drop a nutrition label photo
+- AI extracts nutrition facts automatically
+- Review and confirm the data
+- Add item name and price (optional)
+
+**Option B: Manual Entry**
+- Click "Manual Input" button
+- Fill in nutrition facts from the label
+- Submit for analysis
+
+### 4. Get AI Analysis
+- Click "Get AI Analysis" button
+- View comprehensive evaluation:
+  - Overall score (0-100)
+  - Health alignment analysis
+  - Fitness recommendations
+  - Price value assessment
+
+### 5. Chat with AI
+- Ask questions in the chat interface
+- Get personalized nutrition advice
+- AI remembers your scanned products
+- Use quick action buttons for common questions:
+  - "What should I eat before a workout?"
+  - "How much protein do I need daily?"
+  - "What are healthy snack options?"
 
 ---
 
@@ -74,20 +118,23 @@ docker-compose up -d --build
 ```
 AINutritionHelp/
 ├── backend/
-│   ├── api.py                     # REST API (includes chat endpoint)
-│   ├── database.py                # SQLite database
-│   ├── nutrition_agent_service.py # Agent integration wrapper
-│   └── ingest/                    # OCR and nutrition data extraction
+│   ├── api.py                     # Flask REST API
+│   ├── database.py                # SQLite database operations
+│   ├── nutrition_agent_service.py # AI agent integration
+│   └── ingest/                    # OCR and data extraction
+│       ├── ocr_service.py         # Tesseract OCR service
+│       └── nutrition_extractor.py # Nutrition data parser
 │
 ├── frontend/
-│   ├── index.html                 # Main app with AI chat interface
-│   ├── app.js                     # Frontend JavaScript logic
-│   └── styles.css                 # Application styles
+│   ├── index.html                 # Main application UI
+│   ├── app.js                     # Frontend logic
+│   ├── styles.css                 # Application styles
+│   └── config.js                  # Frontend configuration
 │
 ├── agent/                          # AI Agent System
 │   ├── main_agent.py              # Main orchestrator
-│   ├── service.py                 # Backend integration layer
-│   ├── models.py                  # Product & UserProfile models
+│   ├── service.py                 # Backend integration
+│   ├── models.py                  # Data models
 │   ├── health_evaluator.py        # Health analysis agent
 │   ├── fitness_evaluator.py       # Fitness evaluation agent
 │   ├── price_evaluator.py         # Price analysis agent
@@ -95,157 +142,79 @@ AINutritionHelp/
 │       ├── data_parser.py
 │       └── response_formatter.py
 │
-├── config/                         # Configuration files
-│   ├── config.py                  # Application configuration
-│   ├── docker-compose.yml         # Local Docker orchestration
-│   └── nginx/                     # Nginx web server config
-│       └── nginx.conf
+├── config/
+│   └── config.py                  # Application configuration
 │
 ├── docs/                           # Documentation
-│   └── DEPLOYMENT.md              # Production deployment guide
 │
-├── Dockerfile                      # Docker image for Render deployment
-├── .dockerignore                   # Docker build ignore patterns
-├── netlify.toml                    # Netlify frontend deployment
-├── render.yaml                     # Render backend deployment
 ├── run.py                          # Application entry point
 ├── requirements.txt                # Python dependencies
-├── runtime.txt                     # Python version specification
-├── test_ocr.py                     # OCR testing script
 ├── .env.example                    # Environment variables template
 ├── .gitignore                      # Git ignore patterns
-├── LICENSE                         # MIT License
 └── README.md                       # This file
 ```
 
 ---
 
-## 🎯 How to Use
-
-### 1. **Login**
-- Use demo account: `demo_user` / `demo123`
-- Or create your own account
-
-### 2. **Set Your Profile**
-Navigate to Settings and configure:
-- Personal info (height, weight, goals)
-- Activity level
-- Dietary restrictions
-- Daily targets (calories, protein, etc.)
-
-### 3. **Scan Products**
-- **Enter data manually** (e.g., `protein: `)
-- **Upload data image** - automatically extracts data
-- View product information and nutrition facts
-
-### 4. **Chat with AI**
-- Ask questions in the chat interface
-- Get personalized nutrition advice
-- AI remembers your scanned products
-- Use quick action buttons for common questions
-
----
-
 ## 🔌 API Endpoints
 
-**Base URL:** `http://localhost:5000`
+**Base URL:** `http://localhost:5000/api`
 
 ### Authentication
 - `POST /auth/register` - Register new user
-- `POST /auth/login` - Login user
+  - Body: `{ username, email, password }`
+  - Returns: `{ token, user_id, username, email }`
 
-### Profile
-- `GET /profile` - Get user profile
-- `PUT /profile` - Update profile
+- `POST /auth/login` - Login user
+  - Body: `{ username, password }`
+  - Returns: `{ token, user: { user_id, username, email, profile } }`
+
+### Profile Management
+- `GET /profile` - Get user profile (requires auth)
+  - Headers: `Authorization: Bearer <token>`
+  - Returns: User profile data
+
+- `POST /profile/setup` - Create/update profile (requires auth)
+  - Body: `{ height, current_weight_lbs, gender, age_category, goal_type, activity_level, diet_type, dietary_restrictions }`
+
+- `POST /profile` - Update existing profile (requires auth)
+  - Body: Profile fields to update
 
 ### Nutrition Scanning & Analysis
-- `POST /nutrition/ocr` - Upload nutrition label image (OCR)
-- `POST /nutrition/manual` - Submit manual nutrition entry
-- `POST /nutrition/clarify` - Clarify/correct OCR results
-- `POST /agent/evaluate` - Get AI evaluation (3 agents)
-- `POST /agent/chat` - Chat with AI companion ✨
+- `POST /nutrition/ocr` - Upload nutrition label image (requires auth)
+  - Body: FormData with `image` file
+  - Returns: Extracted nutrition data or clarification request
 
-### Weight Tracking
-- `POST /weight` - Log weight
-- `GET /weight/history` - Get weight history
+- `POST /nutrition/manual` - Submit manual nutrition entry (requires auth)
+  - Body: Nutrition facts object
+  - Returns: Validated nutrition data
+
+- `POST /nutrition/clarify` - Clarify/correct OCR results (requires auth)
+  - Body: `{ original_data, corrections }`
+  - Returns: Corrected nutrition data
+
+- `POST /agent/evaluate` - Get AI evaluation (requires auth)
+  - Body: `{ product: { name, nutrition, price } }`
+  - Returns: Complete evaluation from all 3 agents
+
+- `POST /agent/chat` - Chat with AI companion (requires auth)
+  - Body: `{ message, product (optional) }`
+  - Returns: AI response
 
 ### Health Check
-- `GET /health` - API status
-
----
-
-## 💬 AI Chat Interface
-
-### What It Does
-The chat interface provides a conversational AI companion that:
-- Automatically sends analysis results when you scan products
-- Answers nutrition and fitness questions
-- Provides context-aware advice based on your profile
-- Remembers recently scanned products
-
-### How It Works
-
-**Auto-Trigger on Scan:**
-```
-User scans item → AI analyzes product →
-Companion message appears in chat automatically
-```
-
-**Manual Chat:**
-```
-User types question → AI responds with personalized advice
-```
-
-**Quick Actions:**
-- 💪 "What should I eat before a workout?"
-- 🥗 "How much protein do I need daily?"
-- 🍎 "What are healthy snack options?"
-
-### Example Conversation
-```
-🤖 Hey! I just looked at the Quest Protein Bar you scanned.
-   With 21g protein and only 1g sugar, this is an excellent
-   choice for your muscle building goals!
-
-   Overall Score: 85/100 ✅
-   Best time: Post-workout
-
-👤 Is this good for me?
-
-🤖 Absolutely! Based on your moderately active lifestyle and
-   protein target of 100g/day, this bar provides 21% of your
-   daily protein needs. Perfect as a post-workout snack!
-```
-
----
-
-
-## 🔧 Configuration
-
-### Required: Google API Key
-
-The agent system uses **Google Gemini 2.0-flash**
-
-**Add to root `.env`:**
-```env
-GOOGLE_API_KEY=your_google_api_key_here
-```
-
-**Get API Key:**
-1. Go to https://aistudio.google.com/apikey
-2. Create a new API key
-3. Add to `.env` in the project root
+- `GET /health` - API status check
+  - Returns: `{ status: "healthy" }`
 
 ---
 
 ## 🤖 Multi-Agent Architecture
 
-### Agent System (Google Gemini 2.0)
+### System Design
 
 ```
 ┌─────────────────────────────────────────────────┐
 │          Main Nutrition Agent                   │
-│         (NutritionAgent class)                  │
+│         (Google Gemini 2.0)                     │
 └──────────┬──────────────────────────────────────┘
            │
     ┌──────┴──────┐
@@ -261,14 +230,42 @@ GOOGLE_API_KEY=your_google_api_key_here
 ```
 
 ### Data Flow
-```
-1. User scans item
-2. Product info retrieved
-3. All 3 evaluators run in parallel (asyncio)
-4. Results combined
-5. Companion message generated
-6. Message sent to chat interface
-7. User can ask follow-up questions
+
+1. User scans nutrition label (OCR or manual entry)
+2. Product data extracted and validated
+3. User requests AI analysis
+4. All 3 evaluators run in parallel (asyncio)
+5. Results combined into comprehensive evaluation
+6. Companion message generated for chat
+7. User can ask follow-up questions via chat
+
+### Example Analysis Output
+
+```json
+{
+  "overall": {
+    "score": 85,
+    "recommendation": "Great choice for your goals!",
+    "recommendation_emoji": "✅"
+  },
+  "health_analysis": {
+    "score": 82,
+    "summary": "High protein, low sugar - aligns well with your health goals",
+    "pros": ["High protein content", "Low sugar"],
+    "cons": ["Moderate sodium levels"]
+  },
+  "fitness_analysis": {
+    "score": 88,
+    "summary": "Excellent post-workout option",
+    "best_for": "Post-workout recovery",
+    "recommendation": "Consume within 30 minutes after exercise"
+  },
+  "price_analysis": {
+    "rating": "Good Value",
+    "summary": "$1.99 per serving - reasonable for protein content"
+  },
+  "companion_message": "Great choice! This has 21g of protein..."
+}
 ```
 
 ---
@@ -278,156 +275,223 @@ GOOGLE_API_KEY=your_google_api_key_here
 ### Tables
 
 **users**
-- user_id, username, email
-- password_hash, password_salt
-- created_at, last_login
+- `user_id` (INTEGER PRIMARY KEY)
+- `username` (TEXT UNIQUE)
+- `email` (TEXT UNIQUE)
+- `password_hash` (TEXT)
+- `password_salt` (TEXT)
+- `created_at` (TIMESTAMP)
+- `last_login` (TIMESTAMP)
 
 **user_profiles**
-- Personal: height_cm, current_weight_kg, bmi
-- Goals: goal_type, target_weight_kg, activity_level
-- Diet: diet_type, allergies, dietary_restrictions
-- Targets: daily_calorie_target, protein_target_g, carbs_target_g, fat_target_g
+- `profile_id` (INTEGER PRIMARY KEY)
+- `user_id` (INTEGER FOREIGN KEY)
+- Physical: `height_cm`, `height_feet`, `height_inches`, `current_weight_kg`, `weight_lbs`, `bmi`
+- Goals: `goal_type`, `target_weight_kg`, `activity_level`
+- Diet: `diet_type`, `dietary_restrictions`, `gender`, `age_category`
+- Targets: `daily_calorie_target`, `protein_target_g`, `carbs_target_g`, `fat_target_g`
 
 **nutrition_logs**
-- log_date, meal_type, food_name, price
-- nutrition_json, calories, protein_g, carbs_g, fat_g
+- `log_id` (INTEGER PRIMARY KEY)
+- `user_id` (INTEGER FOREIGN KEY)
+- `log_date` (DATE)
+- `meal_type` (TEXT)
+- `food_name` (TEXT)
+- `price` (REAL)
+- `nutrition_json` (TEXT)
+- Nutrients: `calories`, `protein_g`, `carbs_g`, `fat_g`, `sugar_g`, `sodium_mg`
 
 **weight_history**
-- weight_id, user_id, weight_kg, recorded_at
+- `weight_id` (INTEGER PRIMARY KEY)
+- `user_id` (INTEGER FOREIGN KEY)
+- `weight_kg` (REAL)
+- `recorded_at` (TIMESTAMP)
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Backend:**
-- Python 3.12+
-- Flask 3.0.0 (REST API)
-- SQLite3
-- Google Generative AI SDK (Gemini 2.0-flash)
-- Tesseract OCR + OpenCV (nutrition label extraction)
+### Backend
+- **Python 3.12+**
+- **Flask 3.0+** - REST API framework
+- **SQLite3** - Embedded database
+- **Google Generative AI** (Gemini 2.0 Flash) - AI/LLM
+- **Tesseract OCR** - Optical character recognition
+- **OpenCV** - Image processing
+- **PyJWT** - JWT authentication
+- **Werkzeug** - Password hashing
 
-**Frontend:**
-- Vanilla HTML5/CSS3/JavaScript
-- No frameworks (lightweight, fast)
-- Modern CSS (flexbox, grid, animations)
-- Fetch API for HTTP requests
+### Frontend
+- **HTML5/CSS3/JavaScript** - Vanilla, no frameworks
+- **Fetch API** - HTTP requests
+- **CSS Grid & Flexbox** - Responsive layouts
+- **CSS Variables** - Theming system
 
-**AI:**
-- Google Gemini 2.0-flash (via genai SDK)
-- Multi-agent system with parallel execution
-- Context-aware conversations
+### AI
+- **Google Gemini 2.0 Flash** - Multi-agent reasoning
+- **Parallel execution** - Asyncio for concurrent agent calls
+- **Context-aware conversations** - Maintains chat history
+- **Structured outputs** - JSON parsing for consistent results
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
+
+```env
+# Required
+SECRET_KEY=your_secret_key_here
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Optional
+FLASK_ENV=development
+PORT=5000
+```
+
+### Frontend Configuration (frontend/config.js)
+
+```javascript
+window.BalanceBotConfig = {
+    API_URL: 'http://localhost:5000/api',
+    DEBUG: false
+};
+```
 
 ---
 
 ## 🔍 Troubleshooting
 
-### "Nutrition agent not available" Error
+### Backend Won't Start
 
-**Cause:** Missing or invalid Google API key
+**Error:** Module not found
 
-**Fix:**
+**Solution:**
 ```bash
-# 1. Check if .env exists
-cd agent
-ls -la .env
+# Ensure virtual environment is activated
+source venv/bin/activate
 
-# 2. If missing, create it:
-echo "GOOGLE_API_KEY=your_key_here" > .env
-
-# 3. Verify it's loaded
-cat .env
-
-# 4. Restart the backend
-cd ..
-python backend/api.py
+# Reinstall dependencies
+pip install -r requirements.txt
 ```
 
-### Chat Shows "Sorry, I encountered an error"
+### OCR Not Working
 
-**Causes:**
-1. Google API key not set
-2. API key invalid/expired
-3. Network connection issue
-4. Agent service not initialized
+**Error:** Tesseract not found
 
-**Debug Steps:**
+**Solution:**
 ```bash
-# Test the agent directly
-cd agent
-python -c "from main_agent import get_agent; print(get_agent())"
+# macOS
+brew install tesseract
 
-# Check API key is valid
-# Go to: https://aistudio.google.com/apikey
+# Ubuntu/Debian
+sudo apt-get install tesseract-ocr
 
-# Check backend logs
-# Look for errors when starting api.py
+# Windows
+# Download from: https://github.com/UB-Mannheim/tesseract/wiki
 ```
 
-### Frontend Can't Connect to API
+### AI Analysis Fails
 
-**Check:**
+**Error:** "Nutrition agent not available"
+
+**Solution:**
+1. Check `.env` has valid `GOOGLE_API_KEY`
+2. Verify API key at: https://aistudio.google.com/apikey
+3. Restart the backend: `python run.py`
+
+### CORS Errors
+
+**Error:** Cross-origin request blocked
+
+**Solution:**
+- Ensure backend is running on port 5000
+- Check `frontend/config.js` has correct API_URL
+- For production, configure proper CORS headers
+
+---
+
+## 🚀 Deployment
+
+### Important Notes
+- **Database is periodically reset** - This is an educational project
+- User data may be deleted without notice
+- Not intended for production use with real user data
+
+### Local Deployment
 ```bash
-# 1. Is backend running?
-curl http://localhost:5000/api/health
-
-# 2. Check backend is on port 5000
-# Should see: * Running on http://0.0.0.0:5000
-
-# 3. Check browser console (F12) for CORS errors
+python run.py
+# Access at: http://localhost:5000
 ```
+
+### Production Considerations
+If deploying for demonstration:
+1. Set `FLASK_ENV=production` in `.env`
+2. Use a strong `SECRET_KEY`
+3. Consider PostgreSQL instead of SQLite for multi-user
+4. Set up proper HTTPS/SSL
+5. Configure CORS properly
+6. Add rate limiting
 
 ---
 
 ## 📊 Performance
 
-- **Agent Response Time:** 2-4 seconds (all 3 agents in parallel)
-- **Chat Response Time:** 1-2 seconds
-- **Image Detection:** 1-2 seconds
+- **OCR Processing:** 1-3 seconds (depends on image quality)
+- **AI Evaluation (3 agents):** 2-4 seconds (parallel execution)
+- **Chat Response:** 1-2 seconds
+- **Manual Entry:** Instant
 
 ---
 
-## 🎯 Roadmap
+## 🎓 Educational Purpose
 
-- [ ] Save chat history to database
-- [ ] Add message timestamps
-- [ ] Export chat conversations
-- [ ] Voice input for chat
-- [ ] Meal planning suggestions
-- [ ] Recipe recommendations
-- [ ] Social features (meal sharing)
+This project demonstrates:
+- Full-stack web development (Flask + Vanilla JS)
+- RESTful API design
+- JWT authentication
+- Multi-agent AI systems
+- OCR and image processing
+- Responsive web design
+- Database design and operations
+
+**Not suitable for:**
+- Medical or nutritional advice
+- Production health applications
+- Storing real user health data
+- Making dietary decisions
 
 ---
-
 
 ## 📄 License
 
 MIT License - See LICENSE file for details
 
+**Disclaimer:** This software is provided "as is" without warranty of any kind. Use at your own risk.
+
 ---
 
 ## 🤝 Contributing
 
-Contributions welcome! Areas for improvement:
-- Mobile app (API is ready)
-- Recipe engine
-- Social features
-- Multi-language support
-- Fitness tracker integration
+This is an educational project. Contributions for learning purposes are welcome:
+- Bug fixes
+- UI/UX improvements
+- Documentation enhancements
+- Code refactoring
+- Adding tests
 
 ---
 
 ## 📞 Support
 
-**Check the logs:**
-```bash
-# Backend logs
-python backend/api.py
-# Look for errors on startup
-
-# Check API health
-curl http://localhost:5000/api/health
-```
+For issues or questions about the codebase:
+1. Check the troubleshooting section above
+2. Review backend logs: `python run.py`
+3. Check browser console (F12) for frontend errors
+4. Verify API health: `curl http://localhost:5000/api/health`
 
 ---
 
-**Made with ❤️ for better nutrition tracking**
+**Made with ❤️ as a computer science educational project**
+
+*Remember: Always consult qualified healthcare professionals for actual nutrition and dietary advice.*
