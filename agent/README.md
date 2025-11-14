@@ -126,7 +126,7 @@ from agent import get_nutrition_agent_service, run_async
 # Get service
 service = get_nutrition_agent_service()
 
-# Use in Flask routes with nutrition data from OCR or manual entry
+# Use in Flask routes with nutrition data from barcode lookup or manual entry
 evaluation = run_async(service.evaluate_product(product_data, user_profile_data))
 ```
 
@@ -215,7 +215,7 @@ The agent integrates seamlessly with the existing Flask backend:
 
 - **`/api/agent/evaluate`** - Comprehensive product evaluation
 - **`/api/agent/chat`** - Chat with AI companion
-- **`/api/nutrition/ocr`** - Upload nutrition label image
+- **`/api/nutrition/barcode/<barcode>`** - Lookup product by barcode
 - **`/api/nutrition/manual`** - Manual nutrition data entry
 
 ### Integration Layer

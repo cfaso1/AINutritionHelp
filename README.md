@@ -49,7 +49,7 @@ python run.py
 ## ✨ Features
 
 ### Core Capabilities
-- 📸 **Smart Scanner** - Upload nutrition label images with OCR extraction
+- 📱 **Barcode Scanner** - Scan product barcodes to instantly fetch nutrition data
 - ✍️ **Manual Entry** - Input nutrition facts manually
 - 🤖 **AI Chat Companion** - Conversational nutrition assistant powered by Google Gemini
 - ❤️ **Health Analysis** - Evaluates nutritional alignment with your health goals
@@ -83,15 +83,16 @@ After signup, complete the 5-step profile setup:
 - **Step 5:** Dietary restrictions and allergies
 
 ### 3. Scan Products
-**Option A: Upload Image**
-- Click the scan area or drag and drop a nutrition label photo
-- AI extracts nutrition facts automatically
-- Review and confirm the data
-- Add item name and price (optional)
+**Option A: Barcode Scan**
+- Upload a photo of the product barcode
+- Product info fetched from Open Food Facts database
+- Nutrition data automatically populated
+- Add price (optional) for value analysis
 
 **Option B: Manual Entry**
 - Click "Manual Input" button
 - Fill in nutrition facts from the label
+- Add item name and price (optional)
 - Submit for analysis
 
 ### 4. Get AI Analysis
@@ -119,11 +120,10 @@ After signup, complete the 5-step profile setup:
 AINutritionHelp/
 ├── backend/
 │   ├── api.py                     # Flask REST API
+│   ├── auth.py                    # JWT authentication
 │   ├── database.py                # SQLite database operations
-│   ├── nutrition_agent_service.py # AI agent integration
-│   └── ingest/                    # OCR and data extraction
-│       ├── ocr_service.py         # Tesseract OCR service
-│       └── nutrition_extractor.py # Nutrition data parser
+│   ├── barcode_service.py         # Barcode lookup (Open Food Facts)
+│   └── nutrition_agent_service.py # AI agent integration
 │
 ├── frontend/
 │   ├── index.html                 # Main application UI
@@ -145,10 +145,9 @@ AINutritionHelp/
 ├── config/
 │   └── config.py                  # Application configuration
 │
-├── docs/                           # Documentation
-│
 ├── run.py                          # Application entry point
 ├── requirements.txt                # Python dependencies
+├── runtime.txt                     # Python version (for Render deployment)
 ├── .env.example                    # Environment variables template
 ├── .gitignore                      # Git ignore patterns
 └── README.md                       # This file
@@ -181,17 +180,16 @@ AINutritionHelp/
   - Body: Profile fields to update
 
 ### Nutrition Scanning & Analysis
-- `POST /nutrition/ocr` - Upload nutrition label image (requires auth)
-  - Body: FormData with `image` file
-  - Returns: Extracted nutrition data or clarification request
+- `GET /nutrition/barcode/<barcode>` - Lookup product by barcode (requires auth)
+  - Returns: Product nutrition data from Open Food Facts database
+
+- `GET /nutrition/search` - Search for products (requires auth)
+  - Query params: `query`, `limit`
+  - Returns: List of matching products
 
 - `POST /nutrition/manual` - Submit manual nutrition entry (requires auth)
   - Body: Nutrition facts object
   - Returns: Validated nutrition data
-
-- `POST /nutrition/clarify` - Clarify/correct OCR results (requires auth)
-  - Body: `{ original_data, corrections }`
-  - Returns: Corrected nutrition data
 
 - `POST /agent/evaluate` - Get AI evaluation (requires auth)
   - Body: `{ product: { name, nutrition, price } }`
@@ -231,8 +229,8 @@ AINutritionHelp/
 
 ### Data Flow
 
-1. User scans nutrition label (OCR or manual entry)
-2. Product data extracted and validated
+1. User scans barcode or enters nutrition data manually
+2. Product data fetched from database or validated
 3. User requests AI analysis
 4. All 3 evaluators run in parallel (asyncio)
 5. Results combined into comprehensive evaluation
@@ -316,10 +314,10 @@ AINutritionHelp/
 - **Flask 3.0+** - REST API framework
 - **SQLite3** - Embedded database
 - **Google Generative AI** (Gemini 2.0 Flash) - AI/LLM
-- **Tesseract OCR** - Optical character recognition
-- **OpenCV** - Image processing
+- **Open Food Facts API** - Product barcode database
 - **PyJWT** - JWT authentication
-- **Werkzeug** - Password hashing
+- **Flask-Limiter** - Rate limiting
+- **Pydantic** - Data validation
 
 ### Frontend
 - **HTML5/CSS3/JavaScript** - Vanilla, no frameworks
@@ -375,22 +373,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### OCR Not Working
-
-**Error:** Tesseract not found
-
-**Solution:**
-```bash
-# macOS
-brew install tesseract
-
-# Ubuntu/Debian
-sudo apt-get install tesseract-ocr
-
-# Windows
-# Download from: https://github.com/UB-Mannheim/tesseract/wiki
-```
-
 ### AI Analysis Fails
 
 **Error:** "Nutrition agent not available"
@@ -437,7 +419,7 @@ If deploying for demonstration:
 
 ## 📊 Performance
 
-- **OCR Processing:** 1-3 seconds (depends on image quality)
+- **Barcode Lookup:** 1-2 seconds (depends on API response)
 - **AI Evaluation (3 agents):** 2-4 seconds (parallel execution)
 - **Chat Response:** 1-2 seconds
 - **Manual Entry:** Instant
@@ -449,11 +431,13 @@ If deploying for demonstration:
 This project demonstrates:
 - Full-stack web development (Flask + Vanilla JS)
 - RESTful API design
-- JWT authentication
+- JWT authentication & security
 - Multi-agent AI systems
-- OCR and image processing
+- External API integration (Open Food Facts)
+- Barcode scanning & data processing
 - Responsive web design
 - Database design and operations
+- Rate limiting & CORS configuration
 
 **Not suitable for:**
 - Medical or nutritional advice

@@ -1669,3 +1669,47 @@ input[type="checkbox"] {
         font-size: 0.7rem;
     }
 }
+
+/* =================================
+   MOBILE PHONE SPECIFIC (< 480px)
+   Even more compact header for phones
+   =================================== */
+@media (max-width: 480px) {
+    /* Further reduce body padding */
+    body {
+        padding-top: 45px !important;
+    }
+
+    /* Even smaller navigation */
+    .nav-bar {
+        padding: 6px var(--spacing-sm) !important;
+        min-height: auto !important;
+    }
+
+    .logo {
+        font-size: 1rem !important;
+    }
+
+    .logo span {
+        font-size: 1.1rem !important;
+    }
+
+    .user-avatar {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .user-banner-buttons .btn {
+        padding: 5px 10px !important;
+        font-size: 10px !important;
+    }
+
+    .user-banner {
+        gap: 6px !important;
+    }
+
+    .nav-content {
+        gap: 6px !important;
+    }
+}

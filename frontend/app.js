@@ -15,6 +15,48 @@ let barcodeScanner = null; // Html5Qrcode instance
 // ============================================================================
 
 /**
+ * Fetch with timeout and cold start detection
+ * Handles Render.com free tier cold starts (takes ~1 minute to spin up)
+ */
+async function fetchWithTimeout(url, options = {}, timeout = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+
+        // Check if it's a timeout or network error (likely cold start)
+        if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
+            throw new Error('COLD_START');
+        }
+
+        throw error;
+    }
+}
+
+/**
+ * Get user-friendly error message for API errors
+ */
+function getErrorMessage(error, defaultMessage = 'An error occurred') {
+    if (error.message === 'COLD_START') {
+        return '⏳ Service is starting up (this takes about 1 minute on the free tier). Please try again in 1 minute.';
+    }
+
+    if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
+        return 'Connection error. The service may be starting up. Please try again in 1 minute.';
+    }
+
+    return defaultMessage;
+}
+
+/**
  * Convert markdown formatting to HTML
  */
 function markdownToHtml(text) {
@@ -191,7 +233,7 @@ async function handleSignup(e) {
     const password = document.getElementById('signupPassword').value;
 
     try {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const response = await fetchWithTimeout(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password })
@@ -219,7 +261,7 @@ async function handleSignup(e) {
         }
     } catch (error) {
         console.error('Signup error:', error);
-        showMessage('signupMessage', 'Connection error. Please try again in 1 minute.', 'error');
+        showMessage('signupMessage', getErrorMessage(error, 'Unable to create account. Please try again.'), 'error');
     }
 }
 
@@ -229,7 +271,7 @@ async function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const response = await fetchWithTimeout(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -255,7 +297,7 @@ async function handleLogin(e) {
         }
     } catch (error) {
         console.error('Login error:', error);
-        showMessage('loginMessage', 'Connection error. Please try again in 1 minute.', 'error');
+        showMessage('loginMessage', getErrorMessage(error, 'Login failed. Please try again.'), 'error');
     }
 }
 
@@ -268,7 +310,7 @@ function logout() {
 
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_URL}/profile`, {
+        const response = await fetchWithTimeout(`${API_URL}/profile`, {
             headers: getAuthHeaders()
         });
 
@@ -284,6 +326,7 @@ async function loadUserProfile() {
         }
     } catch (error) {
         console.error('Failed to load profile:', error);
+        // Don't show error message here as it's called during login flow
     }
 }
 
@@ -368,7 +411,7 @@ async function submitProfile() {
             dietary_restrictions: dietaryRestrictions.join(', ')
         };
 
-        const response = await fetch(`${API_URL}/profile/setup`, {
+        const response = await fetchWithTimeout(`${API_URL}/profile/setup`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(payload)
@@ -387,7 +430,7 @@ async function submitProfile() {
             alert(error.error || 'Unable to save profile. Please check your information and try again.');
         }
     } catch (error) {
-        alert('Connection error. Unable to save profile. Please try again in 1 minute.');
+        alert(getErrorMessage(error, 'Unable to save profile. Please try again.'));
     }
 }
 
@@ -450,7 +493,7 @@ async function saveProfile() {
     };
 
     try {
-        const response = await fetch(`${API_URL}/profile`, {
+        const response = await fetchWithTimeout(`${API_URL}/profile`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(updatedProfile)
@@ -470,7 +513,7 @@ async function saveProfile() {
             showMessage('settingsMessage', resJson.error || 'Unable to update profile. Please check your information and try again.', 'error');
         }
     } catch (error) {
-        showMessage('settingsMessage', 'Connection error. Please try again in 1 minute.', 'error');
+        showMessage('settingsMessage', getErrorMessage(error, 'Unable to update profile. Please try again.'), 'error');
     }
 }
 
@@ -779,7 +822,7 @@ async function submitManualEntry(event) {
     showLoading();
 
     try {
-        const response = await fetch(`${API_URL}/nutrition/manual`, {
+        const response = await fetchWithTimeout(`${API_URL}/nutrition/manual`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(nutritionData)
@@ -817,7 +860,7 @@ async function submitManualEntry(event) {
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Connection error. Please try again in 1 minute.', 'error');
+        showMessageBox(getErrorMessage(error, 'Unable to validate nutrition data. Please try again.'), 'error');
     }
 }
 
@@ -831,11 +874,11 @@ async function analyzeProduct() {
     document.getElementById('loadingText').textContent = 'Analyzing product...';
 
     try {
-        const response = await fetch(`${API_URL}/agent/evaluate`, {
+        const response = await fetchWithTimeout(`${API_URL}/agent/evaluate`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ product: scannedProduct })
-        });
+        }, 45000); // Longer timeout for AI analysis
 
         if (response.status === 401) {
             hideLoading();
@@ -850,11 +893,11 @@ async function analyzeProduct() {
             displayAIResults(result.evaluation);
             sendEvaluationToChat(result.evaluation);
         } else {
-            showMessageBox(result.error || 'Unable to analyze product. The AI service may be busy. Please try again in 1 minute.', 'error');
+            showMessageBox(result.error || 'Unable to analyze product. Please try again.', 'error');
         }
     } catch (error) {
         hideLoading();
-        showMessageBox('Connection error. Unable to reach AI service. Please try again in 1 minute.', 'error');
+        showMessageBox(getErrorMessage(error, 'Unable to analyze product. Please try again.'), 'error');
     }
 }
 
@@ -1083,7 +1126,7 @@ async function lookupBarcode(barcode) {
     document.getElementById('loadingText').textContent = 'Looking up product...';
 
     try {
-        const response = await fetch(`${API_URL}/nutrition/barcode/${barcode}`, {
+        const response = await fetchWithTimeout(`${API_URL}/nutrition/barcode/${barcode}`, {
             method: 'GET',
             headers: getAuthHeaders()
         });
@@ -1106,7 +1149,7 @@ async function lookupBarcode(barcode) {
     } catch (error) {
         hideLoading();
         console.error('Barcode lookup error:', error);
-        showMessageBox('Unable to look up barcode. Please try again.', 'error');
+        showMessageBox(getErrorMessage(error, 'Unable to look up barcode. Please try again.'), 'error');
     }
 }
 
@@ -1191,11 +1234,11 @@ async function sendChatMessage() {
         const requestData = { message: message };
         if (scannedProduct) requestData.product = scannedProduct;
 
-        const response = await fetch(`${API_URL}/agent/chat`, {
+        const response = await fetchWithTimeout(`${API_URL}/agent/chat`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(requestData)
-        });
+        }, 45000); // Longer timeout for AI chat
 
         if (response.status === 401) {
             hideTypingIndicator();
@@ -1209,11 +1252,12 @@ async function sendChatMessage() {
         if (response.ok) {
             addChatMessage(result.message, false);
         } else {
-            addChatMessage('Sorry, I encountered an error processing your request. The AI service may be busy. Please try again in 1 minute.', false);
+            addChatMessage('Sorry, I encountered an error processing your request. Please try again.', false);
         }
     } catch (error) {
         hideTypingIndicator();
-        addChatMessage('Connection error. I\'m unable to reach the server right now. Please try again in 1 minute.', false);
+        const errorMsg = getErrorMessage(error, 'I\'m unable to reach the server right now. Please try again.');
+        addChatMessage(errorMsg, false);
     } finally {
         chatSendBtn.disabled = false;
         chatInput.focus();
