@@ -172,6 +172,7 @@ def extract_nutrition_from_product(product: Dict) -> Optional[Dict[str, Any]]:
 def search_products(query: str, limit: int = 10) -> list[Dict[str, Any]]:
     """
     Search for products by name in Open Food Facts database.
+    Prioritizes US/English products.
 
     Args:
         query: Product name search query
@@ -185,17 +186,21 @@ def search_products(query: str, limit: int = 10) -> list[Dict[str, Any]]:
             logger.warning("Search query too short")
             return []
 
-        # Search API endpoint
+        # Search API endpoint with country filter for US products
         url = "https://world.openfoodfacts.org/cgi/search.pl"
         params = {
             'search_terms': query,
             'search_simple': 1,
             'action': 'process',
             'json': 1,
-            'page_size': limit
+            'page_size': limit * 3,  # Request more to filter for English products
+            'tagtype_0': 'countries',
+            'tag_contains_0': 'contains',
+            'tag_0': 'united-states',  # Prioritize US products
+            'sort_by': 'unique_scans_n',  # Sort by popularity
         }
 
-        logger.info(f"Searching products for: {query}")
+        logger.info(f"Searching US products for: {query}")
         response = requests.get(url, params=params, timeout=10)
 
         if response.status_code != 200:
@@ -205,16 +210,51 @@ def search_products(query: str, limit: int = 10) -> list[Dict[str, Any]]:
         data = response.json()
         products = data.get('products', [])
 
-        # Extract nutrition data from each product
+        # If no US products found, try global search with English filter
+        if not products or len(products) < 3:
+            logger.info(f"Few US products found, trying global search")
+            params_global = {
+                'search_terms': query,
+                'search_simple': 1,
+                'action': 'process',
+                'json': 1,
+                'page_size': limit * 3,
+                'sort_by': 'unique_scans_n',
+            }
+            response = requests.get(url, params=params_global, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                products = data.get('products', [])
+
+        # Filter and extract nutrition data from each product
         results = []
-        for product in products[:limit]:
+        for product in products:
+            if len(results) >= limit:
+                break
+
+            # Filter for English products
+            product_name = product.get('product_name') or product.get('product_name_en', '')
+
+            # Skip products without English names or with non-Latin characters
+            if not product_name:
+                continue
+
+            # Check if product name is mostly English (has ASCII characters)
+            try:
+                ascii_ratio = sum(ord(c) < 128 for c in product_name) / len(product_name)
+                if ascii_ratio < 0.7:  # Skip if less than 70% ASCII
+                    logger.debug(f"Skipping non-English product: {product_name}")
+                    continue
+            except:
+                continue
+
             nutrition_data = extract_nutrition_from_product(product)
             if nutrition_data:
                 # Add barcode for reference
                 nutrition_data['barcode'] = product.get('code', '')
                 results.append(nutrition_data)
 
-        logger.info(f"Found {len(results)} products for query: {query}")
+        logger.info(f"Found {len(results)} English products for query: {query}")
         return results
 
     except requests.Timeout:
