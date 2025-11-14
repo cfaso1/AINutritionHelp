@@ -714,31 +714,59 @@ def clean_nutrition_data(nutrition_dict):
         'dietary_fiber': 'fiber',        # OCR uses dietary_fiber, AI expects fiber
     }
 
+    # Required nutrition fields with defaults
+    REQUIRED_FIELDS = {
+        'calories': 0.0,
+        'protein': 0.0,
+        'carbohydrates': 0.0,
+        'sugar': 0.0,
+        'fat': 0.0,
+        'saturated_fat': 0.0,
+        'trans_fat': 0.0,
+        'cholesterol': 0.0,
+        'sodium': 0.0,
+        'fiber': 0.0,
+        'serving_size': 100.0,
+        'servings_per_container': 1.0
+    }
+
     cleaned = {}
     import re
 
     for key, value in nutrition_dict.items():
-        if value is None:
-            continue
-
         # Map key to AI-expected name
         normalized_key = KEY_MAPPING.get(key, key)
 
         if normalized_key == 'serving_size':
-            if isinstance(value, str):
+            if value is None:
+                cleaned[normalized_key] = 100.0
+            elif isinstance(value, str):
                 match = re.search(r'(\d+(?:\.\d+)?)', str(value))
                 if match:
                     cleaned[normalized_key] = float(match.group(1))
                 else:
                     cleaned[normalized_key] = 100.0
             else:
-                cleaned[normalized_key] = float(value)
+                try:
+                    cleaned[normalized_key] = float(value)
+                except (ValueError, TypeError):
+                    cleaned[normalized_key] = 100.0
         else:
-            try:
-                cleaned[normalized_key] = float(value)
-            except (ValueError, TypeError):
-                logger.warning(f"Could not convert {key}={value} to float, skipping")
-                continue
+            if value is None:
+                # Use 0 for missing values
+                cleaned[normalized_key] = 0.0
+            else:
+                try:
+                    cleaned[normalized_key] = float(value)
+                except (ValueError, TypeError):
+                    logger.warning(f"Could not convert {key}={value} to float, using 0")
+                    cleaned[normalized_key] = 0.0
+
+    # Ensure all required fields are present
+    for field, default_value in REQUIRED_FIELDS.items():
+        if field not in cleaned:
+            cleaned[field] = default_value
+            logger.debug(f"Added missing field {field} with default {default_value}")
 
     return cleaned
 

@@ -552,13 +552,41 @@ function displayProduct(product) {
                 if (typeof value === 'number') {
                     displayValue = Number.isInteger(value) ? value : parseFloat(value.toFixed(1));
                 } else if (typeof value === 'string') {
-                    // Handle strings like "2.0oz" or "10.0g"
-                    const match = value.match(/^(\d+\.?\d*)(.*)$/);
-                    if (match) {
-                        const numPart = parseFloat(match[1]);
-                        const textPart = match[2];
-                        const formattedNum = Number.isInteger(numPart) ? numPart : parseFloat(numPart.toFixed(1));
-                        displayValue = formattedNum + textPart;
+                    // Special handling for serving_size to simplify display
+                    if (n.key === 'serving_size') {
+                        // Extract just the gram/oz value from strings like "1.5 cup (39g)" or "100g"
+                        const gramMatch = value.match(/\((\d+\.?\d*g)\)/); // Match "(39g)"
+                        if (gramMatch) {
+                            displayValue = gramMatch[1]; // Use just "39g"
+                        } else {
+                            // Try to extract first number with unit
+                            const simpleMatch = value.match(/(\d+\.?\d*)\s*(g|oz|ml|cup|tbsp|tsp)/i);
+                            if (simpleMatch) {
+                                const num = parseFloat(simpleMatch[1]);
+                                const formattedNum = Number.isInteger(num) ? num : parseFloat(num.toFixed(1));
+                                displayValue = formattedNum + simpleMatch[2];
+                            } else {
+                                // Fallback: just take first number with any text after
+                                const fallbackMatch = value.match(/^(\d+\.?\d*)(.*)$/);
+                                if (fallbackMatch) {
+                                    const numPart = parseFloat(fallbackMatch[1]);
+                                    const textPart = fallbackMatch[2].split('(')[0].trim(); // Remove anything in parentheses
+                                    const formattedNum = Number.isInteger(numPart) ? numPart : parseFloat(numPart.toFixed(1));
+                                    displayValue = formattedNum + textPart;
+                                } else {
+                                    displayValue = value;
+                                }
+                            }
+                        }
+                    } else {
+                        // Handle other strings like "2.0oz" or "10.0g"
+                        const match = value.match(/^(\d+\.?\d*)(.*)$/);
+                        if (match) {
+                            const numPart = parseFloat(match[1]);
+                            const textPart = match[2];
+                            const formattedNum = Number.isInteger(numPart) ? numPart : parseFloat(numPart.toFixed(1));
+                            displayValue = formattedNum + textPart;
+                        }
                     }
                 }
 
