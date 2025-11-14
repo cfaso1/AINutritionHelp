@@ -533,6 +533,18 @@ input[type="checkbox"] {
     color: var(--primary-green);
 }
 
+/* Settings page message - fixed at bottom */
+#settingsMessage {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    min-width: 300px;
+    max-width: 500px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* ===================================
    WELCOME SCREEN
    =================================== */
