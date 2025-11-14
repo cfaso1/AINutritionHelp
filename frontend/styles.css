@@ -919,6 +919,30 @@ input[type="checkbox"] {
 }
 
 /* Search Results */
+#searchResults {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+#searchResults::-webkit-scrollbar {
+    width: 8px;
+}
+
+#searchResults::-webkit-scrollbar-track {
+    background: var(--mint);
+    border-radius: 4px;
+}
+
+#searchResults::-webkit-scrollbar-thumb {
+    background: var(--soft-green);
+    border-radius: 4px;
+}
+
+#searchResults::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-green);
+}
+
 .search-result-item {
     background: var(--mint);
     padding: 15px;

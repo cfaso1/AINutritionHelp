@@ -120,6 +120,13 @@ def extract_nutrition_from_product(product: Dict) -> Optional[Dict[str, Any]]:
 
         # Build nutrition data structure (normalized to per serving if available)
         # Open Food Facts provides data per 100g, we'll use that as "serving"
+
+        # Extract nutrition values with defaults
+        def get_nutrient(key_100g, key_regular, default=0):
+            """Helper to get nutrient value with fallback"""
+            value = nutriments.get(key_100g) or nutriments.get(key_regular)
+            return value if value is not None else default
+
         nutrition = {
             'name': product_name,
             'category': product.get('categories_tags', ['Food'])[0] if product.get('categories_tags') else 'Food',
@@ -127,27 +134,33 @@ def extract_nutrition_from_product(product: Dict) -> Optional[Dict[str, Any]]:
             'image_url': product.get('image_url', ''),
             'nutrition': {
                 'serving_size': serving_size or '100g',
-                'servings_per_container': servings_per_container or 1,
-                'calories': nutriments.get('energy-kcal_100g') or nutriments.get('energy-kcal'),
-                'protein': nutriments.get('proteins_100g') or nutriments.get('proteins'),
-                'carbs_total': nutriments.get('carbohydrates_100g') or nutriments.get('carbohydrates'),
-                'sugar_total': nutriments.get('sugars_100g') or nutriments.get('sugars'),
-                'fat_total': nutriments.get('fat_100g') or nutriments.get('fat'),
-                'saturated_fat': nutriments.get('saturated-fat_100g') or nutriments.get('saturated-fat'),
-                'trans_fat': nutriments.get('trans-fat_100g') or nutriments.get('trans-fat', 0),
-                'cholesterol': nutriments.get('cholesterol_100g') or nutriments.get('cholesterol', 0),
-                'sodium': nutriments.get('sodium_100g') or nutriments.get('sodium', 0),
-                'dietary_fiber': nutriments.get('fiber_100g') or nutriments.get('fiber'),
+                'servings_per_container': servings_per_container if servings_per_container is not None else 1,
+                'calories': get_nutrient('energy-kcal_100g', 'energy-kcal', 0),
+                'protein': get_nutrient('proteins_100g', 'proteins', 0),
+                'carbs_total': get_nutrient('carbohydrates_100g', 'carbohydrates', 0),
+                'sugar_total': get_nutrient('sugars_100g', 'sugars', 0),
+                'fat_total': get_nutrient('fat_100g', 'fat', 0),
+                'saturated_fat': get_nutrient('saturated-fat_100g', 'saturated-fat', 0),
+                'trans_fat': get_nutrient('trans-fat_100g', 'trans-fat', 0),
+                'cholesterol': get_nutrient('cholesterol_100g', 'cholesterol', 0),
+                'sodium': get_nutrient('sodium_100g', 'sodium', 0),
+                'dietary_fiber': get_nutrient('fiber_100g', 'fiber', 0),
             }
         }
 
-        # Convert sodium from g to mg if needed
-        if nutrition['nutrition'].get('sodium') and nutrition['nutrition']['sodium'] < 10:
+        # Convert sodium from g to mg if needed (only if non-zero)
+        sodium_val = nutrition['nutrition'].get('sodium', 0)
+        if sodium_val > 0 and sodium_val < 10:
             # Likely in grams, convert to mg
-            nutrition['nutrition']['sodium'] *= 1000
+            nutrition['nutrition']['sodium'] = sodium_val * 1000
 
-        # Remove None values from nutrition
-        nutrition['nutrition'] = {k: v for k, v in nutrition['nutrition'].items() if v is not None}
+        # Ensure all values are numeric (convert to float)
+        for key, value in nutrition['nutrition'].items():
+            if key != 'serving_size':  # Skip serving_size as it's a string
+                try:
+                    nutrition['nutrition'][key] = float(value) if value is not None else 0.0
+                except (ValueError, TypeError):
+                    nutrition['nutrition'][key] = 0.0
 
         return nutrition
 
