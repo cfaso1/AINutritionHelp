@@ -909,52 +909,17 @@ input[type="checkbox"] {
     font-weight: 500;
 }
 
-/* Input Method Tabs */
-.input-tabs {
-    display: flex;
-    gap: 8px;
-    margin: 24px 0 0 0;
-    padding: 6px;
-    background: var(--mint);
-    border-radius: 14px;
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 14px 20px;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    color: var(--medium-text);
-    font-weight: 500;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.tab-btn:hover {
-    color: var(--primary-green);
-    background: rgba(255, 255, 255, 0.5);
-}
-
-.tab-btn.active {
-    color: var(--primary-green);
-    background: var(--white);
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.input-tab-content {
-    padding: 28px 0 20px;
+/* Scanner Input Content */
+.scanner-input-content {
+    padding: 28px 0 0;
     animation: fadeIn 0.3s ease;
 }
 
-.input-tab-content .form-group {
+.scanner-input-content .form-group {
     margin-bottom: 18px;
 }
 
-.input-tab-content .form-label {
+.scanner-input-content .form-label {
     display: block;
     margin-bottom: 8px;
     color: var(--primary-green);
