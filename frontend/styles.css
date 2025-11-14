@@ -825,7 +825,6 @@ input[type="checkbox"] {
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     position: relative;
     overflow: hidden;
 }
@@ -835,9 +834,9 @@ input[type="checkbox"] {
     color: var(--white);
     padding: 25px var(--spacing-md) 20px;
     text-align: center;
-    margin: -2px -2px 0 -2px;
     border-radius: 18px 18px 0 0;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
 }
 
 .scanner-header .section-title {
@@ -912,6 +911,10 @@ input[type="checkbox"] {
 .scanner-input-content {
     padding: var(--spacing-xl);
     animation: fadeIn 0.3s ease;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .scanner-input-content .form-group {
