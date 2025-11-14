@@ -841,20 +841,20 @@ input[type="checkbox"] {
 }
 
 .scanner-header .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.3rem;
     color: var(--white);
     margin: 0 0 8px 0;
     text-align: center;
     font-weight: 700;
-    letter-spacing: -0.5px;
+    letter-spacing: 0.3px;
 }
 
 .scanner-header .section-subtitle {
     text-align: center;
     color: var(--white);
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 500;
     opacity: 0.95;
 }
