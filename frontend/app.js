@@ -474,66 +474,6 @@ async function saveProfile() {
     }
 }
 
-// Image Upload & Scanning
-async function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    showLoading();
-
-    // Reset previous results
-    document.getElementById('results').style.display = 'none';
-    document.getElementById('results').innerHTML = '';
-    document.getElementById('resultsPanel').classList.remove('show');
-    document.getElementById('aiResults').style.display = 'none';
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-        // For file uploads, only add Authorization header (Content-Type set automatically)
-        const headers = {};
-        const token = getAuthToken();
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_URL}/nutrition/ocr`, {
-            method: 'POST',
-            headers: headers,
-            body: formData
-        });
-
-        if (response.status === 401) {
-            hideLoading();
-            handleAuthError();
-            return;
-        }
-
-        const result = await response.json();
-        hideLoading();
-
-        if (result.success) {
-            if (result.needs_clarification) {
-                showMessageBox('Scan complete! Please review and confirm the data below.', 'success');
-                showClarificationForm(result.data, result.clarification_fields, result.message);
-            } else {
-                // OCR was successful - show clarification form to allow price and name input
-                showMessageBox('Scan complete! Please review the data below.', 'success');
-                showClarificationForm(result.data, {}, 'OCR successful! Please add item name and price.');
-            }
-        } else if (result.needs_manual_entry) {
-            showMessageBox(result.error || 'Unable to read nutrition label. Please use manual entry instead.', 'error');
-            setTimeout(() => showManualInput(), 1500);
-        } else {
-            showMessageBox(result.error || 'Unable to process image. Please try a clearer photo or use manual entry.', 'error');
-        }
-    } catch (error) {
-        hideLoading();
-        showMessageBox('Connection error. Please try again in 1 minute.', 'error');
-    }
-}
-
 function truncateProductName(name) {
     /**
      * Truncate long product names to show just the important part.
@@ -881,134 +821,6 @@ async function submitManualEntry(event) {
     }
 }
 
-function showClarificationForm(originalData, clarificationFields, message) {
-    // Add item name field first
-    let fieldsHtml = `
-        <div class="form-group full-width-field">
-            <label class="form-label">🏷️ Item Name</label>
-            <input type="text" class="form-input enhanced-input" name="item_name" placeholder="e.g., Greek Yogurt (optional)" >
-        </div>
-    `;
-
-    for (const [fieldName, fieldInfo] of Object.entries(clarificationFields)) {
-        const displayName = fieldInfo.display_name;
-        const currentValue = fieldInfo.value || '';
-        const status = fieldInfo.status;
-
-        let statusBadge = '';
-        if (status === 'missing') {
-            statusBadge = '<span style="color: red; font-size: 0.8em;">(Missing - Please add)</span>';
-        } else if (status === 'low_confidence') {
-            statusBadge = `<span style="color: orange; font-size: 0.8em;">(${(fieldInfo.confidence * 100).toFixed(0)}% confidence - Please verify)</span>`;
-        } else if (status === 'ok') {
-            statusBadge = `<span style="color: green; font-size: 0.8em;">✓ (${(fieldInfo.confidence * 100).toFixed(0)}% confidence)</span>`;
-        }
-
-        fieldsHtml += `
-            <div class="form-group">
-                <label class="form-label">${displayName} ${statusBadge}</label>
-                <input type="text" class="form-input enhanced-input" name="${fieldName}"
-                       value="${currentValue}" placeholder="Enter value">
-            </div>
-        `;
-    }
-
-    // Add price field
-    fieldsHtml += `
-        <div class="form-group full-width-field">
-            <label class="form-label">💰 Price ($)</label>
-            <input type="number" class="form-input enhanced-input" step="0.01" name="price" placeholder="e.g., 4.99 (optional)">
-            <small style="color: var(--medium-text); font-size: 0.85rem;">Optional - for value analysis</small>
-        </div>
-    `;
-
-    const html = `
-        <div class="manual-input-container" style="max-width: 700px;">
-            <h3 style="color: var(--primary-green); margin-bottom: 10px; text-align: center;">✏️ Review & Edit Scanned Data</h3>
-            <p style="color: var(--medium-text); margin-bottom: 20px; text-align: center; font-size: 0.9rem;">
-                Please verify all values below. Edit any incorrect data before submitting for AI analysis.
-            </p>
-            <form id="clarificationForm" onsubmit="submitClarification(event)">
-                <div class="form-grid">${fieldsHtml}</div>
-                <div class="form-actions">
-                    <button type="submit" class="btn primary">✓ Confirm </button>
-                    <button type="button" class="btn" onclick="showManualInput()">✕ Start Over </button>
-                </div>
-            </form>
-        </div>
-    `;
-
-    window.ocrOriginalData = originalData;
-    document.getElementById('results').innerHTML = html;
-    document.getElementById('results').style.display = 'block';
-}
-
-async function submitClarification(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const corrections = {};
-    let price = null;
-    let itemName = 'Scanned Product';
-
-    for (const [key, value] of formData.entries()) {
-        if (key === 'price') {
-            const trimmedPrice = value ? value.trim() : '';
-            price = trimmedPrice ? parseFloat(trimmedPrice) : null;
-        } else if (key === 'item_name') {
-            itemName = (value && value.trim()) || 'Scanned Product';
-        } else if (value) {
-            corrections[key] = value;
-        }
-    }
-
-    showLoading();
-
-    try {
-        const response = await fetch(`${API_URL}/nutrition/clarify`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                original_data: window.ocrOriginalData,
-                corrections: corrections
-            })
-        });
-
-        if (response.status === 401) {
-            hideLoading();
-            handleAuthError();
-            return;
-        }
-
-        const result = await response.json();
-        hideLoading();
-
-        if (result.success) {
-            document.getElementById('results').style.display = 'none';
-
-            // Create product with price and item name included
-            scannedProduct = {
-                name: itemName,
-                category: 'Price',
-                nutrition: result.data
-            };
-
-            // Only include price if it's a valid number
-            if (price !== null && !isNaN(price)) {
-                scannedProduct.price = price;
-            }
-
-            // Display product directly - no need for separate price prompt
-            showMessageBox('Nutrition data validated successfully!', 'success');
-            displayProduct(scannedProduct);
-        } else {
-            showMessageBox(result.error || 'Invalid nutrition data. Please check your entries and try again.', 'error');
-        }
-    } catch (error) {
-        hideLoading();
-        showMessageBox('Connection error. Please try again in 1 minute.', 'error');
-    }
-}
-
 async function analyzeProduct() {
     if (!scannedProduct) {
         showMessageBox('Please scan or enter a product first before requesting analysis.', 'error');
@@ -1108,7 +920,6 @@ function resetScanner() {
     document.getElementById('resultsPanel').classList.remove('show');
     document.getElementById('aiResults').style.display = 'none';
     scannedProduct = null;
-    window.ocrOriginalData = null;
     window.pendingNutritionData = null;
 
     // Also stop barcode scanner if running

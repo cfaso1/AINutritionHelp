@@ -68,20 +68,22 @@ except ImportError as e:
     logger.warning(f"Nutrition Agent not available: {e}")
     USE_NUTRITION_AGENT = False
 
-# OCR Ingestion Pipeline
-try:
-    from backend.ingest import (
-        extract_text_from_image,
-        parse_nutrition_text,
-        needs_clarification,
-        get_clarification_form_data,
-        merge_user_corrections,
-        validate_nutrition_data
-    )
-    USE_OCR = True
-except ImportError as e:
-    logger.warning(f"OCR pipeline not available: {e}")
-    USE_OCR = False
+# Simple nutrition data validation
+def validate_nutrition_data(data):
+    """Validate nutrition data structure and required fields"""
+    errors = []
+    required_fields = ['calories', 'protein', 'carbohydrates', 'fat']
+
+    for field in required_fields:
+        if field not in data or data[field] is None:
+            errors.append(f"Missing required field: {field}")
+        elif not isinstance(data[field], (int, float)) or data[field] < 0:
+            errors.append(f"Invalid value for {field}: must be a non-negative number")
+
+    return {
+        'valid': len(errors) == 0,
+        'errors': errors
+    }
 
 # Validate configuration
 try:
@@ -465,7 +467,7 @@ def initial_profile_setup():
 
 
 # ============================================================================
-# NUTRITION INGESTION - BARCODE, OCR & MANUAL ENTRY (AUTHENTICATED)
+# NUTRITION INGESTION - BARCODE & MANUAL ENTRY (AUTHENTICATED)
 # ============================================================================
 
 @app.route('/api/nutrition/barcode/<barcode>', methods=['GET'])
@@ -539,91 +541,6 @@ def nutrition_search():
         }), 500
 
 
-@app.route('/api/nutrition/ocr', methods=['POST'])
-@auth_manager.require_auth
-def nutrition_ocr():
-    """Extract nutrition facts from uploaded image using OCR"""
-    if not USE_OCR:
-        return jsonify({'error': 'OCR service not available. Install required dependencies.'}), 503
-
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image file provided'}), 400
-
-    file = request.files['image']
-
-    if file.filename == '':
-        return jsonify({'error': 'Empty filename'}), 400
-
-    # Validate file extension
-    file_ext = Path(file.filename).suffix.lower().lstrip('.')
-    if file_ext not in Config.ALLOWED_EXTENSIONS:
-        return jsonify({
-            'error': f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'
-        }), 400
-
-    try:
-        image_bytes = file.read()
-
-        # Validate file size
-        if len(image_bytes) > Config.MAX_CONTENT_LENGTH:
-            return jsonify({'error': f'File too large. Max size: {Config.MAX_UPLOAD_SIZE_MB}MB'}), 400
-
-        # Extract text using OCR
-        logger.info(f"Extracting text from nutrition label for user {get_current_user_id()}")
-        ocr_text = extract_text_from_image(image_bytes)
-
-        if not ocr_text or len(ocr_text.strip()) < 10:
-            return jsonify({
-                'success': False,
-                'error': 'Could not extract text from image. Please try manual entry.',
-                'needs_manual_entry': True
-            }), 200
-
-        # Parse nutrition data from text
-        parse_result = parse_nutrition_text(ocr_text)
-        nutrition_data = parse_result['data']
-        confidences = parse_result['confidences']
-
-        # Check if clarification needed
-        clarification_info = needs_clarification(nutrition_data, confidences)
-
-        if clarification_info['needs_clarification']:
-            missing_count = len(clarification_info['missing_fields'])
-            if missing_count >= 7:
-                return jsonify({
-                    'success': False,
-                    'error': 'Could not extract nutrition data from image. Please use manual entry.',
-                    'needs_manual_entry': True
-                }), 200
-
-            form_data = get_clarification_form_data(nutrition_data, confidences)
-
-            return jsonify({
-                'success': True,
-                'needs_clarification': True,
-                'data': nutrition_data,
-                'confidences': confidences,
-                'clarification_fields': form_data,
-                'message': clarification_info['prompt_message']
-            }), 200
-        else:
-            return jsonify({
-                'success': True,
-                'needs_clarification': False,
-                'data': nutrition_data,
-                'confidences': confidences,
-                'message': 'Nutrition facts extracted successfully'
-            }), 200
-
-    except Exception as e:
-        logger.error(f"OCR processing failed: {e}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': 'OCR processing failed',
-            'needs_manual_entry': True
-        }), 200
-
-
 @app.route('/api/nutrition/manual', methods=['POST'])
 @auth_manager.require_auth
 def nutrition_manual():
@@ -657,43 +574,6 @@ def nutrition_manual():
         }), 500
 
 
-@app.route('/api/nutrition/clarify', methods=['POST'])
-@auth_manager.require_auth
-def nutrition_clarify():
-    """Accept user corrections/clarifications and merge with original data"""
-    data = request.get_json()
-
-    if not data or 'original_data' not in data or 'corrections' not in data:
-        return jsonify({'error': 'Missing original_data or corrections'}), 400
-
-    try:
-        original_data = data['original_data']
-        corrections = data['corrections']
-
-        merged_data = merge_user_corrections(original_data, corrections)
-        validation_result = validate_nutrition_data(merged_data)
-
-        if not validation_result['valid']:
-            return jsonify({
-                'success': False,
-                'error': 'Validation failed after corrections',
-                'validation_errors': validation_result['errors']
-            }), 400
-
-        return jsonify({
-            'success': True,
-            'data': merged_data,
-            'message': 'Corrections applied successfully'
-        }), 200
-
-    except Exception as e:
-        logger.error(f"Clarification merge failed: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Failed to apply corrections'
-        }), 500
-
-
 # ============================================================================
 # NUTRITION EVALUATION (AUTHENTICATED)
 # ============================================================================
@@ -706,12 +586,12 @@ def clean_nutrition_data(nutrition_dict):
     if not nutrition_dict:
         return nutrition_dict
 
-    # Mapping from OCR parser keys to AI agent keys
+    # Mapping from nutrition data field names to AI agent keys
     KEY_MAPPING = {
-        'carbs_total': 'carbohydrates',  # OCR uses carbs_total, AI expects carbohydrates
-        'sugar_total': 'sugar',          # OCR uses sugar_total, AI expects sugar
-        'fat_total': 'fat',              # OCR uses fat_total, AI expects fat
-        'dietary_fiber': 'fiber',        # OCR uses dietary_fiber, AI expects fiber
+        'carbs_total': 'carbohydrates',  # Frontend/DB uses carbs_total, AI expects carbohydrates
+        'sugar_total': 'sugar',          # Frontend/DB uses sugar_total, AI expects sugar
+        'fat_total': 'fat',              # Frontend/DB uses fat_total, AI expects fat
+        'dietary_fiber': 'fiber',        # Frontend/DB uses dietary_fiber, AI expects fiber
     }
 
     # Required nutrition fields with defaults
@@ -948,26 +828,13 @@ def get_weight():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """API health check endpoint with service status"""
-    # Check Tesseract OCR availability
-    tesseract_available = False
-    tesseract_version = None
-    if USE_OCR:
-        try:
-            import pytesseract
-            tesseract_version = pytesseract.get_tesseract_version()
-            tesseract_available = True
-        except Exception as e:
-            logger.warning(f"Tesseract check failed: {e}")
-
     return jsonify({
         'status': 'healthy',
         'service': 'AI Nutrition Help API',
         'version': '2.0.0',
         'environment': Config.FLASK_ENV,
         'features': {
-            'ocr_available': USE_OCR,
-            'tesseract_available': tesseract_available,
-            'tesseract_version': str(tesseract_version) if tesseract_version else None,
+            'barcode_scanning_available': USE_BARCODE_SERVICE,
             'ai_agent_available': USE_NUTRITION_AGENT
         },
         'timestamp': datetime.now().isoformat()
@@ -986,9 +853,9 @@ def index():
             'auth': ['POST /api/auth/register', 'POST /api/auth/login'],
             'profile': ['GET /api/profile', 'PUT /api/profile', 'POST /api/profile/setup'],
             'nutrition': [
-                'POST /api/nutrition/ocr',
-                'POST /api/nutrition/manual',
-                'POST /api/nutrition/clarify'
+                'GET /api/nutrition/barcode/<barcode>',
+                'GET /api/nutrition/search',
+                'POST /api/nutrition/manual'
             ],
             'evaluation': ['POST /api/agent/evaluate', 'POST /api/agent/chat'],
             'weight': ['POST /api/weight', 'GET /api/weight/history'],

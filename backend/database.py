@@ -123,8 +123,8 @@ def init_database():
             food_name TEXT,
             price REAL,  -- Price of the food item
 
-            -- Nutrition Data (stored as JSON from OCR)
-            nutrition_json TEXT NOT NULL,  -- Full JSON from nutrition_reader.py
+            -- Nutrition Data (stored as JSON)
+            nutrition_json TEXT NOT NULL,  -- Full JSON nutrition data
 
             -- Quick Access Fields (extracted from JSON)
             calories INTEGER,
