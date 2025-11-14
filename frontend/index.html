@@ -486,16 +486,11 @@
                     </header>
 
                     <div class="scanner-input-content">
-                        <div id="barcode-reader" style="display: none; width: 100%; max-width: 500px; margin: 20px auto;"></div>
+                        <input type="file" id="barcodeImageInput" accept="image/*" capture="environment" style="display: none;" onchange="handleBarcodeImageUpload(event)">
 
-                        <div style="margin-bottom: 18px;">
-                            <button class="btn primary btn-full" id="startScanBtn" onclick="startBarcodeScanner()">
-                                📷 Start Camera Scanner
-                            </button>
-                            <button class="btn secondary btn-full" id="stopScanBtn" onclick="stopBarcodeScanner()" style="display: none; margin-top: 10px;">
-                                ⏹️ Stop Scanner
-                            </button>
-                        </div>
+                        <button class="btn primary btn-full" onclick="document.getElementById('barcodeImageInput').click()">
+                            📷 Upload Barcode Image
+                        </button>
 
                         <div class="or-divider">
                             <span>or enter manually</span>

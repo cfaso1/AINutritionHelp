@@ -1080,9 +1080,6 @@ input[type="checkbox"] {
     margin: 0;
 }
 
-.price-input[type=number] {
-    -moz-appearance: textfield;
-}
 
 .nutrition-title {
     color: var(--primary-green);
@@ -1622,10 +1619,36 @@ input[type="checkbox"] {
         max-width: 85%;
     }
 
+    /* Reduce body top padding for smaller header */
+    body {
+        padding-top: 50px;
+    }
+
     /* Navigation */
+    .nav-bar {
+        padding: 8px var(--spacing-sm);
+    }
+
     .nav-content {
-        flex-direction: column;
-        gap: 15px;
+        gap: 8px;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+    }
+
+    .logo span {
+        font-size: 1.2rem;
+    }
+
+    .user-banner {
+        gap: 8px;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
     }
 
     .user-details {
@@ -1633,8 +1656,8 @@ input[type="checkbox"] {
     }
 
     .user-banner-buttons .btn {
-        padding: 6px var(--spacing-sm);
-        font-size: 12px;
+        padding: 6px 12px;
+        font-size: 11px;
     }
 
     /* Disclaimer Footer */

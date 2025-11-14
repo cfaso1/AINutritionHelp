@@ -1210,6 +1210,45 @@ function stopBarcodeScanner() {
     }
 }
 
+async function handleBarcodeImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showLoading();
+    document.getElementById('loadingText').textContent = 'Scanning barcode from image...';
+
+    try {
+        if (!barcodeScanner) {
+            barcodeScanner = new Html5Qrcode('barcode-reader');
+        }
+
+        const config = {
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39
+            ]
+        };
+
+        const result = await barcodeScanner.scanFile(file, false);
+        hideLoading();
+
+        if (DEBUG) console.log('Barcode detected from image:', result);
+        lookupBarcode(result);
+
+        // Clear the file input for next upload
+        event.target.value = '';
+    } catch (error) {
+        hideLoading();
+        console.error('Error scanning barcode from image:', error);
+        showMessageBox('Could not detect a barcode in the image. Please try again with a clearer photo.', 'error');
+        event.target.value = '';
+    }
+}
+
 function lookupManualBarcode() {
     const barcodeInput = document.getElementById('manualBarcodeInput');
     const barcode = barcodeInput.value.trim();
