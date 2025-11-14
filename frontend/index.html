@@ -486,6 +486,9 @@
                     </header>
 
                     <div class="scanner-input-content">
+                        <!-- Hidden element required by Html5Qrcode library -->
+                        <div id="barcode-reader" style="display: none;"></div>
+
                         <input type="file" id="barcodeImageInput" accept="image/*" capture="environment" style="display: none;" onchange="handleBarcodeImageUpload(event)">
 
                         <button class="btn primary btn-full" onclick="document.getElementById('barcodeImageInput').click()">

@@ -1218,14 +1218,13 @@ async function handleBarcodeImageUpload(event) {
     document.getElementById('loadingText').textContent = 'Scanning barcode from image...';
 
     try {
-        // Use static scanFile method with configuration
-        const config = {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-        };
+        // Create reader instance if not already exists
+        if (!barcodeScanner) {
+            barcodeScanner = new Html5Qrcode('barcode-reader');
+        }
 
-        // Html5Qrcode.scanFile returns a Promise with the decoded text
-        const decodedText = await Html5Qrcode.scanFile(file, true);
+        // scanFile method on the instance
+        const decodedText = await barcodeScanner.scanFile(file, true);
 
         hideLoading();
 
@@ -1241,7 +1240,15 @@ async function handleBarcodeImageUpload(event) {
     } catch (error) {
         hideLoading();
         console.error('Error scanning barcode from image:', error);
-        showMessageBox('Could not detect a barcode in the image. Please try again with a clearer photo.', 'error');
+
+        // Provide more detailed error message
+        let errorMsg = 'Could not detect a barcode in the image. ';
+        if (error.message) {
+            console.log('Scan error details:', error.message);
+        }
+        errorMsg += 'Please try again with a clearer photo of the barcode.';
+
+        showMessageBox(errorMsg, 'error');
         event.target.value = '';
     }
 }
