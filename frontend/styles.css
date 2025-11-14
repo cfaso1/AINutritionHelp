@@ -175,19 +175,20 @@ body {
     color: var(--primary-green);
     font-family: 'Poppins', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     border-radius: 25px;
     transition: all var(--transition);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .btn:hover {
     background: var(--primary-green);
     color: var(--white);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--shadow-hover);
+    box-shadow: 0 6px 16px rgba(45, 106, 79, 0.25);
 }
 
 .btn:focus {
@@ -196,13 +197,27 @@ body {
 }
 
 .btn.primary {
-    background: var(--primary-green);
+    background: linear-gradient(135deg, var(--primary-green), #5cb87a);
     color: var(--white);
+    border-color: var(--primary-green);
+    box-shadow: 0 4px 12px rgba(45, 106, 79, 0.2);
 }
 
 .btn.primary:hover {
-    background: var(--light-green);
+    background: linear-gradient(135deg, var(--light-green), #6BC98A);
     border-color: var(--light-green);
+    box-shadow: 0 6px 20px rgba(45, 106, 79, 0.3);
+}
+
+.btn.secondary {
+    background: var(--mint);
+    border-color: var(--soft-green);
+    color: var(--primary-green);
+}
+
+.btn.secondary:hover {
+    background: var(--soft-green);
+    border-color: var(--primary-green);
 }
 
 .btn:disabled {
@@ -803,28 +818,46 @@ input[type="checkbox"] {
 }
 
 .scanner-section {
-    background: var(--white);
-    padding: var(--spacing-lg);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 4px 20px var(--shadow);
+    background: linear-gradient(135deg, var(--white) 0%, #f8fcf9 100%);
+    padding: var(--spacing-xl);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(45, 106, 79, 0.06);
+    border: 2px solid var(--mint);
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.scanner-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-green), var(--light-green), var(--soft-green));
 }
 
 .section-title {
     font-family: 'Playfair Display', serif;
-    font-size: 2rem;
+    font-size: 2.2rem;
     color: var(--primary-green);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 8px;
+    margin-top: 8px;
     text-align: center;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 .section-subtitle {
     text-align: center;
     color: var(--medium-text);
-    margin-bottom: 15px;
+    margin-bottom: 28px;
+    font-size: 1.05rem;
+    font-weight: 500;
 }
 
 .scanner-section .btn.secondary {
@@ -870,47 +903,63 @@ input[type="checkbox"] {
 .scan-hint {
     font-size: 0.9rem;
     color: var(--medium-text);
-    margin-top: 10px;
+    margin-top: 12px;
     pointer-events: none;
+    text-align: center;
+    font-weight: 500;
 }
 
 /* Input Method Tabs */
 .input-tabs {
     display: flex;
-    gap: 10px;
-    margin: 20px 0;
-    border-bottom: 2px solid var(--mint);
+    gap: 8px;
+    margin: 24px 0 0 0;
+    padding: 6px;
+    background: var(--mint);
+    border-radius: 14px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 12px 20px;
+    padding: 14px 20px;
     background: transparent;
     border: none;
-    border-bottom: 3px solid transparent;
+    border-radius: 10px;
     color: var(--medium-text);
     font-weight: 500;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all 0.3s ease;
     position: relative;
-    bottom: -2px;
 }
 
 .tab-btn:hover {
     color: var(--primary-green);
-    background: var(--mint);
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .tab-btn.active {
     color: var(--primary-green);
-    border-bottom-color: var(--primary-green);
+    background: var(--white);
     font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .input-tab-content {
-    padding: 20px 0;
+    padding: 28px 0 20px;
     animation: fadeIn 0.3s ease;
+}
+
+.input-tab-content .form-group {
+    margin-bottom: 18px;
+}
+
+.input-tab-content .form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--primary-green);
+    font-weight: 600;
+    font-size: 0.92rem;
 }
 
 @keyframes fadeIn {
@@ -920,15 +969,41 @@ input[type="checkbox"] {
 
 /* Barcode Scanner */
 #barcode-reader {
-    border: 2px solid var(--soft-green);
-    border-radius: var(--radius-md);
+    border: 3px solid var(--soft-green);
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    background: var(--dark-text);
 }
 
 #barcode-reader video {
     width: 100%;
     height: auto;
     display: block;
+}
+
+.or-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 24px 0;
+    color: var(--medium-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 2px solid var(--mint);
+}
+
+.or-divider span {
+    padding: 0 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
 }
 
 /* ===================================

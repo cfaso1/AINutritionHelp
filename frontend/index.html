@@ -496,27 +496,29 @@
                     <!-- Barcode Scanner Tab -->
                     <div class="input-tab-content active" id="barcodeTab">
                         <div id="barcode-reader" style="display: none; width: 100%; max-width: 500px; margin: 20px auto;"></div>
-                        <button class="btn primary btn-full" id="startScanBtn" onclick="startBarcodeScanner()">
-                            📷 Start Camera Scanner
-                        </button>
-                        <button class="btn secondary btn-full" id="stopScanBtn" onclick="stopBarcodeScanner()" style="display: none;">
-                            ⏹️ Stop Scanner
-                        </button>
-                        <p class="scan-hint" style="margin-top: 15px;">Point your camera at the product barcode</p>
 
-                        <div style="margin: 20px 0; text-align: center; color: var(--medium-text);">
-                            <span>or</span>
+                        <div style="margin-bottom: 18px;">
+                            <button class="btn primary btn-full" id="startScanBtn" onclick="startBarcodeScanner()">
+                                📷 Start Camera Scanner
+                            </button>
+                            <button class="btn secondary btn-full" id="stopScanBtn" onclick="stopBarcodeScanner()" style="display: none; margin-top: 10px;">
+                                ⏹️ Stop Scanner
+                            </button>
+                        </div>
+
+                        <div class="or-divider">
+                            <span>or enter manually</span>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Enter Barcode Manually</label>
                             <div style="display: flex; gap: 10px;">
                                 <input type="text" class="form-input" id="manualBarcodeInput"
-                                       placeholder="Enter UPC/EAN barcode number"
+                                       placeholder="Enter barcode number"
                                        pattern="[0-9]*" inputmode="numeric"
                                        onkeypress="if(event.key==='Enter') lookupManualBarcode()">
-                                <button class="btn primary" onclick="lookupManualBarcode()">Lookup</button>
+                                <button class="btn primary" onclick="lookupManualBarcode()" style="min-width: 100px;">Lookup</button>
                             </div>
+                            <p class="scan-hint">Enter UPC or EAN barcode</p>
                         </div>
                     </div>
 
