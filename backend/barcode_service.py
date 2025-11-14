@@ -71,6 +71,47 @@ def lookup_barcode(barcode: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+def clean_category(category_tag: str) -> str:
+    """
+    Clean Open Food Facts category tags to user-friendly names.
+
+    Args:
+        category_tag: Raw category tag (e.g., "en:plant-based-foods-and-beverages")
+
+    Returns:
+        Clean category name (e.g., "Food & Beverages")
+    """
+    if not category_tag:
+        return "Food"
+
+    # Remove language prefix (e.g., "en:", "fr:")
+    cleaned = category_tag.split(':')[-1]
+
+    # Replace dashes and underscores with spaces
+    cleaned = cleaned.replace('-', ' ').replace('_', ' ')
+
+    # Capitalize each word
+    cleaned = ' '.join(word.capitalize() for word in cleaned.split())
+
+    # Simplify common categories
+    if 'plant based' in cleaned.lower() or 'beverages' in cleaned.lower():
+        return "Food & Beverages"
+    elif 'snack' in cleaned.lower():
+        return "Snacks"
+    elif 'dairy' in cleaned.lower() or 'milk' in cleaned.lower():
+        return "Dairy"
+    elif 'meat' in cleaned.lower():
+        return "Meat & Protein"
+    elif 'fruit' in cleaned.lower() or 'vegetable' in cleaned.lower():
+        return "Produce"
+
+    # Return simplified version or just "Food" if too technical
+    if len(cleaned) > 25:
+        return "Food"
+
+    return cleaned
+
+
 def extract_nutrition_from_product(product: Dict) -> Optional[Dict[str, Any]]:
     """
     Extract and normalize nutrition data from Open Food Facts product.
@@ -127,9 +168,13 @@ def extract_nutrition_from_product(product: Dict) -> Optional[Dict[str, Any]]:
             value = nutriments.get(key_100g) or nutriments.get(key_regular)
             return value if value is not None else default
 
+        # Get and clean category
+        raw_category = product.get('categories_tags', ['Food'])[0] if product.get('categories_tags') else 'Food'
+        category = clean_category(raw_category)
+
         nutrition = {
             'name': product_name,
-            'category': product.get('categories_tags', ['Food'])[0] if product.get('categories_tags') else 'Food',
+            'category': category,
             'brands': brands,
             'image_url': product.get('image_url', ''),
             'nutrition': {
