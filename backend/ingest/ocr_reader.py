@@ -31,21 +31,16 @@ def preprocess_image(image: np.ndarray) -> np.ndarray:
     else:
         gray = image
 
-    # Optimize image size for faster OCR processing
+    # Resize if image is too small - nutrition labels need higher resolution
     height, width = gray.shape
-
-    # For very large images, resize down first to speed up processing
-    if height > 2000 or width > 2000:
-        scale = min(2000 / height, 2000 / width)
-        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        logger.debug(f"Resized large image from {height}x{width} by {scale:.2f}x")
-        height, width = gray.shape
-
-    # Resize if image is too small - nutrition labels need reasonable resolution
     if height < 800 or width < 600:
         scale = max(800 / height, 600 / width)
         gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-        logger.debug(f"Upscaled small image by {scale:.2f}x")
+
+    # For very large images, resize down to avoid excessive processing
+    elif height > 3000 or width > 3000:
+        scale = min(3000 / height, 3000 / width)
+        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
 
     # Apply bilateral filter to reduce noise while preserving edges
     filtered = cv2.bilateralFilter(gray, 9, 75, 75)
@@ -97,13 +92,15 @@ def extract_text_from_image(image_input: Union[bytes, str, Path]) -> str:
         # Preprocess image
         processed = preprocess_image(img_array)
 
-        # Try OCR configurations - optimized for speed
+        # Try multiple OCR configurations for best results
         # PSM modes:
-        # 3=fully automatic, 4=single column, 6=uniform block
-        # Start with most likely to succeed for nutrition labels
+        # 3=fully automatic, 4=single column, 6=uniform block, 11=sparse text, 12=sparse text + OSD
+        # Added custom whitelist for nutrition labels
         configs = [
+            r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%.,()/:- ',
+            r'--oem 3 --psm 4 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%.,()/:- ',
             r'--oem 3 --psm 6',   # Single uniform block (best for labels)
-            r'--oem 3 --psm 4',   # Single column (fallback)
+            r'--oem 3 --psm 3',   # Fully automatic page segmentation
         ]
 
         text = None
@@ -112,22 +109,15 @@ def extract_text_from_image(image_input: Union[bytes, str, Path]) -> str:
 
         for config in configs:
             try:
-                # Try on preprocessed image first
+                # Try on preprocessed image
                 extracted = pytesseract.image_to_string(processed, config=config)
-                extracted_clean = extracted.strip()
-
-                if extracted_clean and len(extracted_clean) > best_length:
-                    best_text = extracted_clean
+                if extracted and len(extracted.strip()) > best_length:
+                    best_text = extracted.strip()
                     best_length = len(best_text)
                     logger.debug(f"Config '{config}' extracted {best_length} chars")
 
-                # If we got good results (>100 chars), stop trying more configs
-                if best_length > 100:
-                    logger.info(f"OCR succeeded with {best_length} chars, skipping remaining configs")
-                    break
-
-                # Only try grayscale as last resort if preprocessed failed
-                if best_length < 50 and config == configs[-1]:
+                # If we get a good amount of text, also try on original grayscale
+                if best_length < 100:
                     if len(img_array.shape) == 3:
                         gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
                     else:
@@ -136,7 +126,7 @@ def extract_text_from_image(image_input: Union[bytes, str, Path]) -> str:
                     if len(extracted_gray.strip()) > best_length:
                         best_text = extracted_gray.strip()
                         best_length = len(best_text)
-                        logger.debug(f"Grayscale fallback extracted {best_length} chars")
+                        logger.debug(f"Config '{config}' on grayscale extracted {best_length} chars")
 
             except Exception as e:
                 logger.debug(f"OCR config {config} failed: {e}")
