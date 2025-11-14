@@ -61,13 +61,21 @@ class NutritionAgentService:
 
     def _dict_to_product(self, data: Dict) -> Product:
         """Convert dictionary to Product model."""
+        # Safely handle price - could be None from barcode scanned products
+        price_value = data.get("price")
+        price = float(price_value) if price_value is not None else 0.0
+
+        # Safely handle unit_price
+        unit_price_value = data.get("unit_price")
+        unit_price = float(unit_price_value) if unit_price_value is not None else None
+
         return Product(
             name=data.get("name", "Unknown Product"),
             brand=data.get("brand", "Unknown Brand"),
             category=data.get("category", "Uncategorized"),
-            price=float(data.get("price", 0)),
+            price=price,
             size=data.get("size"),
-            unit_price=data.get("unit_price"),
+            unit_price=unit_price,
             nutrition=data.get("nutrition"),
             ingredients=data.get("ingredients")
         )
