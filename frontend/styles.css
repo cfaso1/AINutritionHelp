@@ -965,6 +965,67 @@ input[type="checkbox"] {
     margin-top: 5px;
 }
 
+.price-input-group {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.price-input-group label {
+    font-size: 0.9rem;
+    color: var(--medium-text);
+    font-weight: 500;
+}
+
+.price-input-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.price-currency {
+    position: absolute;
+    left: 12px;
+    color: var(--medium-text);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.price-input {
+    width: 120px;
+    padding: 8px 12px 8px 28px;
+    border: 2px solid var(--soft-green);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--primary-green);
+    background: var(--white);
+    transition: all var(--transition);
+}
+
+.price-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(79, 167, 106, 0.1);
+}
+
+.price-input::placeholder {
+    color: var(--light-text);
+    font-weight: 400;
+}
+
+/* Remove number input spinners */
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.price-input[type=number] {
+    -moz-appearance: textfield;
+}
+
 .nutrition-title {
     color: var(--primary-green);
     margin-bottom: 15px;

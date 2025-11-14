@@ -421,8 +421,21 @@
                     <div class="product-header">
                         <h3 class="product-name" id="productName">-</h3>
                         <p class="product-meta">
-                            <span id="productCategory">-</span>: $<span id="productPrice">-</span>
+                            <span id="productCategory">-</span>
                         </p>
+                        <div class="price-input-group">
+                            <label for="productPriceInput">Price (optional):</label>
+                            <div class="price-input-wrapper">
+                                <span class="price-currency">$</span>
+                                <input type="number"
+                                       id="productPriceInput"
+                                       class="price-input"
+                                       placeholder="0.00"
+                                       step="0.01"
+                                       min="0"
+                                       onchange="updateProductPrice()">
+                            </div>
+                        </div>
                     </div>
 
                     <h4 class="nutrition-title">Nutrition Facts</h4>

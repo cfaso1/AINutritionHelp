@@ -512,10 +512,70 @@ async function handleImageUpload(event) {
     }
 }
 
+function truncateProductName(name) {
+    /**
+     * Truncate long product names to show just the important part.
+     * Examples:
+     *   "Coca Cola Company - Thumbs Up 750ml" -> "Thumbs Up"
+     *   "Kraft - Mac & Cheese Original Flavor 7.25oz" -> "Mac & Cheese Original"
+     *   "Greek Yogurt Plain Nonfat" -> "Greek Yogurt Plain"
+     */
+    if (!name || name === 'Unknown') return name;
+
+    // Remove brand prefix if it has a dash separator (e.g., "Brand - Product")
+    let cleaned = name;
+    if (cleaned.includes(' - ')) {
+        const parts = cleaned.split(' - ');
+        // Take everything after the dash
+        cleaned = parts.slice(1).join(' - ');
+    }
+
+    // Remove size/quantity info (e.g., "750ml", "7.25oz", "12 pack")
+    cleaned = cleaned.replace(/\b\d+\.?\d*\s*(ml|oz|g|kg|lb|pack|count|ct)\b/gi, '');
+
+    // Remove parenthetical info
+    cleaned = cleaned.replace(/\([^)]*\)/g, '');
+
+    // Limit to first 5-6 words (the core product name)
+    const words = cleaned.trim().split(/\s+/);
+    if (words.length > 6) {
+        cleaned = words.slice(0, 6).join(' ');
+    }
+
+    // Clean up extra whitespace
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+    return cleaned || name; // Fallback to original if cleaning resulted in empty
+}
+
+function updateProductPrice() {
+    /**
+     * Update the scannedProduct price when user enters it manually
+     */
+    const priceInput = document.getElementById('productPriceInput');
+    const price = parseFloat(priceInput.value);
+
+    if (scannedProduct && !isNaN(price) && price >= 0) {
+        scannedProduct.price = price;
+        if (DEBUG) console.log('Price updated to:', price);
+    } else if (scannedProduct) {
+        scannedProduct.price = null;
+    }
+}
+
 function displayProduct(product) {
-    document.getElementById('productName').textContent = product.name || 'Unknown';
+    // Truncate long product names - extract the core product name
+    const truncatedName = truncateProductName(product.name || 'Unknown');
+    document.getElementById('productName').textContent = truncatedName;
     document.getElementById('productCategory').textContent = product.category || 'Uncategorized';
-    document.getElementById('productPrice').textContent = (product.price !== undefined && product.price !== null) ? product.price.toFixed(2) : 'N/A';
+
+    // Set price input value
+    const priceInput = document.getElementById('productPriceInput');
+    if (product.price !== undefined && product.price !== null && product.price > 0) {
+        priceInput.value = product.price.toFixed(2);
+    } else {
+        priceInput.value = '';
+    }
 
     const grid = document.getElementById('nutritionGrid');
     grid.innerHTML = '';
