@@ -16,15 +16,17 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p backend/uploads logs
 
-# Expose the port the app runs on
-EXPOSE 5000
+# Expose the port (Render uses 10000)
+EXPOSE 10000
 
 # Set environment variables
 ENV FLASK_ENV=production \
     FLASK_DEBUG=0 \
     HOST=0.0.0.0 \
-    PORT=5000 \
     PYTHONUNBUFFERED=1
 
-# Run the application
-CMD ["python", "run.py"]
+# Install Gunicorn for production
+RUN pip install gunicorn
+
+# Run the application with Gunicorn
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile - backend.api:app
