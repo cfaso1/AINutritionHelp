@@ -65,7 +65,8 @@ class Config:
         if not cls.GOOGLE_API_KEY:
             errors.append("GOOGLE_API_KEY is not set")
 
-        if cls.FLASK_ENV == 'production' and cls.SECRET_KEY == secrets.token_hex(32):
+        # Check if SECRET_KEY was explicitly set (not auto-generated)
+        if cls.FLASK_ENV == 'production' and not os.getenv('SECRET_KEY'):
             errors.append("SECRET_KEY must be explicitly set in production (not auto-generated)")
 
         if errors:
