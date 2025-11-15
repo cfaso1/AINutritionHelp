@@ -15,10 +15,45 @@ let barcodeScanner = null; // Html5Qrcode instance
 // ============================================================================
 
 /**
+ * Fetch with timeout for cold start detection
+ * Handles Render.com free tier cold starts (takes ~1 minute to spin up)
+ */
+async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+
+        // If request was aborted due to timeout, it's likely a cold start
+        if (error.name === 'AbortError') {
+            const coldStartError = new Error('Service is taking too long to respond. It may be starting up.');
+            coldStartError.isColdStart = true;
+            throw coldStartError;
+        }
+
+        // Otherwise, throw the original error
+        throw error;
+    }
+}
+
+/**
  * Get user-friendly error message for API errors
- * Detects network errors (API not reachable) and provides helpful message
+ * Detects network errors and cold starts
  */
 function getErrorMessage(error, defaultMessage = 'An error occurred') {
+    // Check if it's a cold start (timeout)
+    if (error.isColdStart) {
+        return '⏳ Service is starting up (this takes about 1 minute on the free tier). Please try again in 1 minute.';
+    }
+
     // Check if it's a network/connection error (API not reachable)
     if (error.message && (error.message.includes('Failed to fetch') ||
         error.message.includes('NetworkError') ||
@@ -207,7 +242,7 @@ async function handleSignup(e) {
     const password = document.getElementById('signupPassword').value;
 
     try {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const response = await fetchWithTimeout(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password })
@@ -245,7 +280,7 @@ async function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const response = await fetchWithTimeout(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -284,7 +319,7 @@ function logout() {
 
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_URL}/profile`, {
+        const response = await fetchWithTimeout(`${API_URL}/profile`, {
             headers: getAuthHeaders()
         });
 
@@ -385,7 +420,7 @@ async function submitProfile() {
             dietary_restrictions: dietaryRestrictions.join(', ')
         };
 
-        const response = await fetch(`${API_URL}/profile/setup`, {
+        const response = await fetchWithTimeout(`${API_URL}/profile/setup`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(payload)
@@ -467,7 +502,7 @@ async function saveProfile() {
     };
 
     try {
-        const response = await fetch(`${API_URL}/profile`, {
+        const response = await fetchWithTimeout(`${API_URL}/profile`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(updatedProfile)
@@ -657,7 +692,7 @@ async function analyzeProduct() {
     document.getElementById('loadingText').textContent = 'Analyzing product...';
 
     try {
-        const response = await fetch(`${API_URL}/agent/evaluate`, {
+        const response = await fetchWithTimeout(`${API_URL}/agent/evaluate`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ product: scannedProduct })
@@ -796,7 +831,7 @@ async function submitManualEntry(event) {
     showLoading();
 
     try {
-        const response = await fetch(`${API_URL}/nutrition/manual`, {
+        const response = await fetchWithTimeout(`${API_URL}/nutrition/manual`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(nutritionData)
@@ -848,7 +883,7 @@ async function analyzeProduct() {
     document.getElementById('loadingText').textContent = 'Analyzing product...';
 
     try {
-        const response = await fetch(`${API_URL}/agent/evaluate`, {
+        const response = await fetchWithTimeout(`${API_URL}/agent/evaluate`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ product: scannedProduct })
@@ -1100,7 +1135,7 @@ async function lookupBarcode(barcode) {
     document.getElementById('loadingText').textContent = 'Looking up product...';
 
     try {
-        const response = await fetch(`${API_URL}/nutrition/barcode/${barcode}`, {
+        const response = await fetchWithTimeout(`${API_URL}/nutrition/barcode/${barcode}`, {
             method: 'GET',
             headers: getAuthHeaders()
         });
@@ -1208,7 +1243,7 @@ async function sendChatMessage() {
         const requestData = { message: message };
         if (scannedProduct) requestData.product = scannedProduct;
 
-        const response = await fetch(`${API_URL}/agent/chat`, {
+        const response = await fetchWithTimeout(`${API_URL}/agent/chat`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(requestData)
