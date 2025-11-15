@@ -31,8 +31,8 @@ services:
       - key: HOST
         value: 0.0.0.0
 
-      - key: PORT
-        value: 10000
+      # PORT is automatically provided by Render (10000 for web services)
+      # Do not override it - let Render set it
 
       - key: DATABASE_PATH
         value: backend/nutrition_app.db
