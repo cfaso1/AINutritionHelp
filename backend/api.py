@@ -825,6 +825,11 @@ def get_weight():
 # HEALTH CHECK & INFO
 # ============================================================================
 
+@app.route('/ping', methods=['GET'])
+def ping():
+    """Minimal health check for Render - responds immediately"""
+    return 'pong', 200
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """API health check endpoint with service status"""

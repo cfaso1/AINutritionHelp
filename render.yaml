@@ -13,8 +13,9 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
 
-    # Health Check
-    healthCheckPath: /api/health
+    # Health Check - Simple endpoint that responds immediately
+    # Using /ping instead of /api/health for faster cold start recovery
+    healthCheckPath: /ping
 
     # Auto-deploy on git push
     autoDeploy: true
