@@ -18,7 +18,7 @@ let barcodeScanner = null; // Html5Qrcode instance
  * Fetch with timeout for cold start detection
  * Handles Render.com free tier cold starts (takes ~1 minute to spin up)
  */
-async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
